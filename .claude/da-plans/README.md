@@ -9,7 +9,7 @@ Implementation deviations are logged at the bottom of each plan file.
 
 | Track | Description | Status |
 |-------|-------------|--------|
-| [Core](core/) | Scanner, vector storage, services, indexer | Not started |
+| [Core](core/) | Scanner, vector storage, services, indexer | Phase 1: Draft |
 | [CLI](cli/) | Command-line interface | Not started |
 | [MCP Server](mcp-server/) | Model Context Protocol server + adapters | Not started |
 | [Subagents](subagents/) | Coordinator, explorer, planner, GitHub agents | Not started |
