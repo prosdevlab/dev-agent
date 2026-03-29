@@ -37,6 +37,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@antfly/sdk": "0.0.14",
     "@lancedb/lancedb": "^0.22.3",
     "@prosdevlab/dev-agent-types": "workspace:*",
     "@prosdevlab/kero": "workspace:*",
