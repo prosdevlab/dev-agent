@@ -21,7 +21,7 @@ vi.mock('../../storage/path.js', () => ({
 
 describe('GitHubService', () => {
   const mockIndexStats: GitHubIndexStats = {
-    repository: 'lytics/dev-agent',
+    repository: 'prosdevlab/dev-agent',
     totalDocuments: 150,
     byType: {
       issue: 100,

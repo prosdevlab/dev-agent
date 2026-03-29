@@ -56,10 +56,10 @@ When integrated with Cursor or Claude Code, you get 6 powerful tools:
 
 ## Documentation
 
-- **Full Documentation:** https://github.com/lytics/dev-agent
-- **Troubleshooting:** https://github.com/lytics/dev-agent/blob/main/TROUBLESHOOTING.md
-- **Cursor Setup:** https://github.com/lytics/dev-agent/blob/main/packages/mcp-server/CURSOR_SETUP.md
-- **Claude Code Setup:** https://github.com/lytics/dev-agent/blob/main/packages/mcp-server/CLAUDE_CODE_SETUP.md
+- **Full Documentation:** https://github.com/prosdevlab/dev-agent
+- **Troubleshooting:** https://github.com/prosdevlab/dev-agent/blob/main/TROUBLESHOOTING.md
+- **Cursor Setup:** https://github.com/prosdevlab/dev-agent/blob/main/packages/mcp-server/CURSOR_SETUP.md
+- **Claude Code Setup:** https://github.com/prosdevlab/dev-agent/blob/main/packages/mcp-server/CLAUDE_CODE_SETUP.md
 
 ## CLI Commands
 
@@ -125,8 +125,8 @@ dev_health: verbose
 
 ## Support
 
-- **GitHub Issues:** https://github.com/lytics/dev-agent/issues
-- **Discussions:** https://github.com/lytics/dev-agent/discussions
+- **GitHub Issues:** https://github.com/prosdevlab/dev-agent/issues
+- **Discussions:** https://github.com/prosdevlab/dev-agent/discussions
 
 ## License
 

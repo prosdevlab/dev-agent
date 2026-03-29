@@ -42,16 +42,16 @@
     "json-logging",
     "pretty-logging"
   ],
-  "author": "Lytics",
+  "author": "prosdevlab",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lytics/dev-agent.git",
+    "url": "https://github.com/prosdevlab/dev-agent.git",
     "directory": "packages/logger"
   },
-  "homepage": "https://github.com/lytics/dev-agent/tree/main/packages/logger#readme",
+  "homepage": "https://github.com/prosdevlab/dev-agent/tree/main/packages/logger#readme",
   "bugs": {
-    "url": "https://github.com/lytics/dev-agent/issues"
+    "url": "https://github.com/prosdevlab/dev-agent/issues"
   },
   "engines": {
     "node": ">=22"

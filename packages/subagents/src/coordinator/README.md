@@ -633,5 +633,5 @@ setInterval(() => {
 
 ## License
 
-MIT © Lytics, Inc.
+MIT © prosdevlab
 

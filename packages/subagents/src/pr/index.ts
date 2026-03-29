@@ -10,7 +10,7 @@
  * - manage-issues: Create, update, close issues
  * - comment: Add comments to PRs and issues
  *
- * @see https://github.com/lytics/dev-agent/issues/10 for implementation tracking
+ * @see https://github.com/prosdevlab/dev-agent/issues/10 for implementation tracking
  */
 
 import type { Agent, AgentContext, Message } from '../types';
@@ -33,7 +33,7 @@ export class PrAgent implements Agent {
     }
 
     // Placeholder: acknowledges requests but takes no action
-    // Implementation tracked in https://github.com/lytics/dev-agent/issues/10
+    // Implementation tracked in https://github.com/prosdevlab/dev-agent/issues/10
     this.context.logger.debug('Received message', { type: message.type });
 
     if (message.type === 'request') {

@@ -259,9 +259,9 @@ This package has zero runtime dependencies. It uses only Node.js built-ins:
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](https://github.com/lytics/dev-agent/blob/main/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](https://github.com/prosdevlab/dev-agent/blob/main/CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT © [Lytics](https://github.com/lytics)
+MIT © [prosdevlab](https://github.com/prosdevlab)
 

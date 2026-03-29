@@ -332,7 +332,7 @@ System remains operational even if:
 ## Future Plans
 
 ### Logger Extraction (`@prosdevlab/croak`)
-The logger is designed to be extracted into a standalone package for use across Lytics projects:
+The logger is designed to be extracted into a standalone package for use across projects:
 
 ```typescript
 // Future: @prosdevlab/croak
@@ -358,7 +358,7 @@ const logger = new Croak('my-service', {
 
 ## Contributing
 
-This is an internal Lytics project, but designed with open-source best practices:
+This is designed with open-source best practices:
 
 1. **TypeScript strict mode** - Type safety first
 2. **Comprehensive tests** - 90%+ coverage target
@@ -367,5 +367,5 @@ This is an internal Lytics project, but designed with open-source best practices
 
 ## License
 
-MIT © Lytics, Inc.
+MIT © prosdevlab
 

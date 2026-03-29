@@ -16,13 +16,13 @@
     "vector-search",
     "github-integration"
   ],
-  "homepage": "https://github.com/lytics/dev-agent#readme",
+  "homepage": "https://github.com/prosdevlab/dev-agent#readme",
   "bugs": {
-    "url": "https://github.com/lytics/dev-agent/issues"
+    "url": "https://github.com/prosdevlab/dev-agent/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lytics/dev-agent.git"
+    "url": "git+https://github.com/prosdevlab/dev-agent.git"
   },
   "license": "MIT",
   "author": {

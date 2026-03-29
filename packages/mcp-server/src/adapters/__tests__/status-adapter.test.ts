@@ -19,7 +19,7 @@ const createMockStatsService = () => {
 const createMockGitHubService = () => {
   return {
     getStats: vi.fn().mockResolvedValue({
-      repository: 'lytics/dev-agent',
+      repository: 'prosdevlab/dev-agent',
       totalDocuments: 59,
       byType: { issue: 47, pull_request: 12 },
       byState: { open: 35, closed: 15, merged: 9 },

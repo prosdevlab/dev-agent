@@ -28,11 +28,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <Layout
           pageMap={pageMap}
-          docsRepositoryBase="https://github.com/lytics/dev-agent/tree/main/website/content"
+          docsRepositoryBase="https://github.com/prosdevlab/dev-agent/tree/main/website/content"
           editLink="Edit this page on GitHub"
           sidebar={{ defaultMenuCollapseLevel: 1 }}
-          navbar={<Navbar logo={logo} projectLink="https://github.com/lytics/dev-agent" />}
-          footer={<Footer>MIT {new Date().getFullYear()} © Contentstack</Footer>}
+          navbar={<Navbar logo={logo} projectLink="https://github.com/prosdevlab/dev-agent" />}
+          footer={<Footer>MIT {new Date().getFullYear()} © prosdevlab</Footer>}
         >
           {children}
         </Layout>

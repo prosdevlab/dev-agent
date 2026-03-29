@@ -66,7 +66,7 @@ describe('GitHub Fetcher - Configuration', () => {
       vi.mocked(execSync).mockReturnValueOnce('lytics/dev-agent\n' as any);
 
       const repo = getCurrentRepository();
-      expect(repo).toBe('lytics/dev-agent');
+      expect(repo).toBe('prosdevlab/dev-agent');
       expect(execSync).toHaveBeenCalledWith('gh repo view --json nameWithOwner -q .nameWithOwner', {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -104,7 +104,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     // Mock getCurrentRepository
     vi.mocked(execSync).mockImplementation((command) => {
       if (command.toString().includes('gh repo view')) {
-        return Buffer.from('lytics/dev-agent');
+        return Buffer.from('prosdevlab/dev-agent');
       }
       return Buffer.from('[]');
     });
@@ -114,7 +114,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should use default limit of 500', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent' });
+      fetchIssues({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -126,7 +126,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should use 50MB maxBuffer for issues', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent' });
+      fetchIssues({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -139,7 +139,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should include all required JSON fields', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent' });
+      fetchIssues({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -154,7 +154,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should respect custom limit option', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent', limit: 100 });
+      fetchIssues({ repository: 'prosdevlab/dev-agent', limit: 100 });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -165,7 +165,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should allow high limit for power users', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent', limit: 1000 });
+      fetchIssues({ repository: 'prosdevlab/dev-agent', limit: 1000 });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -176,7 +176,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
     it('should allow low limit for large repos', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchIssues({ repository: 'lytics/dev-agent', limit: 50 });
+      fetchIssues({ repository: 'prosdevlab/dev-agent', limit: 50 });
 
       const calls = vi.mocked(execSync).mock.calls;
       const issueCall = calls.find((call) => call[0].toString().includes('gh issue list'));
@@ -192,7 +192,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
         throw error;
       });
 
-      expect(() => fetchIssues({ repository: 'lytics/dev-agent' })).toThrow(
+      expect(() => fetchIssues({ repository: 'prosdevlab/dev-agent' })).toThrow(
         'Failed to fetch issues: Output too large. Try using --gh-limit with a lower value (e.g., --gh-limit 100)'
       );
     });
@@ -203,7 +203,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
         throw error;
       });
 
-      expect(() => fetchIssues({ repository: 'lytics/dev-agent' })).toThrow(
+      expect(() => fetchIssues({ repository: 'prosdevlab/dev-agent' })).toThrow(
         'Failed to fetch issues: Output too large. Try using --gh-limit with a lower value (e.g., --gh-limit 100)'
       );
     });
@@ -213,7 +213,7 @@ describe('GitHub Fetcher - Issue Fetching', () => {
         throw new Error('Network timeout');
       });
 
-      expect(() => fetchIssues({ repository: 'lytics/dev-agent' })).toThrow(
+      expect(() => fetchIssues({ repository: 'prosdevlab/dev-agent' })).toThrow(
         'Failed to fetch issues: Network timeout'
       );
     });
@@ -226,7 +226,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
     // Mock getCurrentRepository
     vi.mocked(execSync).mockImplementation((command) => {
       if (command.toString().includes('gh repo view')) {
-        return Buffer.from('lytics/dev-agent');
+        return Buffer.from('prosdevlab/dev-agent');
       }
       return Buffer.from('[]');
     });
@@ -236,7 +236,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
     it('should use default limit of 500', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchPullRequests({ repository: 'lytics/dev-agent' });
+      fetchPullRequests({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const prCall = calls.find((call) => call[0].toString().includes('gh pr list'));
@@ -248,7 +248,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
     it('should use 50MB maxBuffer for pull requests', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchPullRequests({ repository: 'lytics/dev-agent' });
+      fetchPullRequests({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const prCall = calls.find((call) => call[0].toString().includes('gh pr list'));
@@ -261,7 +261,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
     it('should include all required JSON fields', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchPullRequests({ repository: 'lytics/dev-agent' });
+      fetchPullRequests({ repository: 'prosdevlab/dev-agent' });
 
       const calls = vi.mocked(execSync).mock.calls;
       const prCall = calls.find((call) => call[0].toString().includes('gh pr list'));
@@ -277,7 +277,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
     it('should respect custom limit option', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from('[]'));
 
-      fetchPullRequests({ repository: 'lytics/dev-agent', limit: 200 });
+      fetchPullRequests({ repository: 'prosdevlab/dev-agent', limit: 200 });
 
       const calls = vi.mocked(execSync).mock.calls;
       const prCall = calls.find((call) => call[0].toString().includes('gh pr list'));
@@ -293,7 +293,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
         throw error;
       });
 
-      expect(() => fetchPullRequests({ repository: 'lytics/dev-agent' })).toThrow(
+      expect(() => fetchPullRequests({ repository: 'prosdevlab/dev-agent' })).toThrow(
         'Failed to fetch pull requests: Output too large. Try using --gh-limit with a lower value (e.g., --gh-limit 100)'
       );
     });
@@ -304,7 +304,7 @@ describe('GitHub Fetcher - Pull Request Fetching', () => {
         throw error;
       });
 
-      expect(() => fetchPullRequests({ repository: 'lytics/dev-agent' })).toThrow(
+      expect(() => fetchPullRequests({ repository: 'prosdevlab/dev-agent' })).toThrow(
         'Failed to fetch pull requests: Output too large. Try using --gh-limit with a lower value (e.g., --gh-limit 100)'
       );
     });
@@ -318,7 +318,7 @@ describe('GitHub Fetcher - Buffer Management', () => {
 
   it('should use appropriate buffer sizes for different operations', () => {
     // Repository name fetch (small payload)
-    vi.mocked(execSync).mockReturnValueOnce('lytics/dev-agent' as any);
+    vi.mocked(execSync).mockReturnValueOnce('prosdevlab/dev-agent' as any);
     getCurrentRepository();
     expect(vi.mocked(execSync).mock.calls[0][1]).toMatchObject({
       maxBuffer: 10 * 1024 * 1024, // 10MB
@@ -328,7 +328,7 @@ describe('GitHub Fetcher - Buffer Management', () => {
 
     // Issue list fetch (large payload)
     vi.mocked(execSync).mockReturnValueOnce('[]' as any);
-    fetchIssues({ repository: 'lytics/dev-agent' });
+    fetchIssues({ repository: 'prosdevlab/dev-agent' });
     const issueCalls = vi
       .mocked(execSync)
       .mock.calls.filter((call) => call[0].toString().includes('gh issue list'));
@@ -340,7 +340,7 @@ describe('GitHub Fetcher - Buffer Management', () => {
 
     // PR list fetch (large payload)
     vi.mocked(execSync).mockReturnValueOnce('[]' as any);
-    fetchPullRequests({ repository: 'lytics/dev-agent' });
+    fetchPullRequests({ repository: 'prosdevlab/dev-agent' });
     const prCalls = vi
       .mocked(execSync)
       .mock.calls.filter((call) => call[0].toString().includes('gh pr list'));

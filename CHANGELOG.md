@@ -154,11 +154,11 @@ This is the first public release of dev-agent! 🎉
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/lytics/dev-agent/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lytics/dev-agent/discussions)
+- **Issues**: [GitHub Issues](https://github.com/prosdevlab/dev-agent/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/prosdevlab/dev-agent/discussions)
 - **Security**: See [SECURITY.md](SECURITY.md)
 
-[unreleased]: https://github.com/lytics/dev-agent/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/lytics/dev-agent/releases/tag/v0.1.0
-[0.0.1]: https://github.com/lytics/dev-agent/releases/tag/v0.0.1
+[unreleased]: https://github.com/prosdevlab/dev-agent/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/prosdevlab/dev-agent/releases/tag/v0.1.0
+[0.0.1]: https://github.com/prosdevlab/dev-agent/releases/tag/v0.0.1
 

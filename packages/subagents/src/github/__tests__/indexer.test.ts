@@ -14,7 +14,7 @@ import * as utils from '../utils/index';
 vi.mock('../utils/index', () => ({
   fetchAllDocuments: vi.fn(),
   enrichDocument: vi.fn((doc: unknown) => doc),
-  getCurrentRepository: vi.fn(() => 'lytics/dev-agent'),
+  getCurrentRepository: vi.fn(() => 'prosdevlab/dev-agent'),
   calculateRelevance: vi.fn(() => 0.8),
   matchesQuery: vi.fn(() => true),
 }));
@@ -45,8 +45,8 @@ describe('GitHubIndexer - Persistence', () => {
       labels: ['bug'],
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',
-      url: 'https://github.com/lytics/dev-agent/issues/1',
-      repository: 'lytics/dev-agent',
+      url: 'https://github.com/prosdevlab/dev-agent/issues/1',
+      repository: 'prosdevlab/dev-agent',
       comments: 0,
       reactions: {},
       relatedIssues: [],
@@ -64,8 +64,8 @@ describe('GitHubIndexer - Persistence', () => {
       labels: ['feature'],
       createdAt: '2024-01-02T00:00:00Z',
       updatedAt: '2024-01-02T00:00:00Z',
-      url: 'https://github.com/lytics/dev-agent/pull/2',
-      repository: 'lytics/dev-agent',
+      url: 'https://github.com/prosdevlab/dev-agent/pull/2',
+      repository: 'prosdevlab/dev-agent',
       comments: 0,
       reactions: {},
       relatedIssues: [1],
@@ -123,7 +123,7 @@ describe('GitHubIndexer - Persistence', () => {
       const state = JSON.parse(stateContent);
 
       expect(state.version).toBe('1.0.0');
-      expect(state.repository).toBe('lytics/dev-agent');
+      expect(state.repository).toBe('prosdevlab/dev-agent');
       expect(state.totalDocuments).toBe(2);
       expect(state.lastIndexed).toBeDefined();
     });
@@ -277,7 +277,7 @@ describe('GitHubIndexer - Persistence', () => {
 
       const stats = indexer.getStats();
       expect(stats).not.toBeNull();
-      expect(stats?.repository).toBe('lytics/dev-agent');
+      expect(stats?.repository).toBe('prosdevlab/dev-agent');
       expect(stats?.totalDocuments).toBe(2);
       expect(stats?.byType).toEqual({
         issue: 1,

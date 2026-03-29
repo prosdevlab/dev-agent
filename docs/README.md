@@ -6,8 +6,7 @@ Welcome to the dev-agent documentation! This index helps you find the right doc 
 
 ## 🚀 Getting Started
 
-- **[AGENTS.md](../AGENTS.md)** - AI agent guidance for working with this codebase
-- **[CLAUDE.md](../CLAUDE.md)** - Claude Code specific integration guide
+- **[CLAUDE.md](../CLAUDE.md)** - AI assistant context and project guide
 - **[README.md](../README.md)** - Project overview and quick start
 
 ---
@@ -96,7 +95,7 @@ Welcome to the dev-agent documentation! This index helps you find the right doc 
 2. Verify [TYPESCRIPT_STANDARDS.md](./TYPESCRIPT_STANDARDS.md) compliance
 
 ### "I'm using AI to help code"
-1. Share [AGENTS.md](../AGENTS.md) and [TYPESCRIPT_STANDARDS.md](./TYPESCRIPT_STANDARDS.md) with AI
+1. Share [CLAUDE.md](../CLAUDE.md) and [TYPESCRIPT_STANDARDS.md](./TYPESCRIPT_STANDARDS.md) with AI
 2. Use [FEATURE_TEMPLATE.md](./FEATURE_TEMPLATE.md) for structure
 
 ---

@@ -732,7 +732,7 @@ If you encounter a bug:
 3. **Enable debug logs:**
    Set `LOG_LEVEL=debug` and reproduce issue
 
-4. **File issue:** https://github.com/lytics/dev-agent/issues
+4. **File issue:** https://github.com/prosdevlab/dev-agent/issues
 
 Include:
 - Steps to reproduce
@@ -1010,7 +1010,7 @@ du -sh ~/.dev-agent/indexes/
    Set `LOG_LEVEL=debug` in your MCP config
 
 4. **File an issue:**
-   https://github.com/lytics/dev-agent/issues
+   https://github.com/prosdevlab/dev-agent/issues
 
 Include:
 - `dev --version`

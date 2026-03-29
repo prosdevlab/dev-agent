@@ -5,15 +5,15 @@ const config = {
     </span>
   ),
   project: {
-    link: 'https://github.com/lytics/dev-agent',
+    link: 'https://github.com/prosdevlab/dev-agent',
   },
-  docsRepositoryBase: 'https://github.com/lytics/dev-agent/tree/main/website/content',
+  docsRepositoryBase: 'https://github.com/prosdevlab/dev-agent/tree/main/website/content',
   footer: {
     content: (
       <span>
         MIT {new Date().getFullYear()} ©{' '}
-        <a href="https://github.com/lytics" target="_blank" rel="noreferrer">
-          Lytics
+        <a href="https://github.com/prosdevlab" target="_blank" rel="noreferrer">
+          prosdevlab
         </a>
       </span>
     ),

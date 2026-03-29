@@ -53,9 +53,9 @@ export interface GitRefs {
 export interface GitRepositoryInfo {
   /** Repository name (e.g., "dev-agent") */
   name: string;
-  /** Remote URL (e.g., "git@github.com:lytics/dev-agent.git") */
+  /** Remote URL (e.g., "git@github.com:prosdevlab/dev-agent.git") */
   remote: string | null;
-  /** Owner/org (e.g., "lytics") */
+  /** Owner/org (e.g., "prosdevlab") */
   owner: string | null;
   /** Current branch */
   branch: string;

@@ -6,6 +6,8 @@
 
 **Local semantic code search for Cursor and Claude Code via MCP.**
 
+> **Origin:** dev-agent started as a hack project at [Lytics](https://github.com/lytics/dev-agent) — built on hack days to scratch an itch around giving AI tools better codebase context. It's now maintained independently as an open source project.
+
 ## What it does
 
 dev-agent indexes your codebase and provides 9 MCP tools to AI assistants. Instead of AI tools grepping through files, they can ask conceptual questions like "where do we handle authentication?"
@@ -223,7 +225,7 @@ npm install -g dev-agent
 ### From Source
 
 ```bash
-git clone https://github.com/lytics/dev-agent.git
+git clone https://github.com/prosdevlab/dev-agent.git
 cd dev-agent
 pnpm install
 pnpm build

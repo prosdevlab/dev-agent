@@ -769,5 +769,5 @@ export type {
 
 ## License
 
-MIT © Lytics, Inc.
+MIT © prosdevlab
 
