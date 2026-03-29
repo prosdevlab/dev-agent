@@ -35,7 +35,7 @@ packages/
 ├── subagents/     # Coordinator, planner, explorer, PR agents
 ├── mcp-server/    # MCP server with built-in adapters
 ├── integrations/  # Claude Code, VS Code integrations
-└── logger/        # Centralized logging (@lytics/kero)
+└── logger/        # Centralized logging (@prosdevlab/kero)
 
 docs/              # Architecture, workflow documentation
 examples/          # Real-world usage examples
@@ -79,12 +79,12 @@ pnpm release
 
 Critical build dependencies (Turborepo handles automatically):
 
-1. **@lytics/kero** (logger) - No dependencies
-2. **@lytics/dev-agent-core** - Depends on logger
-3. **@lytics/dev-agent-cli** - Depends on core
-4. **@lytics/dev-agent-subagents** - Depends on core
-5. **@lytics/dev-agent-mcp** - Depends on core, subagents
-6. **@lytics/dev-agent-integrations** - Depends on multiple packages
+1. **@prosdevlab/kero** (logger) - No dependencies
+2. **@prosdevlab/dev-agent-core** - Depends on logger
+3. **@prosdevlab/dev-agent-cli** - Depends on core
+4. **@prosdevlab/dev-agent-subagents** - Depends on core
+5. **@prosdevlab/dev-agent-mcp** - Depends on core, subagents
+6. **@prosdevlab/dev-agent-integrations** - Depends on multiple packages
 
 **Critical:** Always run `pnpm build` before `pnpm typecheck` because TypeScript needs built `.d.ts` files.
 
@@ -145,7 +145,7 @@ chore: update dependencies
 
 ## Core Packages
 
-### @lytics/dev-agent-core
+### @prosdevlab/dev-agent-core
 
 Repository scanning, vector storage, GitHub integration, utilities.
 
@@ -158,7 +158,7 @@ Repository scanning, vector storage, GitHub integration, utilities.
 
 **Test Coverage:** Extensive unit and integration tests
 
-### @lytics/dev-agent-cli
+### @prosdevlab/dev-agent-cli
 
 Command-line interface for repository indexing and MCP setup.
 
@@ -169,7 +169,7 @@ Command-line interface for repository indexing and MCP setup.
 - `dev mcp list [--cursor]` - List MCP servers
 - `dev github index` - Index GitHub issues/PRs
 
-### @lytics/dev-agent-subagents
+### @prosdevlab/dev-agent-subagents
 
 Specialized agents for development tasks.
 
@@ -180,7 +180,7 @@ Specialized agents for development tasks.
 
 **Coordinator:** Routes tasks to appropriate agents with context management.
 
-### @lytics/dev-agent-mcp
+### @prosdevlab/dev-agent-mcp
 
 MCP server with built-in adapters for AI tools.
 
@@ -201,7 +201,7 @@ MCP server with built-in adapters for AI tools.
 - Auto-reload for GitHub index changes
 - Graceful shutdown (no zombie processes)
 
-### @lytics/kero
+### @prosdevlab/kero
 
 Centralized logging system with multiple transports and formatters.
 
@@ -273,10 +273,10 @@ Dev-Agent integrates with AI tools via Model Context Protocol:
 
 ```bash
 # Build specific package
-pnpm -F "@lytics/dev-agent-core" build
+pnpm -F "@prosdevlab/dev-agent-core" build
 
 # Watch mode for development
-pnpm -F "@lytics/dev-agent-core" dev
+pnpm -F "@prosdevlab/dev-agent-core" dev
 
 # Run package tests
 cd packages/core && pnpm test:watch

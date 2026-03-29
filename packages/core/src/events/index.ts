@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { AsyncEventBus, createTypedEventBus, SystemEventMap } from '@lytics/dev-agent-core';
+ * import { AsyncEventBus, createTypedEventBus, SystemEventMap } from '@prosdevlab/dev-agent-core';
  *
  * // Basic usage
  * const bus = new AsyncEventBus();

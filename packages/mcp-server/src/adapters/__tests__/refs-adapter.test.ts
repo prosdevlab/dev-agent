@@ -2,7 +2,7 @@
  * Tests for RefsAdapter
  */
 
-import type { SearchResult, SearchService } from '@lytics/dev-agent-core';
+import type { SearchResult, SearchService } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleLogger } from '../../utils/logger';
 import { RefsAdapter } from '../built-in/refs-adapter';

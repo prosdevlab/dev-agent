@@ -1,4 +1,4 @@
-import type { GitCommit, GitIndexer, LocalGitExtractor } from '@lytics/dev-agent-core';
+import type { GitCommit, GitIndexer, LocalGitExtractor } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HistoryAdapter } from '../built-in/history-adapter';
 import type { ToolExecutionContext } from '../types';

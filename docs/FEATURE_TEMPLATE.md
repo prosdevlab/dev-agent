@@ -200,7 +200,7 @@ Brief description of what this feature does.
 ## Usage
 
 \`\`\`typescript
-import { MyFeature } from '@lytics/dev-agent-[package]/[feature]';
+import { MyFeature } from '@prosdevlab/dev-agent-[package]/[feature]';
 
 const feature = new MyFeature({ option1: 'value' });
 const result = await feature.execute('create', ['data']);

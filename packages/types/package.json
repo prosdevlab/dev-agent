@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent-types",
+  "name": "@prosdevlab/dev-agent-types",
   "version": "0.2.1",
   "description": "Shared TypeScript types for dev-agent packages",
   "type": "module",
@@ -24,7 +24,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@lytics/kero": "workspace:*"
+    "@prosdevlab/kero": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

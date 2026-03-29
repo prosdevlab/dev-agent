@@ -45,10 +45,10 @@ pnpm release
 ### Package-specific Commands
 ```bash
 # Build specific package
-pnpm -F "@lytics/dev-agent-core" build
+pnpm -F "@prosdevlab/dev-agent-core" build
 
 # Development watch mode for specific package
-pnpm -F "@lytics/dev-agent-core" dev
+pnpm -F "@prosdevlab/dev-agent-core" dev
 ```
 
 ## Architecture
@@ -58,7 +58,7 @@ pnpm -F "@lytics/dev-agent-core" dev
 - **packages/cli**: Command-line interface using Commander.js
 - **packages/subagents**: Subagent system (coordinator, planner, explorer, PR subagent)
 - **packages/integrations**: Tool integrations (Claude Code, VS Code)
-- **packages/logger**: Centralized logging system (@lytics/kero)
+- **packages/logger**: Centralized logging system (@prosdevlab/kero)
 - **packages/mcp-server**: MCP (Model Context Protocol) server implementation
 
 ### Key Technologies
@@ -83,7 +83,7 @@ pnpm -F "@lytics/dev-agent-core" dev
 - **GitHub Integration**: Metadata extraction and semantic search for issues/PRs using GitHub CLI
 - **Subagent System**: Specialized agents for planning, exploration, and PR management
 - **MCP Server**: Model Context Protocol server for AI tool integration
-- **Logger**: Centralized logging with multiple transports and formatters (@lytics/kero)
+- **Logger**: Centralized logging with multiple transports and formatters (@prosdevlab/kero)
 - **Rate Limiting**: Token bucket algorithm prevents abuse (configurable per-tool)
 - **Retry Logic**: Exponential backoff with jitter for transient failures
 - **Health Monitoring**: Component health checks for diagnostics
@@ -91,12 +91,12 @@ pnpm -F "@lytics/dev-agent-core" dev
 ## Build Dependencies
 
 Critical build order due to package interdependencies:
-1. `@lytics/kero` (logger - no dependencies)
-2. `@lytics/dev-agent-core` (depends on logger)
-3. `@lytics/dev-agent-cli` (depends on core)
-4. `@lytics/dev-agent-subagents` (depends on core)
-5. `@lytics/dev-agent-mcp-server` (depends on core, subagents)
-6. `@lytics/dev-agent-integrations` (depends on multiple packages)
+1. `@prosdevlab/kero` (logger - no dependencies)
+2. `@prosdevlab/dev-agent-core` (depends on logger)
+3. `@prosdevlab/dev-agent-cli` (depends on core)
+4. `@prosdevlab/dev-agent-subagents` (depends on core)
+5. `@prosdevlab/dev-agent-mcp-server` (depends on core, subagents)
+6. `@prosdevlab/dev-agent-integrations` (depends on multiple packages)
 
 Always run `pnpm build` before `pnpm typecheck` since TypeScript needs built `.d.ts` files.
 
@@ -111,9 +111,9 @@ Always run `pnpm build` before `pnpm typecheck` since TypeScript needs built `.d
 
 ## Package Management
 
-- Use workspace protocol for internal dependencies: `"@lytics/dev-agent-core": "workspace:*"`
+- Use workspace protocol for internal dependencies: `"@prosdevlab/dev-agent-core": "workspace:*"`
 - All packages currently private (`"private": true`)
-- Package scoped as `@lytics/dev-agent-*` and `@lytics/kero`
+- Package scoped as `@prosdevlab/dev-agent-*` and `@prosdevlab/kero`
 - Changeset-based release management
 - Node.js version requirement: >=22
 - PNPM package manager required
@@ -234,7 +234,7 @@ For advanced users or development, you can manually configure the MCP server:
    - Memory leak prevention (circular buffers for history/metrics)
    - Graceful shutdown (proper event listener cleanup)
    - Health monitoring (`dev_health` tool)
-   - Comprehensive logging with @lytics/kero
+   - Comprehensive logging with @prosdevlab/kero
 
 5. **Performance Configuration**:
    - Configurable concurrency via environment variables

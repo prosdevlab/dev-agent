@@ -2,7 +2,11 @@
  * Formatting utilities for enhanced CLI output
  */
 
-import type { DetailedIndexStats, LanguageStats, SupportedLanguage } from '@lytics/dev-agent-core';
+import type {
+  DetailedIndexStats,
+  LanguageStats,
+  SupportedLanguage,
+} from '@prosdevlab/dev-agent-core';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import terminalSize from 'terminal-size';

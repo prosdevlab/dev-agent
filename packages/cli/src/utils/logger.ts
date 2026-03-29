@@ -1,8 +1,8 @@
 /**
- * CLI Logger using @lytics/kero
+ * CLI Logger using @prosdevlab/kero
  */
 
-import { createLogger, type Logger, type LogLevel } from '@lytics/kero';
+import { createLogger, type Logger, type LogLevel } from '@prosdevlab/kero';
 
 // Create a logger with pretty output and icons
 export const keroLogger = createLogger({

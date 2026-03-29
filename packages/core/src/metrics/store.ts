@@ -6,7 +6,7 @@
  */
 
 import * as crypto from 'node:crypto';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import Database from 'better-sqlite3';
 import type { DetailedIndexStats } from '../indexer/types.js';
 import { initializeDatabase } from './schema.js';

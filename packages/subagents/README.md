@@ -1,4 +1,4 @@
-# @lytics/dev-agent-subagents
+# @prosdevlab/dev-agent-subagents
 
 **The Central Nervous System** for dev-agent's multi-agent coordination.
 
@@ -9,7 +9,7 @@ The subagents package provides a robust, production-ready coordinator system for
 - **🧠 Coordinator** - The brain, orchestrating all agents
 - **🔬 Context Manager** - The hippocampus, managing shared memory
 - **⚡ Task Queue** - The motor cortex, controlling execution
-- **📊 Logger** - Observability system (future: `@lytics/croak`)
+- **📊 Logger** - Observability system (future: `@prosdevlab/croak`)
 
 ## Architecture
 
@@ -45,7 +45,7 @@ Each folder is designed to be:
 The main orchestrator that manages agent lifecycle, message passing, and task execution.
 
 ```typescript
-import { SubagentCoordinator, PlannerAgent } from '@lytics/dev-agent-subagents';
+import { SubagentCoordinator, PlannerAgent } from '@prosdevlab/dev-agent-subagents';
 
 // Initialize coordinator
 const coordinator = new SubagentCoordinator();
@@ -78,7 +78,7 @@ console.log(`Active agents: ${stats.agentsRegistered}`);
 Manages shared state, repository access, and message history.
 
 ```typescript
-import { ContextManagerImpl } from '@lytics/dev-agent-subagents';
+import { ContextManagerImpl } from '@prosdevlab/dev-agent-subagents';
 
 const context = new ContextManagerImpl({ maxHistorySize: 1000 });
 
@@ -100,7 +100,7 @@ const indexer = context.getIndexer();
 Priority-based task queue with concurrency control and retry logic.
 
 ```typescript
-import { TaskQueue, CoordinatorLogger } from '@lytics/dev-agent-subagents';
+import { TaskQueue, CoordinatorLogger } from '@prosdevlab/dev-agent-subagents';
 
 const logger = new CoordinatorLogger('my-app', 'info');
 const queue = new TaskQueue(3, logger); // max 3 concurrent
@@ -138,10 +138,10 @@ console.log(`Pending: ${stats.pending}, Running: ${stats.running}`);
 
 ### Logger
 
-Structured logging with context and log levels (future: `@lytics/croak`).
+Structured logging with context and log levels (future: `@prosdevlab/croak`).
 
 ```typescript
-import { CoordinatorLogger } from '@lytics/dev-agent-subagents';
+import { CoordinatorLogger } from '@prosdevlab/dev-agent-subagents';
 
 const logger = new CoordinatorLogger('my-service', 'info');
 
@@ -196,7 +196,7 @@ interface Agent {
 ### Creating a Custom Agent
 
 ```typescript
-import type { Agent, AgentContext, Message } from '@lytics/dev-agent-subagents';
+import type { Agent, AgentContext, Message } from '@prosdevlab/dev-agent-subagents';
 
 class MyCustomAgent implements Agent {
   name = 'my-agent';
@@ -287,16 +287,16 @@ pnpm vitest run packages/subagents --coverage
 pnpm install
 
 # Build
-pnpm -F "@lytics/dev-agent-subagents" build
+pnpm -F "@prosdevlab/dev-agent-subagents" build
 
 # Watch mode
-pnpm -F "@lytics/dev-agent-subagents" dev
+pnpm -F "@prosdevlab/dev-agent-subagents" dev
 
 # Lint
-pnpm -F "@lytics/dev-agent-subagents" lint
+pnpm -F "@prosdevlab/dev-agent-subagents" lint
 
 # Type check
-pnpm -F "@lytics/dev-agent-subagents" typecheck
+pnpm -F "@prosdevlab/dev-agent-subagents" typecheck
 ```
 
 ## Design Principles
@@ -331,12 +331,12 @@ System remains operational even if:
 
 ## Future Plans
 
-### Logger Extraction (`@lytics/croak`)
+### Logger Extraction (`@prosdevlab/croak`)
 The logger is designed to be extracted into a standalone package for use across Lytics projects:
 
 ```typescript
-// Future: @lytics/croak
-import { Croak } from '@lytics/croak';
+// Future: @prosdevlab/croak
+import { Croak } from '@prosdevlab/croak';
 
 const logger = new Croak('my-service', {
   level: 'info',

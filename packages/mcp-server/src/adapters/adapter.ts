@@ -14,7 +14,7 @@ import type {
   ContextManagerImpl,
   Message,
   SubagentCoordinator,
-} from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-subagents';
 import type { AdapterContext, AdapterMetadata, Logger } from './types';
 
 export abstract class Adapter {

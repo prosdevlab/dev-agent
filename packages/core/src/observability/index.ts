@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { createLogger, createRequestTracker } from '@lytics/dev-agent-core';
+ * import { createLogger, createRequestTracker } from '@prosdevlab/dev-agent-core';
  *
  * // Create a logger
  * const logger = createLogger({ component: 'my-adapter', level: 'debug' });

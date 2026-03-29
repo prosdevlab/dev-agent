@@ -1,11 +1,11 @@
-# @lytics/dev-agent-cli
+# @prosdevlab/dev-agent-cli
 
 Command-line interface for dev-agent - Multi-agent code intelligence platform.
 
 ## Installation
 
 ```bash
-npm install -g @lytics/dev-agent-cli
+npm install -g @prosdevlab/dev-agent-cli
 ```
 
 ## Usage

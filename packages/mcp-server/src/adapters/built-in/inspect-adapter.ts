@@ -9,7 +9,7 @@ import {
   PatternAnalysisService,
   type PatternComparison,
   type SearchService,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import { InspectArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter.js';
 import type { AdapterContext, ToolDefinition, ToolExecutionContext, ToolResult } from '../types.js';

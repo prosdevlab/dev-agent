@@ -2,7 +2,7 @@
  * Tests for PlanAdapter
  */
 
-import type { RepositoryIndexer } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlanAdapter } from '../built-in/plan-adapter';
 import type { AdapterContext, ToolExecutionContext } from '../types';
@@ -18,7 +18,7 @@ const createMockRepositoryIndexer = () => {
 };
 
 // Mock planner utilities
-vi.mock('@lytics/dev-agent-subagents', () => ({
+vi.mock('@prosdevlab/dev-agent-subagents', () => ({
   assembleContext: vi.fn(),
   formatContextPackage: vi.fn(),
 }));
@@ -59,7 +59,7 @@ describe('PlanAdapter', () => {
     };
 
     // Setup default mock responses
-    const utils = await import('@lytics/dev-agent-subagents');
+    const utils = await import('@prosdevlab/dev-agent-subagents');
 
     vi.mocked(utils.assembleContext).mockResolvedValue({
       issue: {
@@ -264,7 +264,7 @@ describe('PlanAdapter', () => {
       });
 
       it('should pass options to assembleContext', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
 
         await adapter.execute(
           { issue: 29, includeCode: false, includePatterns: false, tokenBudget: 2000 },
@@ -286,7 +286,7 @@ describe('PlanAdapter', () => {
 
     describe('error handling', () => {
       it('should handle issue not found', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
         vi.mocked(utils.assembleContext).mockRejectedValue(new Error('Issue #999 not found'));
 
         const result = await adapter.execute({ issue: 999 }, mockExecutionContext);
@@ -297,7 +297,7 @@ describe('PlanAdapter', () => {
       });
 
       it('should handle GitHub CLI errors', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
         vi.mocked(utils.assembleContext).mockRejectedValue(
           new Error('GitHub CLI (gh) is not installed')
         );
@@ -310,7 +310,7 @@ describe('PlanAdapter', () => {
       });
 
       it('should handle timeout', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
         vi.mocked(utils.assembleContext).mockImplementation(
           () => new Promise((resolve) => setTimeout(resolve, 10000))
         );
@@ -323,7 +323,7 @@ describe('PlanAdapter', () => {
       }, 10000);
 
       it('should handle unknown errors', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
         vi.mocked(utils.assembleContext).mockRejectedValue(new Error('Unknown error'));
 
         const result = await adapter.execute({ issue: 29 }, mockExecutionContext);
@@ -334,7 +334,7 @@ describe('PlanAdapter', () => {
       });
 
       it('should log errors', async () => {
-        const utils = await import('@lytics/dev-agent-subagents');
+        const utils = await import('@prosdevlab/dev-agent-subagents');
         vi.mocked(utils.assembleContext).mockRejectedValue(new Error('Test error'));
 
         await adapter.execute({ issue: 29 }, mockExecutionContext);

@@ -1,11 +1,11 @@
 /**
- * MCP Server Logger using @lytics/kero
+ * MCP Server Logger using @prosdevlab/kero
  *
  * MCP requires all logs on stderr (stdout is reserved for JSON-RPC)
  */
 
-import type { LogEntry, Transport } from '@lytics/kero';
-import { createLogger } from '@lytics/kero';
+import type { LogEntry, Transport } from '@prosdevlab/kero';
+import { createLogger } from '@prosdevlab/kero';
 import type { Logger } from '../adapters/types';
 
 /**

@@ -2,7 +2,7 @@
  * Tests for StatusAdapter
  */
 
-import type { GitHubService, StatsService } from '@lytics/dev-agent-core';
+import type { GitHubService, StatsService } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatusAdapter } from '../built-in/status-adapter';
 import type { AdapterContext, ToolExecutionContext } from '../types';

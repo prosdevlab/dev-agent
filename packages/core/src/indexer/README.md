@@ -40,7 +40,7 @@ The Repository Indexer is the integration layer that ties together:
 ### Basic Indexing
 
 ```typescript
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // Initialize indexer
 const indexer = new RepositoryIndexer({
@@ -229,7 +229,7 @@ if (stats.errors.length > 0) {
 ## Real-World Example: Indexing a Full Repository
 
 ```typescript
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import * as path from 'path';
 
 async function indexRepository(repoPath: string) {

@@ -28,7 +28,7 @@ dev plan 123 --no-explorer       # Skip code search
 ### Agent Usage (Coordinator)
 
 ```typescript
-import { SubagentCoordinator, PlannerAgent } from '@lytics/dev-agent-subagents';
+import { SubagentCoordinator, PlannerAgent } from '@prosdevlab/dev-agent-subagents';
 
 const coordinator = new SubagentCoordinator();
 
@@ -106,7 +106,7 @@ The Planner package exports pure utility functions for custom workflows:
 ### GitHub Utilities
 
 ```typescript
-import { fetchGitHubIssue, isGhInstalled, isGitHubRepo } from '@lytics/dev-agent-subagents';
+import { fetchGitHubIssue, isGhInstalled, isGitHubRepo } from '@prosdevlab/dev-agent-subagents';
 
 // Check prerequisites
 if (!isGhInstalled()) {
@@ -130,7 +130,7 @@ import {
   extractTechnicalRequirements,
   inferPriority,
   cleanDescription,
-} from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-subagents';
 
 const criteria = extractAcceptanceCriteria(issue.body);
 // ['User can log in', 'Password is validated']
@@ -148,7 +148,7 @@ const cleanDesc = cleanDescription(issue.body);
 ### Task Breakdown
 
 ```typescript
-import { breakdownIssue, groupTasksByPhase, validateTasks } from '@lytics/dev-agent-subagents';
+import { breakdownIssue, groupTasksByPhase, validateTasks } from '@prosdevlab/dev-agent-subagents';
 
 // Break issue into tasks
 const tasks = breakdownIssue(issue, acceptanceCriteria, {
@@ -176,7 +176,7 @@ import {
   addEstimatesToTasks,
   calculateTotalEstimate,
   formatEstimate,
-} from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-subagents';
 
 // Estimate single task
 const hours = estimateTaskHours('Write unit tests');
@@ -197,7 +197,7 @@ formatEstimate(45);  // "2 weeks"
 ### Output Formatting
 
 ```typescript
-import { formatPretty, formatJSON, formatMarkdown } from '@lytics/dev-agent-subagents';
+import { formatPretty, formatJSON, formatMarkdown } from '@prosdevlab/dev-agent-subagents';
 
 // Terminal output (with colors)
 console.log(formatPretty(plan));
@@ -214,8 +214,8 @@ const markdown = formatMarkdown(plan);
 ### Basic Integration
 
 ```typescript
-import { SubagentCoordinator, PlannerAgent, ExplorerAgent } from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { SubagentCoordinator, PlannerAgent, ExplorerAgent } from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // Setup
 const coordinator = new SubagentCoordinator();

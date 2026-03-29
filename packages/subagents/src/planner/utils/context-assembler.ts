@@ -5,7 +5,7 @@
  * Philosophy: Provide raw, structured context - let the LLM do the reasoning
  */
 
-import type { GitIndexer, RepositoryIndexer } from '@lytics/dev-agent-core';
+import type { GitIndexer, RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import type {
   CodebasePatterns,
   ContextAssemblyOptions,

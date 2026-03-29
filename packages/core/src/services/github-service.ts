@@ -12,8 +12,8 @@ import type {
   GitHubIndexStats,
   GitHubSearchOptions,
   GitHubSearchResult,
-} from '@lytics/dev-agent-types/github';
-import type { Logger } from '@lytics/kero';
+} from '@prosdevlab/dev-agent-types/github';
+import type { Logger } from '@prosdevlab/kero';
 
 export interface GitHubServiceConfig {
   repositoryPath: string;

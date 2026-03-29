@@ -3,7 +3,7 @@
  * Types for result formatting and token estimation
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 
 /**
  * Format mode for search results

@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent-cli",
+  "name": "@prosdevlab/dev-agent-cli",
   "version": "0.6.1",
   "private": true,
   "main": "./dist/index.js",
@@ -38,10 +38,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@lytics/dev-agent-core": "workspace:*",
-    "@lytics/dev-agent-mcp": "workspace:*",
-    "@lytics/dev-agent-subagents": "workspace:*",
-    "@lytics/kero": "workspace:*",
+    "@prosdevlab/dev-agent-core": "workspace:*",
+    "@prosdevlab/dev-agent-mcp": "workspace:*",
+    "@prosdevlab/dev-agent-subagents": "workspace:*",
+    "@prosdevlab/kero": "workspace:*",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",

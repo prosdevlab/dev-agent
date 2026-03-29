@@ -47,8 +47,8 @@ dev github context 42
 ### Programmatic Usage
 
 ```typescript
-import { GitHubAgent, GitHubIndexer } from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { GitHubAgent, GitHubIndexer } from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // Initialize code indexer
 const codeIndexer = new RepositoryIndexer({
@@ -90,8 +90,8 @@ The GitHub Agent follows the standard agent pattern and integrates with the Coor
 import { 
   SubagentCoordinator,
   GitHubAgent 
-} from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // Initialize code indexer
 const codeIndexer = new RepositoryIndexer({

@@ -5,9 +5,9 @@
  * Philosophy: Provide raw, structured context - let the LLM do the reasoning
  */
 
-import type { GitIndexer, RepositoryIndexer } from '@lytics/dev-agent-core';
-import type { ContextAssemblyOptions } from '@lytics/dev-agent-subagents';
-import { assembleContext, formatContextPackage } from '@lytics/dev-agent-subagents';
+import type { GitIndexer, RepositoryIndexer } from '@prosdevlab/dev-agent-core';
+import type { ContextAssemblyOptions } from '@prosdevlab/dev-agent-subagents';
+import { assembleContext, formatContextPackage } from '@prosdevlab/dev-agent-subagents';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { PlanArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

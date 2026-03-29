@@ -511,8 +511,8 @@ describe('Scanner', () => {
       const scannerInterface = result.documents.find((d) => d.metadata.name === 'Scanner');
       expect(scannerInterface).toBeDefined();
       expect(scannerInterface?.metadata.imports).toBeDefined();
-      // types.ts imports Logger from @lytics/kero
-      expect(scannerInterface?.metadata.imports).toContain('@lytics/kero');
+      // types.ts imports Logger from @prosdevlab/kero
+      expect(scannerInterface?.metadata.imports).toContain('@prosdevlab/kero');
     });
 
     it('should extract imports for methods', async () => {
@@ -553,7 +553,7 @@ describe('Scanner', () => {
       const doc = result.documents.find((d) => d.metadata.name === 'SearchAdapter');
       expect(doc).toBeDefined();
       // Should have scoped package imports
-      expect(doc?.metadata.imports?.some((i) => i.startsWith('@lytics/'))).toBe(true);
+      expect(doc?.metadata.imports?.some((i) => i.startsWith('@prosdevlab/'))).toBe(true);
     });
 
     it('should handle node builtin imports', async () => {
@@ -582,7 +582,7 @@ describe('Scanner', () => {
     });
 
     it('should capture type-only imports', async () => {
-      // types.ts imports Logger type from @lytics/kero
+      // types.ts imports Logger type from @prosdevlab/kero
       const result = await scanRepository({
         repoRoot,
         include: ['packages/core/src/scanner/types.ts'],
@@ -592,7 +592,7 @@ describe('Scanner', () => {
       expect(docType).toBeDefined();
       expect(docType?.metadata.imports).toBeDefined();
       // Type imports should be captured
-      expect(docType?.metadata.imports).toContain('@lytics/kero');
+      expect(docType?.metadata.imports).toContain('@prosdevlab/kero');
     });
   });
 

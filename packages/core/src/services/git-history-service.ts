@@ -5,7 +5,7 @@
  * Used by MCP adapters (HistoryAdapter, PlanAdapter) and CLI commands.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 
 // Re-define types to avoid cross-package TypeScript issues
 export interface GitExtractor {
@@ -83,13 +83,13 @@ export class GitHistoryService {
    */
   private async defaultExtractorFactory(repositoryPath: string): Promise<GitExtractor> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { LocalGitExtractor } = require('@lytics/dev-agent-core');
+    const { LocalGitExtractor } = require('@prosdevlab/dev-agent-core');
     return new LocalGitExtractor(repositoryPath) as GitExtractor;
   }
 
   private async defaultVectorStorageFactory(storePath: string): Promise<VectorStorage> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { VectorStorage: Storage } = require('@lytics/dev-agent-core');
+    const { VectorStorage: Storage } = require('@prosdevlab/dev-agent-core');
     const storage = new Storage({ storePath }) as VectorStorage;
     await storage.initialize();
     return storage;
@@ -97,7 +97,7 @@ export class GitHistoryService {
 
   private async defaultGitIndexerFactory(config: GitIndexerFactoryConfig): Promise<GitIndexer> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { GitIndexer: Indexer } = require('@lytics/dev-agent-core');
+    const { GitIndexer: Indexer } = require('@prosdevlab/dev-agent-core');
     return new Indexer(config) as GitIndexer;
   }
 

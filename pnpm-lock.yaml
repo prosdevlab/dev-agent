@@ -39,34 +39,18 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3(@types/node@24.10.1)
 
-  packages/benchmark:
-    dependencies:
-      chalk:
-        specifier: ^5.6.2
-        version: 5.6.2
-      commander:
-        specifier: ^12.1.0
-        version: 12.1.0
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.1
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-
   packages/cli:
     dependencies:
-      '@lytics/dev-agent-core':
+      '@prosdevlab/dev-agent-core':
         specifier: workspace:*
         version: link:../core
-      '@lytics/dev-agent-mcp':
+      '@prosdevlab/dev-agent-mcp':
         specifier: workspace:*
         version: link:../mcp-server
-      '@lytics/dev-agent-subagents':
+      '@prosdevlab/dev-agent-subagents':
         specifier: workspace:*
         version: link:../subagents
-      '@lytics/kero':
+      '@prosdevlab/kero':
         specifier: workspace:*
         version: link:../logger
       chalk:
@@ -100,10 +84,10 @@ importers:
       '@lancedb/lancedb':
         specifier: ^0.22.3
         version: 0.22.3(apache-arrow@18.1.0)
-      '@lytics/dev-agent-types':
+      '@prosdevlab/dev-agent-types':
         specifier: workspace:*
         version: link:../types
-      '@lytics/kero':
+      '@prosdevlab/kero':
         specifier: workspace:*
         version: link:../logger
       '@xenova/transformers':
@@ -171,10 +155,10 @@ importers:
         specifier: ^0.25.10
         version: 0.25.10
     devDependencies:
-      '@lytics/dev-agent-cli':
+      '@prosdevlab/dev-agent-cli':
         specifier: workspace:*
         version: link:../cli
-      '@lytics/dev-agent-mcp':
+      '@prosdevlab/dev-agent-mcp':
         specifier: workspace:*
         version: link:../mcp-server
       '@types/node':
@@ -189,13 +173,13 @@ importers:
 
   packages/integrations:
     dependencies:
-      '@lytics/dev-agent-cli':
+      '@prosdevlab/dev-agent-cli':
         specifier: workspace:*
         version: link:../cli
-      '@lytics/dev-agent-core':
+      '@prosdevlab/dev-agent-core':
         specifier: workspace:*
         version: link:../core
-      '@lytics/dev-agent-subagents':
+      '@prosdevlab/dev-agent-subagents':
         specifier: workspace:*
         version: link:../subagents
     devDependencies:
@@ -217,16 +201,16 @@ importers:
 
   packages/mcp-server:
     dependencies:
-      '@lytics/dev-agent-core':
+      '@prosdevlab/dev-agent-core':
         specifier: workspace:*
         version: link:../core
-      '@lytics/dev-agent-subagents':
+      '@prosdevlab/dev-agent-subagents':
         specifier: workspace:*
         version: link:../subagents
-      '@lytics/dev-agent-types':
+      '@prosdevlab/dev-agent-types':
         specifier: workspace:*
         version: link:../types
-      '@lytics/kero':
+      '@prosdevlab/kero':
         specifier: workspace:*
         version: link:../logger
       zod:
@@ -245,13 +229,13 @@ importers:
 
   packages/subagents:
     dependencies:
-      '@lytics/dev-agent-core':
+      '@prosdevlab/dev-agent-core':
         specifier: workspace:*
         version: link:../core
-      '@lytics/dev-agent-types':
+      '@prosdevlab/dev-agent-types':
         specifier: workspace:*
         version: link:../types
-      '@lytics/kero':
+      '@prosdevlab/kero':
         specifier: workspace:*
         version: link:../logger
       zod:
@@ -267,7 +251,7 @@ importers:
 
   packages/types:
     dependencies:
-      '@lytics/kero':
+      '@prosdevlab/kero':
         specifier: workspace:*
         version: link:../logger
     devDependencies:

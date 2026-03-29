@@ -5,7 +5,7 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { EventBus } from '../events/types.js';
 import { buildCodeMetadata } from '../metrics/collector.js';
 import type { CodeMetadata } from '../metrics/types.js';

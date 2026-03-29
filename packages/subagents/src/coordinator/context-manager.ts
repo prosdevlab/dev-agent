@@ -7,7 +7,7 @@
  * - Can be configured with FileStorageAdapter, etc. for durability
  */
 
-import type { RepositoryIndexer } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import type { ContextManager, Message } from '../types';
 import { MemoryStorageAdapter, type StorageAdapter } from './storage';
 import { CircularBuffer } from './utils/circular-buffer';

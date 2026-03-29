@@ -138,7 +138,7 @@ describe('StatsAggregator', () => {
 
   describe('Package Aggregation', () => {
     it('should aggregate package stats', () => {
-      aggregator.registerPackage('packages/core', '@lytics/dev-agent-core');
+      aggregator.registerPackage('packages/core', '@prosdevlab/dev-agent-core');
 
       const doc: Document = {
         id: 'packages/core/src/test.ts:func:1',
@@ -158,7 +158,7 @@ describe('StatsAggregator', () => {
       const stats = aggregator.getDetailedStats();
 
       expect(stats.byPackage['packages/core']).toEqual({
-        name: '@lytics/dev-agent-core',
+        name: '@prosdevlab/dev-agent-core',
         path: 'packages/core',
         files: 1,
         components: 1,
@@ -169,8 +169,8 @@ describe('StatsAggregator', () => {
     });
 
     it('should handle multiple packages', () => {
-      aggregator.registerPackage('packages/core', '@lytics/dev-agent-core');
-      aggregator.registerPackage('packages/cli', '@lytics/dev-agent-cli');
+      aggregator.registerPackage('packages/core', '@prosdevlab/dev-agent-core');
+      aggregator.registerPackage('packages/cli', '@prosdevlab/dev-agent-cli');
 
       const coreDoc: Document = {
         id: 'packages/core/src/test.ts:func:1',
@@ -209,7 +209,7 @@ describe('StatsAggregator', () => {
 
     it('should match most specific package for nested paths', () => {
       aggregator.registerPackage('packages', 'root-package');
-      aggregator.registerPackage('packages/core', '@lytics/dev-agent-core');
+      aggregator.registerPackage('packages/core', '@prosdevlab/dev-agent-core');
 
       const doc: Document = {
         id: 'packages/core/src/test.ts:func:1',
@@ -234,7 +234,7 @@ describe('StatsAggregator', () => {
     });
 
     it('should handle mixed languages in a package', () => {
-      aggregator.registerPackage('packages/core', '@lytics/dev-agent-core');
+      aggregator.registerPackage('packages/core', '@prosdevlab/dev-agent-core');
 
       const tsDoc: Document = {
         id: 'packages/core/src/test.ts:func:1',
@@ -379,7 +379,7 @@ describe('StatsAggregator', () => {
     });
 
     it('should provide accurate counts', () => {
-      aggregator.registerPackage('packages/core', '@lytics/dev-agent-core');
+      aggregator.registerPackage('packages/core', '@prosdevlab/dev-agent-core');
 
       const docs: Document[] = [
         {

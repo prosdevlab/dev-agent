@@ -4,7 +4,7 @@
  * Indexes git commits into the vector store for semantic search.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { VectorStorage } from '../vector';
 import type { EmbeddingDocument } from '../vector/types';
 import type { GitExtractor } from './extractor';

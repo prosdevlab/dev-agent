@@ -3,7 +3,7 @@
  * Token-efficient formatter with progressive disclosure support
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 import type { DetailLevel, FormattedResult, FormatterOptions, ResultFormatter } from './types';
 import { estimateTokensForText } from './utils';
 

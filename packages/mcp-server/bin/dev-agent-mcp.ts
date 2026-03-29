@@ -17,8 +17,8 @@ import {
   StatsService,
   saveMetadata,
   VectorStorage,
-} from '@lytics/dev-agent-core';
-import type { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-core';
+import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import {
   GitHubAdapter,
   HealthAdapter,
@@ -142,7 +142,7 @@ async function main() {
     // Create services
     const searchService = new SearchService({ repositoryPath });
     const githubService = new GitHubService({ repositoryPath }, async (config) => {
-      const { GitHubIndexer } = await import('@lytics/dev-agent-subagents');
+      const { GitHubIndexer } = await import('@prosdevlab/dev-agent-subagents');
       return new GitHubIndexer(config);
     });
     const statsService = new StatsService({ repositoryPath });

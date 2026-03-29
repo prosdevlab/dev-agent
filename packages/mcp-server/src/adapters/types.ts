@@ -2,7 +2,7 @@
  * Adapter Framework Types
  */
 
-import type { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 
 // Adapter Metadata
 export interface AdapterMetadata {

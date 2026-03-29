@@ -5,7 +5,7 @@
  */
 
 import * as path from 'node:path';
-import type { SearchResult, SearchService } from '@lytics/dev-agent-core';
+import type { SearchResult, SearchService } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InspectAdapter } from '../built-in/inspect-adapter.js';
 import type { ToolExecutionContext } from '../types.js';

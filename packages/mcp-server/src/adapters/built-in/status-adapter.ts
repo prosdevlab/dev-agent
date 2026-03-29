@@ -5,7 +5,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { GitHubService, StatsService } from '@lytics/dev-agent-core';
+import type { GitHubService, StatsService } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText } from '../../formatters/utils';
 import { StatusArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

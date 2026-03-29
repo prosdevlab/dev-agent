@@ -28,20 +28,20 @@ Dev-agent provides semantic code search, codebase intelligence, and GitHub integ
 
 | Feature | Status | Package |
 |---------|--------|---------|
-| TypeScript scanner (ts-morph) | ✅ Done | `@lytics/dev-agent-core` |
-| Repository indexer | ✅ Done | `@lytics/dev-agent-core` |
-| Vector storage (LanceDB) | ✅ Done | `@lytics/dev-agent-core` |
-| Embeddings (@xenova/transformers) | ✅ Done | `@lytics/dev-agent-core` |
-| Semantic search | ✅ Done | `@lytics/dev-agent-core` |
-| CLI interface | ✅ Done | `@lytics/dev-agent-cli` |
-| Centralized logging | ✅ Done | `@lytics/kero` |
+| TypeScript scanner (ts-morph) | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Repository indexer | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Vector storage (LanceDB) | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Embeddings (@xenova/transformers) | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Semantic search | ✅ Done | `@prosdevlab/dev-agent-core` |
+| CLI interface | ✅ Done | `@prosdevlab/dev-agent-cli` |
+| Centralized logging | ✅ Done | `@prosdevlab/kero` |
 
 ### Phase 2: MCP Integration
 
 | Feature | Status | Package |
 |---------|--------|---------|
-| MCP server architecture | ✅ Done | `@lytics/dev-agent-mcp` |
-| Adapter framework | ✅ Done | `@lytics/dev-agent-mcp` |
+| MCP server architecture | ✅ Done | `@prosdevlab/dev-agent-mcp` |
+| Adapter framework | ✅ Done | `@prosdevlab/dev-agent-mcp` |
 | `dev_search` - Semantic code search | ✅ Done | MCP adapter |
 | `dev_status` - Repository status | ✅ Done | MCP adapter |
 | `dev_inspect` - File analysis | ✅ Done | MCP adapter |
@@ -57,12 +57,12 @@ Dev-agent provides semantic code search, codebase intelligence, and GitHub integ
 
 | Feature | Status | Package |
 |---------|--------|---------|
-| Coordinator architecture | ✅ Done | `@lytics/dev-agent-subagents` |
-| Context manager | ✅ Done | `@lytics/dev-agent-subagents` |
-| Task queue | ✅ Done | `@lytics/dev-agent-subagents` |
-| Explorer agent | ✅ Done | `@lytics/dev-agent-subagents` |
-| Planner agent | ✅ Done | `@lytics/dev-agent-subagents` |
-| GitHub indexer | ✅ Done | `@lytics/dev-agent-subagents` |
+| Coordinator architecture | ✅ Done | `@prosdevlab/dev-agent-subagents` |
+| Context manager | ✅ Done | `@prosdevlab/dev-agent-subagents` |
+| Task queue | ✅ Done | `@prosdevlab/dev-agent-subagents` |
+| Explorer agent | ✅ Done | `@prosdevlab/dev-agent-subagents` |
+| Planner agent | ✅ Done | `@prosdevlab/dev-agent-subagents` |
+| GitHub indexer | ✅ Done | `@prosdevlab/dev-agent-subagents` |
 
 ### Infrastructure
 
@@ -573,7 +573,7 @@ packages/
 ├── mcp-server/     # MCP server + adapters
 ├── subagents/      # Coordinator, explorer, planner, GitHub
 ├── integrations/   # Claude Code, VS Code (future)
-├── logger/         # @lytics/kero logging
+├── logger/         # @prosdevlab/kero logging
 └── dev-agent/      # Unified CLI entry point
 ```
 

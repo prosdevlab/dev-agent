@@ -6,7 +6,7 @@
  */
 
 import * as path from 'node:path';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import {
   type FileSystemValidator,
   NodeFileSystemValidator,

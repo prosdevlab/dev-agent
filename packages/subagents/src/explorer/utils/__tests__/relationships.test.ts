@@ -2,7 +2,7 @@
  * Tests for relationship building utilities
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 import { describe, expect, it } from 'vitest';
 import type { CodeRelationship } from '../../types';
 import { createRelationship, isDuplicateRelationship } from '../relationships';

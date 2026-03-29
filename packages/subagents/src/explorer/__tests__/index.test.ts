@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContextManagerImpl } from '../../coordinator/context-manager';
 import { CoordinatorLogger } from '../../logger';

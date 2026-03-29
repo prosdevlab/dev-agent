@@ -3,7 +3,7 @@
  * Functions for filtering and matching search results
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 import { extractMetadata } from './metadata';
 
 /**

@@ -1,4 +1,4 @@
-# @lytics/dev-agent
+# @prosdevlab/dev-agent
 
 **Deep code intelligence + AI subagents via MCP**
 
@@ -8,7 +8,7 @@ Local-first semantic code search, GitHub integration, and development planning f
 
 ```bash
 # Install globally
-npm install -g @lytics/dev-agent
+npm install -g @prosdevlab/dev-agent
 
 # Index your repository
 cd /path/to/your/repo

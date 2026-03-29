@@ -1,4 +1,4 @@
-# @lytics/dev-agent
+# @prosdevlab/dev-agent
 
 ## 0.8.5
 
@@ -42,7 +42,7 @@
 
   **New Features:**
 
-  - Test utilities in `@lytics/dev-agent-core/utils`:
+  - Test utilities in `@prosdevlab/dev-agent-core/utils`:
     - `isTestFile()` — Check if file is a test file
     - `findTestFile()` — Find co-located test files
   - Vector store `clear()` method
@@ -156,7 +156,7 @@
 
   ### Shared Icon Utility
 
-  Extracted `getFileIcon()` to `@lytics/dev-agent-core/utils` for reuse across packages.
+  Extracted `getFileIcon()` to `@prosdevlab/dev-agent-core/utils` for reuse across packages.
 
   ## GitHub Stats Fix 🐛
 
@@ -786,4 +786,4 @@
 
 - bc44ec7: chore: bump main package to match core and mcp versions
 
-  Syncs the main `@lytics/dev-agent` package version with the underlying `@lytics/dev-agent-core` and `@lytics/dev-agent-mcp` packages which were bumped to 0.2.0 for the "Richer Search Results" feature.
+  Syncs the main `@prosdevlab/dev-agent` package version with the underlying `@prosdevlab/dev-agent-core` and `@prosdevlab/dev-agent-mcp` packages which were bumped to 0.2.0 for the "Richer Search Results" feature.

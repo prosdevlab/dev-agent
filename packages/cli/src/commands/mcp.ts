@@ -18,7 +18,7 @@ import {
   SearchService,
   StatsService,
   VectorStorage,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import {
   ExploreAdapter,
   GitHubAdapter,
@@ -30,8 +30,8 @@ import {
   RefsAdapter,
   SearchAdapter,
   StatusAdapter,
-} from '@lytics/dev-agent-mcp';
-import type { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-mcp';
+import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
@@ -132,7 +132,7 @@ Available Tools (9):
 
           const statsService = new StatsService({ repositoryPath });
           const createGitHubIndexer: GitHubIndexerFactory = async (config) => {
-            const { GitHubIndexer } = await import('@lytics/dev-agent-subagents');
+            const { GitHubIndexer } = await import('@prosdevlab/dev-agent-subagents');
             // biome-ignore lint/suspicious/noExplicitAny: Dynamic import requires type coercion
             return new GitHubIndexer(config) as any;
           };

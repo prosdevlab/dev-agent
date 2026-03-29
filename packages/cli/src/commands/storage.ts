@@ -13,7 +13,7 @@ import {
   loadMetadata,
   type RepositoryMetadata,
   saveMetadata,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';

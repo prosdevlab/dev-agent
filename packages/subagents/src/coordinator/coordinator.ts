@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { AsyncEventBus } from '@lytics/dev-agent-core';
+import { AsyncEventBus } from '@prosdevlab/dev-agent-core';
 import { CoordinatorLogger } from '../logger';
 import type {
   Agent,

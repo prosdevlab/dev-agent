@@ -22,11 +22,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@lytics/dev-agent-core': resolve(__dirname, 'packages/core/src'),
-      '@lytics/dev-agent-subagents': resolve(__dirname, 'packages/subagents/src'),
-      '@lytics/dev-agent-cli': resolve(__dirname, 'packages/cli/src'),
-      '@lytics/dev-agent-integrations': resolve(__dirname, 'packages/integrations/src'),
-      '@lytics/kero': resolve(__dirname, 'packages/logger/src'),
+      '@prosdevlab/dev-agent-core': resolve(__dirname, 'packages/core/src'),
+      '@prosdevlab/dev-agent-subagents': resolve(__dirname, 'packages/subagents/src'),
+      '@prosdevlab/dev-agent-cli': resolve(__dirname, 'packages/cli/src'),
+      '@prosdevlab/dev-agent-integrations': resolve(__dirname, 'packages/integrations/src'),
+      '@prosdevlab/kero': resolve(__dirname, 'packages/logger/src'),
     },
   },
 });

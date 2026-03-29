@@ -2,7 +2,7 @@
  * Repository Indexer types
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 
 /**
  * Options for indexing a repository

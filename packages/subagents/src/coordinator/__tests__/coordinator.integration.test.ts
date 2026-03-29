@@ -6,7 +6,7 @@
 import { mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExplorerAgent } from '../../explorer';
 import { CoordinatorLogger } from '../../logger';

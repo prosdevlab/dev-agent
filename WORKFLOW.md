@@ -155,25 +155,25 @@ pnpm changeset
 ```
 
 **Package Dependency Rules:**
-- **CLI changes** (`@lytics/dev-agent-cli`) → **ALWAYS bump `@lytics/dev-agent`** (the main wrapper package)
-- **Core changes** (`@lytics/dev-agent-core`) → Usually bump CLI and wrapper
-- **MCP changes** (`@lytics/dev-agent-mcp`) → Usually bump wrapper if user-facing
+- **CLI changes** (`@prosdevlab/dev-agent-cli`) → **ALWAYS bump `@prosdevlab/dev-agent`** (the main wrapper package)
+- **Core changes** (`@prosdevlab/dev-agent-core`) → Usually bump CLI and wrapper
+- **MCP changes** (`@prosdevlab/dev-agent-mcp`) → Usually bump wrapper if user-facing
 - **Documentation only** → No package bumps needed
 
 **Changeset Examples:**
 ```bash
 # For CLI improvements that affect end users
 echo '---
-"@lytics/dev-agent-cli": minor
-"@lytics/dev-agent": minor
+"@prosdevlab/dev-agent-cli": minor
+"@prosdevlab/dev-agent": minor
 ---
 
 Add TypeScript performance optimizations' > .changeset/feature-name.md
 
 # For bug fixes
 echo '---
-"@lytics/dev-agent-cli": patch
-"@lytics/dev-agent": patch
+"@prosdevlab/dev-agent-cli": patch
+"@prosdevlab/dev-agent": patch
 ---
 
 Fix MCP install error handling' > .changeset/fix-name.md
@@ -445,7 +445,7 @@ dev index --gh-limit 100     # Very active repos
 
 ## Changes
 - 6 commits: fix implementation, tests, documentation, changeset, website
-- Patches: \`@lytics/dev-agent\`, \`@lytics/dev-agent-cli\`, \`@lytics/dev-agent-subagents\`
+- Patches: \`@prosdevlab/dev-agent\`, \`@prosdevlab/dev-agent-cli\`, \`@prosdevlab/dev-agent-subagents\`
 ```
 
 ### What to Exclude
@@ -640,10 +640,10 @@ pnpm test packages/<package>/src/<module>
 npx vitest run packages/<package>/src/<module> --coverage
 
 # Build specific package
-pnpm -F "@lytics/<package>" build
+pnpm -F "@prosdevlab/<package>" build
 
 # Lint specific package
-pnpm -F "@lytics/<package>" lint
+pnpm -F "@prosdevlab/<package>" lint
 ```
 
 ## Example: Complete Feature Workflow

@@ -5,13 +5,13 @@
  * Used by both MCP server and CLI commands that need agent coordination.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer/index.js';
 
 /**
  * Minimal coordinator interface
  *
- * This matches the SubagentCoordinator from @lytics/dev-agent-subagents
+ * This matches the SubagentCoordinator from @prosdevlab/dev-agent-subagents
  * but avoids cross-package import issues. TypeScript's structural typing
  * ensures compatibility at runtime.
  *
@@ -106,25 +106,25 @@ export class CoordinatorService {
    */
   private async defaultCoordinatorFactory(config: CoordinatorConfig): Promise<SubagentCoordinator> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { SubagentCoordinator: Coordinator } = require('@lytics/dev-agent-subagents');
+    const { SubagentCoordinator: Coordinator } = require('@prosdevlab/dev-agent-subagents');
     return new Coordinator(config) as SubagentCoordinator;
   }
 
   private async defaultExplorerAgentFactory(): Promise<unknown> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { ExplorerAgent } = require('@lytics/dev-agent-subagents');
+    const { ExplorerAgent } = require('@prosdevlab/dev-agent-subagents');
     return new ExplorerAgent();
   }
 
   private async defaultPlannerAgentFactory(): Promise<unknown> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { PlannerAgent } = require('@lytics/dev-agent-subagents');
+    const { PlannerAgent } = require('@prosdevlab/dev-agent-subagents');
     return new PlannerAgent();
   }
 
   private async defaultPrAgentFactory(): Promise<unknown> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { PrAgent } = require('@lytics/dev-agent-subagents');
+    const { PrAgent } = require('@prosdevlab/dev-agent-subagents');
     return new PrAgent();
   }
 

@@ -33,9 +33,9 @@ dev explore insights
 ### As an Agent
 
 ```typescript
-import { ExplorerAgent, ContextManagerImpl } from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
-import { CoordinatorLogger } from '@lytics/dev-agent-subagents';
+import { ExplorerAgent, ContextManagerImpl } from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
+import { CoordinatorLogger } from '@prosdevlab/dev-agent-subagents';
 
 // Setup
 const indexer = new RepositoryIndexer({
@@ -363,8 +363,8 @@ import {
   SubagentCoordinator, 
   ExplorerAgent, 
   ContextManagerImpl 
-} from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // 1. Initialize Repository Indexer
 const indexer = new RepositoryIndexer({

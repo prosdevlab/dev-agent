@@ -3,7 +3,7 @@
  * Functions for extracting and typing search result metadata
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 
 /**
  * Search result metadata structure

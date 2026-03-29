@@ -26,7 +26,7 @@ The main brain that:
 #### Initialization
 
 ```typescript
-import { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+import { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 
 const coordinator = new SubagentCoordinator();
 
@@ -47,8 +47,8 @@ import {
   ExplorerAgent, 
   GitHubAgent,
   PrAgent 
-} from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 // Initialize code indexer (required for Explorer and GitHub agents)
 const codeIndexer = new RepositoryIndexer({
@@ -146,7 +146,7 @@ The **hippocampus** - manages shared memory and resources.
 #### State Management
 
 ```typescript
-import { ContextManagerImpl } from '@lytics/dev-agent-subagents';
+import { ContextManagerImpl } from '@prosdevlab/dev-agent-subagents';
 
 const context = new ContextManagerImpl({
   maxHistorySize: 1000, // Keep last 1000 messages
@@ -177,7 +177,7 @@ context.clear();
 #### Repository Access
 
 ```typescript
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 const indexer = new RepositoryIndexer({
   repositoryPath: '/path/to/repo',
@@ -256,7 +256,7 @@ interface Task {
 #### Basic Usage
 
 ```typescript
-import { TaskQueue, CoordinatorLogger } from '@lytics/dev-agent-subagents';
+import { TaskQueue, CoordinatorLogger } from '@prosdevlab/dev-agent-subagents';
 
 const logger = new CoordinatorLogger('task-system', 'info');
 const queue = new TaskQueue(3, logger); // Max 3 concurrent tasks
@@ -410,8 +410,8 @@ import {
   ExplorerAgent,
   GitHubAgent,
   CoordinatorLogger,
-} from '@lytics/dev-agent-subagents';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-subagents';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 async function main() {
   // 1. Initialize logger

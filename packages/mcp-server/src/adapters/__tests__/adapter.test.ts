@@ -1,4 +1,4 @@
-import type { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Adapter } from '../adapter';
 import type { AdapterContext, AdapterMetadata } from '../types';

@@ -1,4 +1,4 @@
-# @lytics/dev-agent-cli
+# @prosdevlab/dev-agent-cli
 
 ## 0.6.1
 
@@ -42,7 +42,7 @@
 
   **New Features:**
 
-  - Test utilities in `@lytics/dev-agent-core/utils`:
+  - Test utilities in `@prosdevlab/dev-agent-core/utils`:
     - `isTestFile()` — Check if file is a test file
     - `findTestFile()` — Find co-located test files
   - Vector store `clear()` method
@@ -86,9 +86,9 @@
   - Integration tests for InspectAdapter
 
 - Updated dependencies [d3d2126]
-  - @lytics/dev-agent-core@0.9.3
-  - @lytics/dev-agent-mcp@0.5.4
-  - @lytics/dev-agent-subagents@0.5.4
+  - @prosdevlab/dev-agent-core@0.9.3
+  - @prosdevlab/dev-agent-mcp@0.5.4
+  - @prosdevlab/dev-agent-subagents@0.5.4
 
 ## 0.6.0
 
@@ -128,9 +128,9 @@
 ### Patch Changes
 
 - Updated dependencies [8b4972a]
-  - @lytics/dev-agent-core@0.9.2
-  - @lytics/dev-agent-mcp@0.5.3
-  - @lytics/dev-agent-subagents@0.5.3
+  - @prosdevlab/dev-agent-core@0.9.2
+  - @prosdevlab/dev-agent-mcp@0.5.3
+  - @prosdevlab/dev-agent-subagents@0.5.3
 
 ## 0.5.1
 
@@ -168,7 +168,7 @@
 
   ### Shared Icon Utility
 
-  Extracted `getFileIcon()` to `@lytics/dev-agent-core/utils` for reuse across packages.
+  Extracted `getFileIcon()` to `@prosdevlab/dev-agent-core/utils` for reuse across packages.
 
   ## GitHub Stats Fix 🐛
 
@@ -238,9 +238,9 @@
   None - all changes are backward compatible. Old GitHub state files will fall back to aggregate counts gracefully.
 
 - Updated dependencies [f20406e]
-  - @lytics/dev-agent-core@0.9.1
-  - @lytics/dev-agent-subagents@0.5.2
-  - @lytics/dev-agent-mcp@0.5.2
+  - @prosdevlab/dev-agent-core@0.9.1
+  - @prosdevlab/dev-agent-subagents@0.5.2
+  - @prosdevlab/dev-agent-mcp@0.5.2
 
 ## 0.5.0
 
@@ -344,9 +344,9 @@
 ### Patch Changes
 
 - Updated dependencies [d23d1a9]
-  - @lytics/dev-agent-core@0.9.0
-  - @lytics/dev-agent-mcp@0.5.1
-  - @lytics/dev-agent-subagents@0.5.1
+  - @prosdevlab/dev-agent-core@0.9.0
+  - @prosdevlab/dev-agent-mcp@0.5.1
+  - @prosdevlab/dev-agent-subagents@0.5.1
 
 ## 0.4.1
 
@@ -441,9 +441,9 @@
 ### Patch Changes
 
 - Updated dependencies [0f8c4eb]
-  - @lytics/dev-agent-core@0.8.0
-  - @lytics/dev-agent-mcp@0.5.0
-  - @lytics/dev-agent-subagents@0.5.0
+  - @prosdevlab/dev-agent-core@0.8.0
+  - @prosdevlab/dev-agent-mcp@0.5.0
+  - @prosdevlab/dev-agent-subagents@0.5.0
 
 ## 0.3.0
 
@@ -475,9 +475,9 @@
 ### Patch Changes
 
 - Updated dependencies [c13b24f]
-  - @lytics/dev-agent-core@0.7.0
-  - @lytics/dev-agent-mcp@0.4.9
-  - @lytics/dev-agent-subagents@0.4.2
+  - @prosdevlab/dev-agent-core@0.7.0
+  - @prosdevlab/dev-agent-mcp@0.4.9
+  - @prosdevlab/dev-agent-subagents@0.4.2
 
 ## 0.2.1
 
@@ -518,9 +518,9 @@
   This release significantly improves performance, reliability, and developer experience while maintaining backward compatibility.
 
 - Updated dependencies [b675fc9]
-  - @lytics/dev-agent-core@0.6.1
-  - @lytics/dev-agent-mcp@0.4.8
-  - @lytics/dev-agent-subagents@0.4.1
+  - @prosdevlab/dev-agent-core@0.6.1
+  - @prosdevlab/dev-agent-mcp@0.4.8
+  - @prosdevlab/dev-agent-subagents@0.4.1
 
 ## 0.2.0
 
@@ -559,9 +559,9 @@
 ### Patch Changes
 
 - Updated dependencies [f578042]
-  - @lytics/dev-agent-core@0.6.0
-  - @lytics/dev-agent-subagents@0.4.0
-  - @lytics/dev-agent-mcp@0.4.7
+  - @prosdevlab/dev-agent-core@0.6.0
+  - @prosdevlab/dev-agent-subagents@0.4.0
+  - @prosdevlab/dev-agent-mcp@0.4.7
 
 ## 0.1.11
 
@@ -602,33 +602,33 @@
   **Testing:** All 1100+ tests passing. Verified on lytics-ui repository (6989 files, 1000 issues/PRs indexed successfully).
 
 - Updated dependencies [d6e5e6f]
-  - @lytics/dev-agent-subagents@0.3.3
-  - @lytics/dev-agent-mcp@0.4.6
+  - @prosdevlab/dev-agent-subagents@0.3.3
+  - @prosdevlab/dev-agent-mcp@0.4.6
 
 ## 0.1.10
 
 ### Patch Changes
 
 - Updated dependencies [579925c]
-  - @lytics/dev-agent-core@0.5.1
-  - @lytics/dev-agent-mcp@0.4.5
-  - @lytics/dev-agent-subagents@0.3.2
+  - @prosdevlab/dev-agent-core@0.5.1
+  - @prosdevlab/dev-agent-mcp@0.4.5
+  - @prosdevlab/dev-agent-subagents@0.3.2
 
 ## 0.1.9
 
 ### Patch Changes
 
 - Updated dependencies [d0481b4]
-  - @lytics/dev-agent-core@0.5.0
-  - @lytics/dev-agent-mcp@0.4.4
-  - @lytics/dev-agent-subagents@0.3.1
+  - @prosdevlab/dev-agent-core@0.5.0
+  - @prosdevlab/dev-agent-mcp@0.4.4
+  - @prosdevlab/dev-agent-subagents@0.3.1
 
 ## 0.1.8
 
 ### Patch Changes
 
 - Updated dependencies [ad4af12]
-  - @lytics/dev-agent-mcp@0.4.3
+  - @prosdevlab/dev-agent-mcp@0.4.3
 
 ## 0.1.7
 
@@ -653,7 +653,7 @@
 ### Patch Changes
 
 - Updated dependencies [40192f5]
-  - @lytics/dev-agent-mcp@0.4.2
+  - @prosdevlab/dev-agent-mcp@0.4.2
 
 ## 0.1.5
 
@@ -679,7 +679,7 @@
   These description improvements help AI tools (Claude, Cursor) choose the right dev-agent tool for each task.
 
 - Updated dependencies [4b55a04]
-  - @lytics/dev-agent-mcp@0.4.1
+  - @prosdevlab/dev-agent-mcp@0.4.1
 
 ## 0.1.4
 
@@ -709,24 +709,24 @@
 ### Patch Changes
 
 - Updated dependencies [c42f5ba]
-  - @lytics/dev-agent-core@0.4.0
-  - @lytics/dev-agent-mcp@0.4.0
-  - @lytics/dev-agent-subagents@0.3.0
+  - @prosdevlab/dev-agent-core@0.4.0
+  - @prosdevlab/dev-agent-mcp@0.4.0
+  - @prosdevlab/dev-agent-subagents@0.3.0
 
 ## 0.1.2
 
 ### Patch Changes
 
 - Updated dependencies [afa8adb]
-  - @lytics/dev-agent-core@0.3.0
-  - @lytics/dev-agent-mcp@0.3.0
-  - @lytics/dev-agent-subagents@0.2.0
+  - @prosdevlab/dev-agent-core@0.3.0
+  - @prosdevlab/dev-agent-mcp@0.3.0
+  - @prosdevlab/dev-agent-subagents@0.2.0
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [ce7390b]
-  - @lytics/dev-agent-core@0.2.0
-  - @lytics/dev-agent-mcp@0.2.0
-  - @lytics/dev-agent-subagents@0.1.1
+  - @prosdevlab/dev-agent-core@0.2.0
+  - @prosdevlab/dev-agent-mcp@0.2.0
+  - @prosdevlab/dev-agent-subagents@0.1.1

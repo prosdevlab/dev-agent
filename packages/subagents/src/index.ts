@@ -4,7 +4,7 @@
  *
  * Self-contained modules:
  * - coordinator/  - Central nervous system
- * - logger/       - Observability (future: @lytics/croak)
+ * - logger/       - Observability (future: @prosdevlab/croak)
  * - planner/      - Planning agent
  * - explorer/     - Code exploration agent
  * - pr/           - GitHub PR agent

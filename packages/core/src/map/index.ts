@@ -4,7 +4,7 @@
  */
 
 import * as path from 'node:path';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { LocalGitExtractor } from '../git/extractor';
 import type { RepositoryIndexer } from '../indexer';
 import { getFileIcon } from '../utils/icons';

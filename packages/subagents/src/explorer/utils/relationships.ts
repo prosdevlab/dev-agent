@@ -3,7 +3,7 @@
  * Functions for creating and managing code relationships
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 import type { CodeRelationship } from '../types';
 import { extractMetadata } from './metadata';
 

@@ -3,7 +3,7 @@
  * Pattern discovery and code exploration
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 
 /**
  * Exploration action types

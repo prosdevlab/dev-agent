@@ -179,7 +179,7 @@ All tools include **token cost footers** (🪙) for real-time cost tracking!
 ### Basic Setup
 
 ```typescript
-import { MCPServer } from '@lytics/dev-agent-mcp';
+import { MCPServer } from '@prosdevlab/dev-agent-mcp';
 import { SearchAdapter } from './adapters/SearchAdapter';
 
 const server = new MCPServer({
@@ -201,13 +201,13 @@ await server.start();
 ### Creating a Custom Adapter
 
 ```typescript
-import { ToolAdapter } from '@lytics/dev-agent-mcp';
+import { ToolAdapter } from '@prosdevlab/dev-agent-mcp';
 import type {
   AdapterContext,
   ToolDefinition,
   ToolExecutionContext,
   ToolResult,
-} from '@lytics/dev-agent-mcp';
+} from '@prosdevlab/dev-agent-mcp';
 
 export class MyAdapter extends ToolAdapter {
   readonly metadata = {

@@ -9,7 +9,7 @@ import {
   getStorageFilePaths,
   getStoragePath,
   RepositoryIndexer,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
@@ -66,7 +66,7 @@ export const planCommand = new Command('plan')
       spinner.text = `Fetching issue #${issueNumber}...`;
 
       // Import utilities dynamically from dist
-      const utilsModule = await import('@lytics/dev-agent-subagents');
+      const utilsModule = await import('@prosdevlab/dev-agent-subagents');
       const {
         fetchGitHubIssue,
         extractAcceptanceCriteria,

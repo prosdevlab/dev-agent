@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { RepositoryIndexer } from '@lytics/dev-agent-core';
+import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Message } from '../../types';
 import { ContextManagerImpl } from '../context-manager';

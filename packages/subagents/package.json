@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent-subagents",
+  "name": "@prosdevlab/dev-agent-subagents",
   "version": "0.5.4",
   "private": true,
   "main": "./dist/index.js",
@@ -30,9 +30,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@lytics/dev-agent-core": "workspace:*",
-    "@lytics/dev-agent-types": "workspace:*",
-    "@lytics/kero": "workspace:*",
+    "@prosdevlab/dev-agent-core": "workspace:*",
+    "@prosdevlab/dev-agent-types": "workspace:*",
+    "@prosdevlab/kero": "workspace:*",
     "zod": "^4.1.13"
   },
   "devDependencies": {

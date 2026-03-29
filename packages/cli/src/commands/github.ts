@@ -3,8 +3,8 @@
  * CLI commands for indexing and searching GitHub data
  */
 
-import { getStorageFilePaths, getStoragePath } from '@lytics/dev-agent-core';
-import { GitHubIndexer } from '@lytics/dev-agent-subagents';
+import { getStorageFilePaths, getStoragePath } from '@prosdevlab/dev-agent-core';
+import { GitHubIndexer } from '@prosdevlab/dev-agent-subagents';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';

@@ -1,4 +1,4 @@
-import type { RepositoryIndexer, SearchResult } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer, SearchResult } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContextPackage } from '../../context-types';
 

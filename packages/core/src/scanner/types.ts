@@ -1,6 +1,6 @@
 // Core scanner types and interfaces
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 
 export type DocumentType =
   | 'function'

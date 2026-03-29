@@ -3,7 +3,7 @@
  * Provides call graph queries via the dev_refs tool
  */
 
-import type { CalleeInfo, SearchResult, SearchService } from '@lytics/dev-agent-core';
+import type { CalleeInfo, SearchResult, SearchService } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { RefsArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

@@ -1,4 +1,4 @@
-# @lytics/dev-agent-types
+# @prosdevlab/dev-agent-types
 
 Shared TypeScript type definitions for dev-agent packages.
 
@@ -14,15 +14,15 @@ This package provides common type definitions that are shared across multiple de
 ## Usage
 
 ```typescript
-import type { GitHubDocument, GitHubSearchResult } from '@lytics/dev-agent-types/github';
+import type { GitHubDocument, GitHubSearchResult } from '@prosdevlab/dev-agent-types/github';
 ```
 
 ## Why a Separate Package?
 
 This package exists to break circular dependencies between:
-- `@lytics/dev-agent-core` (services)
-- `@lytics/dev-agent-subagents` (GitHub indexer, agents)
-- `@lytics/dev-agent-mcp` (MCP adapters)
+- `@prosdevlab/dev-agent-core` (services)
+- `@prosdevlab/dev-agent-subagents` (GitHub indexer, agents)
+- `@prosdevlab/dev-agent-mcp` (MCP adapters)
 
 By extracting shared types into a separate package that all others depend on, we maintain a clean dependency graph while ensuring type safety.
 

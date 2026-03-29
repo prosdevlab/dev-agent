@@ -3,7 +3,7 @@
  * Provides semantic search over git commit history via the dev_history tool
  */
 
-import type { GitCommit, GitIndexer, LocalGitExtractor } from '@lytics/dev-agent-core';
+import type { GitCommit, GitIndexer, LocalGitExtractor } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { HistoryArgsSchema, type HistoryOutput } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

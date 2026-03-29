@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { Code, Heading, Paragraph, Root } from 'mdast';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';

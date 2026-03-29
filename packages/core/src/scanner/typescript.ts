@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import {
   type ArrowFunction,
   type CallExpression,

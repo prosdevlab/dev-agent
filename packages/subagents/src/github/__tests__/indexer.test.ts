@@ -4,7 +4,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { VectorStorage } from '@lytics/dev-agent-core';
+import type { VectorStorage } from '@prosdevlab/dev-agent-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GitHubIndexer } from '../indexer';
 import type { GitHubDocument } from '../types';
@@ -20,7 +20,7 @@ vi.mock('../utils/index', () => ({
 }));
 
 // Mock VectorStorage
-vi.mock('@lytics/dev-agent-core', () => ({
+vi.mock('@prosdevlab/dev-agent-core', () => ({
   VectorStorage: class MockVectorStorage {
     initialize = vi.fn().mockResolvedValue(undefined);
     addDocuments = vi.fn().mockResolvedValue(undefined);

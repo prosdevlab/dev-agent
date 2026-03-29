@@ -5,7 +5,7 @@
  * Used by both MCP adapters and Dashboard API routes.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer/index.js';
 import type { DetailedIndexStats } from '../indexer/types.js';
 

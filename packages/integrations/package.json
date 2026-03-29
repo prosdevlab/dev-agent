@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent-integrations",
+  "name": "@prosdevlab/dev-agent-integrations",
   "version": "0.1.20",
   "private": true,
   "main": "./dist/index.js",
@@ -22,9 +22,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@lytics/dev-agent-core": "workspace:*",
-    "@lytics/dev-agent-cli": "workspace:*",
-    "@lytics/dev-agent-subagents": "workspace:*"
+    "@prosdevlab/dev-agent-core": "workspace:*",
+    "@prosdevlab/dev-agent-cli": "workspace:*",
+    "@prosdevlab/dev-agent-subagents": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

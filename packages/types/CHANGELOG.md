@@ -1,4 +1,4 @@
-# @lytics/dev-agent-types
+# @prosdevlab/dev-agent-types
 
 ## 0.2.1
 
@@ -36,7 +36,7 @@
 
   ### Shared Icon Utility
 
-  Extracted `getFileIcon()` to `@lytics/dev-agent-core/utils` for reuse across packages.
+  Extracted `getFileIcon()` to `@prosdevlab/dev-agent-core/utils` for reuse across packages.
 
   ## GitHub Stats Fix 🐛
 

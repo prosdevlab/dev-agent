@@ -13,16 +13,16 @@
     "lib": ["ES2022", "DOM"],
     "baseUrl": ".",
     "paths": {
-      "@lytics/dev-agent-core": ["packages/core/src"],
-      "@lytics/dev-agent-core/*": ["packages/core/src/*"],
-      "@lytics/dev-agent-subagents": ["packages/subagents/src"],
-      "@lytics/dev-agent-subagents/*": ["packages/subagents/src/*"],
-      "@lytics/dev-agent-cli": ["packages/cli/src"],
-      "@lytics/dev-agent-cli/*": ["packages/cli/src/*"],
-      "@lytics/dev-agent-integrations": ["packages/integrations/src"],
-      "@lytics/dev-agent-integrations/*": ["packages/integrations/src/*"],
-      "@lytics/kero": ["packages/logger/src"],
-      "@lytics/kero/*": ["packages/logger/src/*"]
+      "@prosdevlab/dev-agent-core": ["packages/core/src"],
+      "@prosdevlab/dev-agent-core/*": ["packages/core/src/*"],
+      "@prosdevlab/dev-agent-subagents": ["packages/subagents/src"],
+      "@prosdevlab/dev-agent-subagents/*": ["packages/subagents/src/*"],
+      "@prosdevlab/dev-agent-cli": ["packages/cli/src"],
+      "@prosdevlab/dev-agent-cli/*": ["packages/cli/src/*"],
+      "@prosdevlab/dev-agent-integrations": ["packages/integrations/src"],
+      "@prosdevlab/dev-agent-integrations/*": ["packages/integrations/src/*"],
+      "@prosdevlab/kero": ["packages/logger/src"],
+      "@prosdevlab/kero/*": ["packages/logger/src/*"]
     }
   },
   "exclude": ["node_modules"],

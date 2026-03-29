@@ -3,12 +3,12 @@
  *
  * Shared type definitions for GitHub operations across dev-agent packages.
  * These types are used by:
- * - @lytics/dev-agent-core (GitHubService)
- * - @lytics/dev-agent-subagents (GitHubIndexer, GitHubAgent)
- * - @lytics/dev-agent-mcp (GitHubAdapter)
+ * - @prosdevlab/dev-agent-core (GitHubService)
+ * - @prosdevlab/dev-agent-subagents (GitHubIndexer, GitHubAgent)
+ * - @prosdevlab/dev-agent-mcp (GitHubAdapter)
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 
 /**
  * Type of GitHub document

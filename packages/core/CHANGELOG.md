@@ -1,4 +1,4 @@
-# @lytics/dev-agent-core
+# @prosdevlab/dev-agent-core
 
 ## 0.9.3
 
@@ -42,7 +42,7 @@
 
   **New Features:**
 
-  - Test utilities in `@lytics/dev-agent-core/utils`:
+  - Test utilities in `@prosdevlab/dev-agent-core/utils`:
     - `isTestFile()` — Check if file is a test file
     - `findTestFile()` — Find co-located test files
   - Vector store `clear()` method
@@ -156,7 +156,7 @@
 
   ### Shared Icon Utility
 
-  Extracted `getFileIcon()` to `@lytics/dev-agent-core/utils` for reuse across packages.
+  Extracted `getFileIcon()` to `@prosdevlab/dev-agent-core/utils` for reuse across packages.
 
   ## GitHub Stats Fix 🐛
 
@@ -226,7 +226,7 @@
   None - all changes are backward compatible. Old GitHub state files will fall back to aggregate counts gracefully.
 
 - Updated dependencies [f20406e]
-  - @lytics/dev-agent-types@0.2.1
+  - @prosdevlab/dev-agent-types@0.2.1
 
 ## 0.9.0
 
@@ -404,7 +404,7 @@
 ### Patch Changes
 
 - Updated dependencies [0f8c4eb]
-  - @lytics/dev-agent-types@0.2.0
+  - @prosdevlab/dev-agent-types@0.2.0
 
 ## 0.7.0
 

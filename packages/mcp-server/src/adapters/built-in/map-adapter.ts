@@ -9,7 +9,7 @@ import {
   LocalGitExtractor,
   type MapOptions,
   type RepositoryIndexer,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { MapArgsSchema, type MapOutput } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

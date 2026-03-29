@@ -6,7 +6,7 @@
  * in utility test files with 50+ tests.
  */
 
-import type { RepositoryIndexer } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentContext } from '../../types';
 import { PlannerAgent } from '../index';

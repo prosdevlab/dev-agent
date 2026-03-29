@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent",
+  "name": "@prosdevlab/dev-agent",
   "version": "0.8.5",
   "private": false,
   "description": "Deep code intelligence + AI subagents via MCP. Local-first semantic code search, GitHub integration, and development planning for AI tools like Cursor and Claude Code.",
@@ -51,8 +51,8 @@
   },
   "devDependencies": {
     "tree-sitter-wasms": "^0.1.13",
-    "@lytics/dev-agent-cli": "workspace:*",
-    "@lytics/dev-agent-mcp": "workspace:*",
+    "@prosdevlab/dev-agent-cli": "workspace:*",
+    "@prosdevlab/dev-agent-mcp": "workspace:*",
     "@types/node": "^22.0.0",
     "tsup": "^8.3.0"
   },

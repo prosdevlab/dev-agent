@@ -5,7 +5,7 @@
  * Used by MCP search/refs/explore adapters and CLI search command.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer/index.js';
 import type { SearchResult, SearchOptions as VectorSearchOptions } from '../vector/types.js';
 

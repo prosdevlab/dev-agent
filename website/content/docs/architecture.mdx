@@ -44,7 +44,7 @@ dev-agent is built as a TypeScript monorepo with specialized packages for differ
 
 ## Packages
 
-### @lytics/dev-agent-core
+### @prosdevlab/dev-agent-core
 
 The foundation layer providing:
 
@@ -56,7 +56,7 @@ The foundation layer providing:
 - **Vector Storage** — LanceDB for fast similarity search
 - **GitHub Integration** — Fetches and indexes issues/PRs via GitHub CLI
 
-### @lytics/dev-agent-cli
+### @prosdevlab/dev-agent-cli
 
 Command-line interface:
 
@@ -67,7 +67,7 @@ dev github index             # Index GitHub issues/PRs
 dev status               # Check indexing status
 ```
 
-### @lytics/dev-agent-mcp
+### @prosdevlab/dev-agent-mcp
 
 MCP server with tool adapters:
 
@@ -76,7 +76,7 @@ MCP server with tool adapters:
 - **Rate Limiting** — Token bucket algorithm (100 req burst)
 - **Retry Logic** — Exponential backoff with jitter
 
-### @lytics/dev-agent-subagents
+### @prosdevlab/dev-agent-subagents
 
 Specialized AI agents:
 
@@ -85,7 +85,7 @@ Specialized AI agents:
 - **PRAgent** — PR management and review assistance
 - **Coordinator** — Routes tasks to appropriate agents
 
-### @lytics/kero
+### @prosdevlab/kero
 
 Centralized logging:
 

@@ -3,7 +3,7 @@
  * Inspired by human physiology - neurons, synapses, action potentials
  */
 
-import type { RepositoryIndexer } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 
 /**
  * Message = Action Potential

@@ -17,7 +17,7 @@ import {
   createLogger,
   createRequestTracker,
   AsyncEventBus
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 
 // Create a logger
 const logger = createLogger({

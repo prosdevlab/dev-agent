@@ -1,10 +1,10 @@
 /**
  * Logger = Observability System
- * Structured logging for the coordinator and agents using @lytics/kero
+ * Structured logging for the coordinator and agents using @prosdevlab/kero
  */
 
-import type { Logger as KeroLogger } from '@lytics/kero';
-import { createLogger } from '@lytics/kero';
+import type { Logger as KeroLogger } from '@prosdevlab/kero';
+import { createLogger } from '@prosdevlab/kero';
 import type { Logger } from '../types';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

@@ -1,9 +1,9 @@
 /**
- * @lytics/kero - Zero-dependency TypeScript logger
+ * @prosdevlab/kero - Zero-dependency TypeScript logger
  *
  * @example
  * ```typescript
- * import { createLogger, kero } from '@lytics/kero';
+ * import { createLogger, kero } from '@prosdevlab/kero';
  *
  * // Use the default logger
  * kero.info('Hello, world!');

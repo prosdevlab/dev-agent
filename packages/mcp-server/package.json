@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/dev-agent-mcp",
+  "name": "@prosdevlab/dev-agent-mcp",
   "version": "0.5.4",
   "description": "MCP server for dev-agent with extensible adapter framework",
   "private": true,
@@ -17,10 +17,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@lytics/dev-agent-core": "workspace:*",
-    "@lytics/dev-agent-subagents": "workspace:*",
-    "@lytics/dev-agent-types": "workspace:*",
-    "@lytics/kero": "workspace:*",
+    "@prosdevlab/dev-agent-core": "workspace:*",
+    "@prosdevlab/dev-agent-subagents": "workspace:*",
+    "@prosdevlab/dev-agent-types": "workspace:*",
+    "@prosdevlab/kero": "workspace:*",
     "zod": "^4.1.13"
   },
   "devDependencies": {

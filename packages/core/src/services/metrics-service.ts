@@ -5,7 +5,7 @@
  * Used by both MCP adapters and Dashboard API routes.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { FileMetrics } from '../metrics/analytics.js';
 import type { MetricsStore } from '../metrics/store.js';
 import type { CodeMetadata, Snapshot, SnapshotQuery } from '../metrics/types.js';

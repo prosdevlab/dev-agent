@@ -5,7 +5,7 @@
  * Used by both MCP health adapter and Dashboard health API.
  */
 
-import type { Logger } from '@lytics/kero';
+import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer/index.js';
 import type { MetricsStore } from '../metrics/store.js';
 import type { VectorStorage } from '../vector/index.js';

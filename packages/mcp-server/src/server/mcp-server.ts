@@ -3,7 +3,7 @@
  * Handles protocol, routing, and adapter coordination
  */
 
-import type { SubagentCoordinator } from '@lytics/dev-agent-subagents';
+import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import { AdapterRegistry, type RegistryConfig } from '../adapters/adapter-registry';
 import type { ToolAdapter } from '../adapters/tool-adapter';
 import type { AdapterContext, Config, ToolExecutionContext } from '../adapters/types';

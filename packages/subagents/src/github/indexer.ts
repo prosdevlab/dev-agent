@@ -5,7 +5,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { VectorStorage } from '@lytics/dev-agent-core';
+import { VectorStorage } from '@prosdevlab/dev-agent-core';
 import type {
   GitHubContext,
   GitHubDocument,

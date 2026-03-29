@@ -4,7 +4,7 @@ import {
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
-} from '@lytics/dev-agent-core';
+} from '@prosdevlab/dev-agent-core';
 import { Command } from 'commander';
 import ora from 'ora';
 import { loadConfig } from '../utils/config.js';

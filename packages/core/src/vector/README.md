@@ -41,7 +41,7 @@ The vector storage system provides semantic search capabilities for code and doc
 ### Basic Setup
 
 ```typescript
-import { VectorStorage } from '@lytics/dev-agent-core';
+import { VectorStorage } from '@prosdevlab/dev-agent-core';
 
 // Initialize with default settings (all-MiniLM-L6-v2, 384 dimensions)
 const storage = new VectorStorage({
@@ -54,7 +54,7 @@ await storage.initialize();
 ### Adding Documents
 
 ```typescript
-import type { EmbeddingDocument } from '@lytics/dev-agent-core';
+import type { EmbeddingDocument } from '@prosdevlab/dev-agent-core';
 
 const documents: EmbeddingDocument[] = [
   {
@@ -195,8 +195,8 @@ console.log(`Total documents: ${stats.totalDocuments}`);
 ## Real-World Example: Repository Indexing
 
 ```typescript
-import { scanRepository } from '@lytics/dev-agent-core';
-import { VectorStorage } from '@lytics/dev-agent-core';
+import { scanRepository } from '@prosdevlab/dev-agent-core';
+import { VectorStorage } from '@prosdevlab/dev-agent-core';
 
 // 1. Scan repository for code components
 const scanResult = await scanRepository('/path/to/repo', {
@@ -359,7 +359,7 @@ const storage = new VectorStorage({
 For more control, use the components directly:
 
 ```typescript
-import { TransformersEmbedder, LanceDBVectorStore } from '@lytics/dev-agent-core';
+import { TransformersEmbedder, LanceDBVectorStore } from '@prosdevlab/dev-agent-core';
 
 // 1. Create embedder
 const embedder = new TransformersEmbedder();

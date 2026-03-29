@@ -1,8 +1,8 @@
 /**
  * GitHub Context Subagent Types
  *
- * Re-exports shared types from @lytics/dev-agent-types for backward compatibility.
- * New code should import directly from @lytics/dev-agent-types/github.
+ * Re-exports shared types from @prosdevlab/dev-agent-types for backward compatibility.
+ * New code should import directly from @prosdevlab/dev-agent-types/github.
  */
 
 import type {
@@ -12,7 +12,7 @@ import type {
   GitHubIndexStats,
   GitHubSearchOptions,
   GitHubSearchResult,
-} from '@lytics/dev-agent-types/github';
+} from '@prosdevlab/dev-agent-types/github';
 
 export type {
   GitHubAPIResponse,
@@ -27,7 +27,7 @@ export type {
   GitHubSearchOptions,
   GitHubSearchResult,
   GitHubState,
-} from '@lytics/dev-agent-types/github';
+} from '@prosdevlab/dev-agent-types/github';
 
 /**
  * GitHub Context request (for agent communication)

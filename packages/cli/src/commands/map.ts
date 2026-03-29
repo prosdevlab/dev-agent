@@ -13,8 +13,8 @@ import {
   LocalGitExtractor,
   type MapOptions,
   RepositoryIndexer,
-} from '@lytics/dev-agent-core';
-import { createLogger } from '@lytics/kero';
+} from '@prosdevlab/dev-agent-core';
+import { createLogger } from '@prosdevlab/kero';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';

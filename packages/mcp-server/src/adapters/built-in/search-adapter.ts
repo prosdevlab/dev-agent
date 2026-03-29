@@ -3,7 +3,7 @@
  * Provides semantic code search via the dev_search tool
  */
 
-import type { SearchService } from '@lytics/dev-agent-core';
+import type { SearchService } from '@prosdevlab/dev-agent-core';
 import { CompactFormatter, type FormatMode, VerboseFormatter } from '../../formatters';
 import { SearchArgsSchema } from '../../schemas/index.js';
 import { findRelatedTestFiles, formatRelatedFiles } from '../../utils/related-files';

@@ -12,7 +12,7 @@ The scanner uses a hybrid approach:
 ## Quick Start
 
 ```typescript
-import { scanRepository } from '@lytics/dev-agent-core/scanner';
+import { scanRepository } from '@prosdevlab/dev-agent-core/scanner';
 
 // Scan a repository
 const result = await scanRepository({
@@ -369,7 +369,7 @@ func (s *Stack[T]) Push(item T) {
 ### Example 3: Full Repository Scan
 
 ```typescript
-import { scanRepository } from '@lytics/dev-agent-core/scanner';
+import { scanRepository } from '@prosdevlab/dev-agent-core/scanner';
 
 const result = await scanRepository({
   repoRoot: '/path/to/my-project',
@@ -427,7 +427,7 @@ Found 28 exported functions
 ### Custom Scanner Registry
 
 ```typescript
-import { ScannerRegistry, TypeScriptScanner, MarkdownScanner } from '@lytics/dev-agent-core/scanner';
+import { ScannerRegistry, TypeScriptScanner, MarkdownScanner } from '@prosdevlab/dev-agent-core/scanner';
 
 // Create custom registry
 const registry = new ScannerRegistry();
@@ -447,7 +447,7 @@ const result = await registry.scanRepository({
 Check what each scanner can extract:
 
 ```typescript
-import { createDefaultRegistry } from '@lytics/dev-agent-core/scanner';
+import { createDefaultRegistry } from '@prosdevlab/dev-agent-core/scanner';
 
 const registry = createDefaultRegistry();
 const scanners = registry.getAllScanners();
@@ -558,7 +558,7 @@ Test on a custom repository:
 
 ```typescript
 // test-scanner.ts
-import { scanRepository } from '@lytics/dev-agent-core/scanner';
+import { scanRepository } from '@prosdevlab/dev-agent-core/scanner';
 
 async function test() {
   const result = await scanRepository({

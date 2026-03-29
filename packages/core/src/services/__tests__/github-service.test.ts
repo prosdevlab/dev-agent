@@ -7,7 +7,7 @@ import type {
   GitHubIndexerInstance,
   GitHubIndexStats,
   GitHubSearchResult,
-} from '@lytics/dev-agent-types/github';
+} from '@prosdevlab/dev-agent-types/github';
 import { describe, expect, it, vi } from 'vitest';
 import { type GitHubIndexerFactory, GitHubService } from '../github-service.js';
 

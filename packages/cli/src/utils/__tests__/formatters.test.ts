@@ -1,4 +1,4 @@
-import type { DetailedIndexStats, LanguageStats } from '@lytics/dev-agent-core';
+import type { DetailedIndexStats, LanguageStats } from '@prosdevlab/dev-agent-core';
 import { describe, expect, it } from 'vitest';
 import {
   createComponentTypesTable,
@@ -307,7 +307,7 @@ describe('formatters', () => {
         repositoryPath: '/test',
         byPackage: {
           'packages/core': {
-            name: '@lytics/dev-agent-core',
+            name: '@prosdevlab/dev-agent-core',
             path: 'packages/core',
             files: 50,
             components: 250,
@@ -319,7 +319,7 @@ describe('formatters', () => {
       const output = formatDetailedStats(stats, '/test/repo', { showPackages: true });
 
       expect(output).toContain('Packages');
-      expect(output).toContain('@lytics/dev-agent-core');
+      expect(output).toContain('@prosdevlab/dev-agent-core');
     });
   });
 });

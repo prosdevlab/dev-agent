@@ -3,12 +3,12 @@
  * Exposes GitHub context and search capabilities via MCP (dev_gh tool)
  */
 
-import type { GitHubService } from '@lytics/dev-agent-core';
+import type { GitHubService } from '@prosdevlab/dev-agent-core';
 import type {
   GitHubDocument,
   GitHubSearchOptions,
   GitHubSearchResult,
-} from '@lytics/dev-agent-types/github';
+} from '@prosdevlab/dev-agent-types/github';
 import { estimateTokensForText } from '../../formatters/utils';
 import { GitHubArgsSchema, type GitHubOutput } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';

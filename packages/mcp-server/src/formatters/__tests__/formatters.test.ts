@@ -2,7 +2,7 @@
  * Tests for CompactFormatter and VerboseFormatter
  */
 
-import type { SearchResult } from '@lytics/dev-agent-core';
+import type { SearchResult } from '@prosdevlab/dev-agent-core';
 import { describe, expect, it } from 'vitest';
 import { CompactFormatter, VerboseFormatter } from '../index';
 

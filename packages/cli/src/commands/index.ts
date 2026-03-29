@@ -13,8 +13,8 @@ import {
   RepositoryIndexer,
   updateIndexedStats,
   VectorStorage,
-} from '@lytics/dev-agent-core';
-import { GitHubIndexer } from '@lytics/dev-agent-subagents';
+} from '@prosdevlab/dev-agent-core';
+import { GitHubIndexer } from '@prosdevlab/dev-agent-subagents';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';

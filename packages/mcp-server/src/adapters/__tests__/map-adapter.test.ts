@@ -2,7 +2,7 @@
  * Tests for MapAdapter
  */
 
-import type { RepositoryIndexer, SearchResult } from '@lytics/dev-agent-core';
+import type { RepositoryIndexer, SearchResult } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleLogger } from '../../utils/logger';
 import { MapAdapter } from '../built-in/map-adapter';

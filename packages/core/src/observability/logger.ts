@@ -2,16 +2,16 @@
  * Observable Logger
  *
  * Structured logging with request correlation, timing, and multiple output formats.
- * Uses @lytics/kero as the underlying logging engine.
+ * Uses @prosdevlab/kero as the underlying logging engine.
  */
 
-import type { Logger as KeroLogger } from '@lytics/kero';
-import { createLogger as createKeroLogger } from '@lytics/kero';
+import type { Logger as KeroLogger } from '@prosdevlab/kero';
+import { createLogger as createKeroLogger } from '@prosdevlab/kero';
 import type { LoggerConfig, LogLevel, ObservableLogger, Timer } from './types';
 
 /**
  * Observable Logger Implementation
- * Wraps @lytics/kero with request tracking and timing utilities
+ * Wraps @prosdevlab/kero with request tracking and timing utilities
  */
 export class ObservableLoggerImpl implements ObservableLogger {
   private config: Required<LoggerConfig>;

@@ -1,5 +1,5 @@
 {
-  "name": "@lytics/kero",
+  "name": "@prosdevlab/kero",
   "version": "1.0.0",
   "description": "Zero-dependency TypeScript logger with structured logging, multiple transports, and beautiful output",
   "private": false,

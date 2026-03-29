@@ -1,4 +1,4 @@
-# @lytics/kero
+# @prosdevlab/kero
 
 Zero-dependency TypeScript logger with structured logging, multiple transports, and beautiful output.
 
@@ -20,13 +20,13 @@ Inspired by [Pino](https://getpino.io/), built for modern TypeScript application
 ## Installation
 
 ```bash
-pnpm add @lytics/kero
+pnpm add @prosdevlab/kero
 ```
 
 ## Quick Start
 
 ```typescript
-import { kero } from '@lytics/kero';
+import { kero } from '@prosdevlab/kero';
 
 // Basic logging
 kero.info('Server started');
@@ -38,7 +38,7 @@ kero.error(new Error('Failed'), 'Request failed');
 ## Creating a Logger
 
 ```typescript
-import { createLogger } from '@lytics/kero';
+import { createLogger } from '@prosdevlab/kero';
 
 const logger = createLogger({
   level: 'debug',        // Minimum level: trace, debug, info, warn, error, fatal
@@ -49,7 +49,7 @@ const logger = createLogger({
 ## Presets
 
 ```typescript
-import { createLogger } from '@lytics/kero';
+import { createLogger } from '@prosdevlab/kero';
 
 // Development: pretty output, debug level
 const devLogger = createLogger({ preset: 'development' });
@@ -132,7 +132,7 @@ From lowest to highest priority:
 Enable icons for visual scanning:
 
 ```typescript
-import { createLogger, PrettyFormatter } from '@lytics/kero';
+import { createLogger, PrettyFormatter } from '@prosdevlab/kero';
 
 // Unicode icons (default when icons=true) - works everywhere
 const logger = createLogger({
@@ -175,7 +175,7 @@ const logger = createLogger({
 Implement the `Formatter` interface:
 
 ```typescript
-import { createLogger, Formatter, LogEntry } from '@lytics/kero';
+import { createLogger, Formatter, LogEntry } from '@prosdevlab/kero';
 
 const myFormatter: Formatter = {
   format(entry: LogEntry): string {
@@ -191,7 +191,7 @@ const logger = createLogger({ formatter: myFormatter });
 Implement the `Transport` interface:
 
 ```typescript
-import { createLogger, Transport, LogEntry } from '@lytics/kero';
+import { createLogger, Transport, LogEntry } from '@prosdevlab/kero';
 
 const myTransport: Transport = {
   write(entry: LogEntry, formatted: string): void {
