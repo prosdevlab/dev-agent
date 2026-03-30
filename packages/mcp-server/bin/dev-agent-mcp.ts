@@ -22,6 +22,8 @@ import {
   StatusAdapter,
 } from '../src/adapters/built-in';
 import { MCPServer } from '../src/server/mcp-server';
+import type { FileWatcherHandle } from '../src/watcher';
+import { createIncrementalIndexer, getEventsSince, startFileWatcher } from '../src/watcher';
 
 // Get config from environment with smart workspace detection
 // Priority: WORKSPACE_FOLDER_PATHS (Cursor dynamic) > REPOSITORY_PATH (explicit) > cwd (fallback)
@@ -95,7 +97,56 @@ function _startIdleMonitor(): void {
   }, 60000); // Check every minute
 }
 
+/**
+ * Startup catchup: process file changes that occurred while the server was off.
+ * - No snapshot: run full index, write snapshot
+ * - Snapshot with no changes: log "index is current"
+ * - Snapshot with changes: run incremental update, write snapshot
+ */
+async function startupCatchup(
+  indexer: RepositoryIndexer,
+  repositoryPath: string,
+  snapshotPath: string
+): Promise<void> {
+  const result = await getEventsSince(repositoryPath, snapshotPath);
+
+  if (result.snapshotMissing) {
+    console.error('[MCP] No watcher snapshot found — running full index');
+    const stats = await indexer.index();
+    console.error(`[MCP] Full index complete: ${stats.documentsIndexed} docs`);
+    const watcher = await import('@parcel/watcher');
+    await watcher.writeSnapshot(repositoryPath, snapshotPath);
+    return;
+  }
+
+  const { changed, deleted } = result;
+
+  if (changed.length === 0 && deleted.length === 0) {
+    console.error('[MCP] No changes since last run — index is current');
+    return;
+  }
+
+  console.error(`[MCP] Catching up: ${changed.length} changed, ${deleted.length} deleted`);
+
+  const incrementalIndexer = createIncrementalIndexer({
+    repositoryIndexer: indexer,
+    repositoryPath,
+    logger: {
+      info: console.error.bind(console),
+      warn: console.error.bind(console),
+      error: console.error.bind(console),
+    },
+  });
+  await incrementalIndexer.onChanges(changed, deleted);
+  console.error('[MCP] Catchup complete');
+
+  const watcher = await import('@parcel/watcher');
+  await watcher.writeSnapshot(repositoryPath, snapshotPath);
+}
+
 async function main() {
+  let watcherHandle: FileWatcherHandle | undefined;
+
   try {
     // Get centralized storage paths
     const storagePath = await getStoragePath(repositoryPath);
@@ -112,6 +163,9 @@ async function main() {
 
     // Update metadata
     await saveMetadata(storagePath, repositoryPath);
+
+    // Startup catchup: index or update since last snapshot
+    await startupCatchup(indexer, repositoryPath, filePaths.watcherSnapshot);
 
     // Create services
     const searchService = new SearchService({ repositoryPath });
@@ -178,8 +232,40 @@ async function main() {
       ],
     });
 
+    // Start server
+    await server.start();
+
+    // Start file watcher for automatic incremental re-indexing
+    const incrementalIndexer = createIncrementalIndexer({
+      repositoryIndexer: indexer,
+      repositoryPath,
+      logger: {
+        info: console.error.bind(console),
+        warn: console.error.bind(console),
+        error: console.error.bind(console),
+      },
+    });
+
+    watcherHandle = await startFileWatcher({
+      repositoryPath,
+      snapshotPath: filePaths.watcherSnapshot,
+      onChanges: async (changed, deleted) => {
+        await incrementalIndexer.onChanges(changed, deleted);
+        // Write snapshot after each successful incremental update
+        await watcherHandle?.writeSnapshot();
+      },
+      onError: (err) => {
+        console.error('[MCP] File watcher error:', err);
+      },
+    });
+
+    console.error('[MCP] File watcher started');
+
     // Handle graceful shutdown
     const shutdown = async () => {
+      if (watcherHandle) {
+        await watcherHandle.unsubscribe().catch(() => {});
+      }
       await server.stop();
       await indexer.close();
       process.exit(0);
@@ -188,11 +274,11 @@ async function main() {
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
 
-    // Start server
-    await server.start();
-
     // Keep process alive (server runs until stdin closes or signal received)
   } catch (error) {
+    if (watcherHandle) {
+      await watcherHandle.unsubscribe().catch(() => {});
+    }
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   }
