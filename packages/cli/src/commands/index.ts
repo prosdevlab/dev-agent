@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   AsyncEventBus,
@@ -13,18 +12,9 @@ import {
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
+import { ensureAntfly, isServerReady } from '../utils/antfly.js';
 import { getDefaultConfig, loadConfig } from '../utils/config.js';
-// Storage size calculation moved to on-demand in `dev stats` command
-import { createIndexLogger, logger } from '../utils/logger.js';
-import { output } from '../utils/output.js';
-import { formatFinalSummary, ProgressRenderer } from '../utils/progress.js';
-
-/**
- * Check if directory is a git repository
- */
-function isGitRepository(path: string): boolean {
-  return existsSync(join(path, '.git'));
-}
+import { createIndexLogger } from '../utils/logger.js';
 
 export const indexCommand = new Command('index')
   .description('Index a repository (code)')
@@ -32,65 +22,51 @@ export const indexCommand = new Command('index')
   .option('-f, --force', 'Force re-index even if unchanged', false)
   .option('-v, --verbose', 'Verbose output', false)
   .action(async (repositoryPath: string, options) => {
-    const spinner = ora('Checking prerequisites...').start();
+    const spinner = ora();
 
     try {
       const resolvedRepoPath = resolve(repositoryPath);
 
-      // Check prerequisites upfront
-      const isGitRepo = isGitRepository(resolvedRepoPath);
-
-      // Show what will be indexed (clean output without timestamps)
-      spinner.stop();
-      console.log('');
-      console.log(chalk.bold('Indexing Plan:'));
-      console.log(`  ${chalk.green('✓')} Code (always)`);
-      if (isGitRepo) {
-        console.log(`  ${chalk.gray('○')} Git history (use git CLI directly)`);
+      // ── Pre-flight: ensure Antfly is running ──
+      if (!(await isServerReady())) {
+        spinner.start('Starting Antfly server...');
+        try {
+          await ensureAntfly({ quiet: true });
+          spinner.succeed('Antfly server started');
+        } catch {
+          spinner.fail('Antfly server is not running');
+          console.error('');
+          console.error('  This usually means:');
+          console.error('    1. Docker/Podman needs more memory (8GB+ recommended)');
+          console.error('       → Docker Desktop: Settings → Resources → Memory');
+          console.error('       → Podman: podman machine set --memory 8192');
+          console.error('    2. First time? Run `dev setup` first');
+          console.error('');
+          process.exit(1);
+        }
       }
-      console.log('');
 
-      spinner.start('Loading configuration...');
-
-      // Load config or use defaults
+      // Load config
       let config = await loadConfig();
       if (!config) {
-        spinner.info('No config found, using defaults');
         config = getDefaultConfig(repositoryPath);
       }
 
       // Get centralized storage path
-      spinner.text = 'Resolving storage path...';
       const storagePath = await getStoragePath(resolvedRepoPath);
       await ensureStorageDirectory(storagePath);
       const filePaths = getStorageFilePaths(storagePath);
 
-      spinner.text = 'Initializing indexer...';
-
-      // Create event bus for metrics (no logger in CLI to keep it simple)
+      // Create event bus for metrics
       const eventBus = new AsyncEventBus();
-
-      // Initialize metrics store (no logger in CLI to avoid noise)
       const metricsDbPath = join(storagePath, 'metrics.db');
       const metricsStore = new MetricsStore(metricsDbPath);
 
-      // Subscribe to index.updated events for automatic metrics persistence
       eventBus.on<IndexUpdatedEvent>('index.updated', async (event) => {
         try {
-          const snapshotId = metricsStore.recordSnapshot(
-            event.stats,
-            event.isIncremental ? 'update' : 'index'
-          );
-
-          // Store code metadata if available
-          if (event.codeMetadata && event.codeMetadata.length > 0) {
-            metricsStore.appendCodeMetadata(snapshotId, event.codeMetadata);
-          }
-        } catch (error) {
-          // Log error but don't fail indexing - metrics are non-critical
-          logger.error(
-            `Failed to record metrics: ${error instanceof Error ? error.message : String(error)}`
-          );
+          metricsStore.recordSnapshot(event.stats, event.isIncremental ? 'update' : 'index');
+        } catch {
+          // Metrics are non-critical — don't fail indexing
         }
       });
 
@@ -106,122 +82,115 @@ export const indexCommand = new Command('index')
 
       await indexer.initialize();
 
-      // Create logger for indexing (verbose mode shows debug logs)
       const indexLogger = createIndexLogger(options.verbose);
 
-      // Stop spinner and switch to section-based progress (unless verbose)
-      spinner.stop();
-
-      // Initialize progress renderer
-      const progressRenderer = new ProgressRenderer({ verbose: options.verbose });
-      const sections: string[] = ['Scanning Repository', 'Embedding Vectors'];
-      progressRenderer.setSections(sections);
-
+      // Track state for phase transitions
       const startTime = Date.now();
       const scanStartTime = startTime;
       let embeddingStartTime = 0;
-      let inEmbeddingPhase = false;
+      let totalComponents = 0;
+      let totalFiles = 0;
+      spinner.start('Scanning repository...');
 
       const stats = await indexer.index({
         force: options.force,
         logger: indexLogger,
         onProgress: (progress) => {
-          if (progress.phase === 'storing' && progress.totalDocuments) {
-            // Transitioning to embedding phase
-            if (!inEmbeddingPhase) {
-              // Complete scanning section and move to embedding
-              const scanDuration = (Date.now() - scanStartTime) / 1000;
-              progressRenderer.completeSection(
-                `${progress.totalDocuments.toLocaleString()} components extracted`,
-                scanDuration
-              );
-              embeddingStartTime = Date.now();
-              inEmbeddingPhase = true;
+          if (progress.phase === 'scanning') {
+            if (progress.totalFiles > 0) {
+              spinner.text = `Scanning repository... (${progress.filesProcessed.toLocaleString()}/${progress.totalFiles.toLocaleString()} files)`;
             }
+          } else if (
+            progress.phase === 'storing' &&
+            progress.totalDocuments &&
+            !embeddingStartTime
+          ) {
+            // Transition: scanning → embedding
+            totalFiles = progress.filesProcessed;
+            totalComponents = progress.totalDocuments;
+            const scanDuration = ((Date.now() - scanStartTime) / 1000).toFixed(1);
+            spinner.succeed(
+              `Scanned ${totalFiles.toLocaleString()} files → ${totalComponents.toLocaleString()} components (${scanDuration}s)`
+            );
 
-            // Update embedding progress
-            progressRenderer.updateSectionWithRate(
-              progress.documentsIndexed,
-              progress.totalDocuments,
-              'documents',
-              embeddingStartTime
-            );
-          } else if (progress.phase === 'scanning') {
-            // Scanning phase - show file progress
-            progressRenderer.updateSectionWithRate(
-              progress.filesProcessed,
-              progress.totalFiles,
-              'files',
-              scanStartTime
-            );
+            embeddingStartTime = Date.now();
+            spinner.start(`Embedding ${totalComponents.toLocaleString()} vectors...`);
           }
         },
       });
 
-      // Complete embedding section
-      if (inEmbeddingPhase) {
-        const embeddingDuration = (Date.now() - embeddingStartTime) / 1000;
-        progressRenderer.completeSection(
-          `${stats.documentsIndexed.toLocaleString()} documents`,
-          embeddingDuration
+      // Complete embedding phase
+      if (embeddingStartTime) {
+        const embeddingDuration = ((Date.now() - embeddingStartTime) / 1000).toFixed(1);
+        spinner.succeed(
+          `Embedded ${stats.documentsIndexed.toLocaleString()} vectors (${embeddingDuration}s)`
         );
       } else {
-        // If we never entered embedding phase (edge case), complete scanning
-        const scanDuration = (Date.now() - scanStartTime) / 1000;
-        progressRenderer.completeSection(
-          `${stats.filesScanned.toLocaleString()} files → ${stats.documentsIndexed.toLocaleString()} components`,
-          scanDuration
+        const scanDuration = ((Date.now() - scanStartTime) / 1000).toFixed(1);
+        spinner.succeed(
+          `Scanned ${stats.filesScanned.toLocaleString()} files → ${stats.documentsIndexed.toLocaleString()} components (${scanDuration}s)`
         );
       }
 
-      // Finalize indexing (silent - no UI update needed)
+      // Finalize
       await indexer.close();
       metricsStore.close();
 
-      // Update metadata with indexing stats (storage size calculated on-demand)
       await updateIndexedStats(storagePath, {
         files: stats.filesScanned,
         components: stats.documentsIndexed,
-        size: 0, // Calculated on-demand in `dev stats`
+        size: 0,
       });
 
-      const totalDuration = (Date.now() - startTime) / 1000;
+      const totalDuration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      // Finalize progress display
-      progressRenderer.done();
-
-      // Show final summary with next steps
-      output.log(
-        formatFinalSummary({
-          code: {
-            files: stats.filesScanned,
-            documents: stats.documentsIndexed,
-          },
-          totalDuration,
-        })
+      console.log(
+        `\n  Indexed ${stats.filesScanned.toLocaleString()} files · ${stats.documentsIndexed.toLocaleString()} components in ${totalDuration}s`
       );
+      console.log('');
+      console.log('  Next steps:');
+      console.log('    dev mcp install                Connect to Claude Code');
+      console.log('    dev mcp install --cursor       Connect to Cursor');
+      console.log('');
+      console.log('  Try it out:');
+      console.log('    dev search "authentication"    Semantic code search');
+      console.log('    dev map                        Explore codebase structure');
+      console.log('    dev status                     Check index health');
+      console.log('    dev --help                     See all commands');
+      console.log('');
 
       // Show errors if any
       if (stats.errors.length > 0) {
-        output.log('');
-        output.warn(`${stats.errors.length} error(s) occurred during indexing`);
+        console.log(
+          `  ${chalk.yellow(`${stats.errors.length} error(s) occurred during indexing`)}`
+        );
         if (options.verbose) {
           for (const error of stats.errors) {
-            output.log(`  ${chalk.gray(error.file)}: ${error.message}`);
+            console.log(`    ${chalk.gray(error.file)}: ${error.message}`);
           }
         } else {
-          output.log(
-            `  ${chalk.gray('Run with')} ${chalk.cyan('--verbose')} ${chalk.gray('to see details')}`
+          console.log(
+            `    ${chalk.gray('Run with')} ${chalk.cyan('--verbose')} ${chalk.gray('to see details')}`
           );
         }
+        console.log('');
       }
-
-      output.log('');
     } catch (error) {
       spinner.fail('Failed to index repository');
-      logger.error(error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('fetch failed') || message.includes('ECONNREFUSED')) {
+        console.error('');
+        console.error('  Antfly server crashed. This usually means not enough memory.');
+        console.error('    → Docker Desktop: Settings → Resources → Memory → 8GB+');
+        console.error('    → Podman: podman machine set --memory 8192');
+        console.error('');
+        console.error('  Then run: dev reset && dev setup');
+        console.error('');
+      } else {
+        console.error(`\n  ${message}\n`);
+      }
       if (options.verbose && error instanceof Error && error.stack) {
-        logger.debug(error.stack);
+        console.error(error.stack);
       }
       process.exit(1);
     }

@@ -10,6 +10,7 @@ import { indexCommand } from './commands/index.js';
 import { initCommand } from './commands/init.js';
 import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
+import { resetCommand } from './commands/reset.js';
 import { searchCommand } from './commands/search.js';
 import { setupCommand } from './commands/setup.js';
 import { statsCommand } from './commands/stats.js';
@@ -39,6 +40,7 @@ program.addCommand(cleanCommand);
 program.addCommand(storageCommand);
 program.addCommand(mcpCommand);
 program.addCommand(setupCommand);
+program.addCommand(resetCommand);
 
 // Show help if no command provided
 if (process.argv.length === 2) {

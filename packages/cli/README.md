@@ -25,7 +25,7 @@ This creates a `.dev-agent.json` configuration file.
 Index your repository for semantic search:
 
 ```bash
-dev index .
+dev index
 ```
 
 Options:
@@ -143,7 +143,7 @@ The `.dev-agent.json` file configures the indexer:
 ```bash
 # Initialize and index
 dev init
-dev index .
+dev index
 
 # View statistics
 dev stats
@@ -210,7 +210,7 @@ dev update
 
 # Clean and re-index if needed
 dev clean --force
-dev index . --force
+dev index --force
 ```
 
 ## License

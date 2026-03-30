@@ -132,10 +132,11 @@ export class VectorStorage {
    */
   async linearMerge(
     documents: EmbeddingDocument[],
-    lastMergedId?: string
+    lastMergedId?: string,
+    onProgress?: (processed: number, total: number) => void
   ): Promise<LinearMergeResult> {
     this.assertReady();
-    return this.store.linearMerge(documents, lastMergedId);
+    return this.store.linearMerge(documents, lastMergedId, onProgress);
   }
 
   /**

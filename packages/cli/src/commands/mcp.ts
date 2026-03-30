@@ -77,7 +77,7 @@ Available Tools (6):
             .then(() => true)
             .catch(() => false);
           if (!vectorsExist) {
-            logger.error(`Repository not indexed. Run: ${chalk.yellow('dev index .')}`);
+            logger.error(`Repository not indexed. Run: ${chalk.yellow('dev index')}`);
             process.exit(1);
           }
 
@@ -214,7 +214,7 @@ Available Tools (6):
             .then(() => true)
             .catch(() => false);
           if (!vectorsExist) {
-            spinner.fail(`Repository not indexed. Run: ${chalk.yellow('dev index .')}`);
+            spinner.fail(`Repository not indexed. Run: ${chalk.yellow('dev index')}`);
             process.exit(1);
           }
 

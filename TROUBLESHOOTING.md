@@ -77,7 +77,7 @@ dev --version
 
 ## Indexing Problems
 
-### `dev index .` fails with "No source files found"
+### `dev index` fails with "No source files found"
 
 **Causes:**
 - Running in wrong directory
@@ -148,7 +148,7 @@ dev --version
 3. **Clear and rebuild:**
    ```bash
    rm -rf ~/.dev-agent/indexes/*
-   dev index .
+   dev index
    ```
 
 ### Index appears empty or outdated
@@ -156,7 +156,7 @@ dev --version
 **Solution:**
 ```bash
 # Force re-index
-dev index .
+dev index
 
 # Verify with status
 dev mcp start &
@@ -186,7 +186,7 @@ dev mcp start --verbose
 
 1. **Repository not indexed:**
    ```bash
-   dev index .
+   dev index
    ```
 
 2. **Wrong repository path:**
@@ -206,7 +206,7 @@ dev mcp start --verbose
 **Solution:**
 ```bash
 # Index the current workspace
-dev index .
+dev index
 
 # Restart Cursor
 ```
@@ -290,7 +290,7 @@ claude mcp add --env LOG_LEVEL=debug dev-agent -- dev mcp start
 
 2. **Verify repository is indexed:**
    ```bash
-   dev index .
+   dev index
    ```
 
 3. **Try different queries:**
@@ -343,7 +343,7 @@ claude mcp add --env LOG_LEVEL=debug dev-agent -- dev mcp start
 
 **Solution:**
 ```bash
-dev index .
+dev index
 ```
 
 ---
@@ -533,7 +533,7 @@ Use dev_health tool to check component status
 **Solution:**
 ```bash
 # Re-index everything
-dev index .
+dev index
 dev github index
 
 # Restart MCP server
@@ -688,7 +688,7 @@ rm -rf ~/.dev-agent/indexes/*
 
 # Re-index your repositories
 cd /path/to/your/repo
-dev index .
+dev index
 dev github index
 
 # Reinstall MCP
@@ -754,7 +754,7 @@ npm update -g dev-agent
 
 # Re-index repositories (recommended)
 cd /path/to/your/repo
-dev index .
+dev index
 dev github index
 
 # Restart AI tool
@@ -775,7 +775,7 @@ dev github index
 
 ```bash
 # Re-index after major changes
-dev index .
+dev index
 
 # Check status
 dev_status
@@ -837,7 +837,7 @@ dev_health
    ```bash
    # Only index changed files (future feature)
    # For now, full re-index is fast enough
-   dev index .
+   dev index
    ```
 
 2. **Exclude large directories:**
@@ -887,7 +887,7 @@ dev_health
 **Solution:**
 ```bash
 # Index works normally
-dev index .
+dev index
 
 # Skip GitHub indexing
 # Just use dev_search, dev_status, dev_inspect, dev_plan
@@ -939,7 +939,7 @@ The `dev_health` tool provides comprehensive diagnostics:
 
 **Vector Storage Warning:**
 ```bash
-dev index .
+dev index
 ```
 
 **GitHub Index Stale:**
@@ -972,7 +972,7 @@ du -sh ~/.dev-agent/indexes/
 
 ### Q: Can I delete the indexes?
 
-**A:** Yes, safely delete `~/.dev-agent/indexes/` anytime. Just re-run `dev index .` to rebuild.
+**A:** Yes, safely delete `~/.dev-agent/indexes/` anytime. Just re-run `dev index` to rebuild.
 
 ### Q: How often should I re-index?
 

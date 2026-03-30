@@ -185,7 +185,7 @@ export class StatusAdapter extends ToolAdapter {
       lines.push(`**Last Updated:** ${this.formatTimeAgo(snapshotAge)}`);
       lines.push('**Auto-index:** Active');
     } else {
-      lines.push('**Auto-index:** Not active — run `dev index .`');
+      lines.push('**Auto-index:** Not active — run `dev index`');
     }
     lines.push('');
 
@@ -209,7 +209,7 @@ export class StatusAdapter extends ToolAdapter {
     if (stats.totalDocuments === 0) {
       lines.push('**Status:** Not indexed');
       lines.push('');
-      lines.push('Run `dev index .` to index your repository');
+      lines.push('Run `dev index` to index your repository');
       return lines.join('\n');
     }
 
@@ -238,7 +238,7 @@ export class StatusAdapter extends ToolAdapter {
       lines.push(`- **Size:** ${this.formatBytes(stats.storageSize)}`);
     } else {
       lines.push('- **Status:** Not indexed');
-      lines.push('- Run `dev index .` to index your repository');
+      lines.push('- Run `dev index` to index your repository');
     }
 
     lines.push('');
@@ -247,7 +247,7 @@ export class StatusAdapter extends ToolAdapter {
       lines.push(`- **Last Snapshot:** ${this.formatTimeAgo(snapshotAge)}`);
       lines.push('- **Auto-index:** Active (file watcher running)');
     } else {
-      lines.push('- **Snapshot:** Not found — run `dev index .` to create');
+      lines.push('- **Snapshot:** Not found — run `dev index` to create');
     }
 
     return lines.join('\n');

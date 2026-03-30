@@ -191,7 +191,7 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Not active');
-        expect(result.data).toContain('dev index .');
+        expect(result.data).toContain('dev index');
       });
     });
 
@@ -217,7 +217,7 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Not indexed');
-        expect(result.data).toContain('dev index .');
+        expect(result.data).toContain('dev index');
       });
     });
 
@@ -254,7 +254,7 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Not found');
-        expect(result.data).toContain('dev index .');
+        expect(result.data).toContain('dev index');
       });
 
       it('should show not indexed when zero docs', async () => {

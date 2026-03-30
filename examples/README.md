@@ -10,7 +10,7 @@ npm install -g dev-agent
 
 # Index your repository (code, git history, GitHub)
 cd /path/to/your/project
-dev index .
+dev index
 
 # Install MCP for Cursor
 dev mcp install --cursor
@@ -336,7 +336,7 @@ dev_health:
 
 ```bash
 # After major changes
-dev index .
+dev index
 
 # After new issues/PRs
 dev github index
@@ -351,7 +351,7 @@ dev_health
 
 ```bash
 # Index everything
-dev index .
+dev index
 
 # Search code
 dev search "authentication" --limit 5 --threshold 0.4
@@ -408,13 +408,13 @@ dev stats --json | jq '.filesIndexed'
 dev stats
 
 # Re-index
-dev index .
+dev index
 ```
 
 ### "Repository not indexed"
 
 ```bash
-dev index .
+dev index
 dev mcp install --cursor
 # Restart Cursor
 ```

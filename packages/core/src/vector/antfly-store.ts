@@ -303,7 +303,11 @@ export class AntflyVectorStore implements VectorStore {
    * Use ONLY for full-index operations. For incremental updates, use batchUpsertAndDelete().
    * Records must be sorted lexicographically by key (handled internally).
    */
-  async linearMerge(documents: EmbeddingDocument[], lastMergedId = ''): Promise<LinearMergeResult> {
+  async linearMerge(
+    documents: EmbeddingDocument[],
+    lastMergedId = '',
+    onProgress?: (processed: number, total: number) => void
+  ): Promise<LinearMergeResult> {
     if (documents.length === 0) {
       return { upserted: 0, skipped: 0, deleted: 0 };
     }
@@ -315,6 +319,7 @@ export class AntflyVectorStore implements VectorStore {
       records[doc.id] = { text: doc.text, metadata: JSON.stringify(doc.metadata) };
     }
 
+    const total = documents.length;
     const totals: LinearMergeResult = { upserted: 0, skipped: 0, deleted: 0 };
     let cursor = lastMergedId;
 
@@ -343,6 +348,8 @@ export class AntflyVectorStore implements VectorStore {
         totals.skipped += data.skipped ?? 0;
         totals.deleted += data.deleted ?? 0;
         if (data.took) totals.took = (totals.took ?? 0) + data.took;
+
+        onProgress?.(totals.upserted + totals.skipped, total);
 
         if (data.status === 'partial' && data.next_cursor) {
           cursor = data.next_cursor;
@@ -448,7 +455,7 @@ export class AntflyVectorStore implements VectorStore {
         throw new Error(
           `Model mismatch: table "${this.cfg.table}" uses "${embeddingIndex.embedder.model}" ` +
             `but config specifies "${this.cfg.model}". ` +
-            'Run `dev index . --force` to re-index with the new model.'
+            'Run `dev index --force` to re-index with the new model.'
         );
       }
     } catch (error) {

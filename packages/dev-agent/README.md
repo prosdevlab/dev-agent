@@ -12,7 +12,7 @@ npm install -g @prosdevlab/dev-agent
 
 # Index your repository
 cd /path/to/your/repo
-dev index .
+dev index
 
 # Install MCP integration
 dev mcp install --cursor  # For Cursor IDE
@@ -65,7 +65,7 @@ When integrated with Cursor or Claude Code, you get 6 powerful tools:
 
 ```bash
 # Indexing
-dev index .                    # Index current repository
+dev index                    # Index current repository
 dev github index                   # Index GitHub issues/PRs
 
 # MCP Server Integration

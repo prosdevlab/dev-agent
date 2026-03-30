@@ -145,7 +145,7 @@ See `.claude/da-plans/README.md` for status and format details.
 # Common workflows
 pnpm install && pnpm build && pnpm test  # Full setup
 dev setup                                 # One-time: start Antfly
-dev index .                               # Index repository
+dev index                                 # Index repository
 dev mcp install                           # Install for Claude Code
 dev mcp install --cursor                  # Install for Cursor
 ```

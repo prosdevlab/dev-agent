@@ -35,7 +35,7 @@ export async function ensureAntfly(options?: { quiet?: boolean }): Promise<strin
     } else {
       if (!options?.quiet) logger.info('Starting Antfly via Docker...');
       execSync(
-        `docker run -d --name ${CONTAINER_NAME} -p ${DOCKER_PORT}:8080 --platform linux/amd64 ${DOCKER_IMAGE} swarm`,
+        `docker run -d --name ${CONTAINER_NAME} -p ${DOCKER_PORT}:8080 -m 8g --platform linux/amd64 ${DOCKER_IMAGE} swarm`,
         { stdio: 'pipe' }
       );
     }
@@ -98,6 +98,19 @@ export function hasDocker(): boolean {
   }
 }
 
+/**
+ * Get Docker's total allocated memory in bytes.
+ */
+export function getDockerMemoryBytes(): number | null {
+  try {
+    const output = execSync('docker info 2>&1', { encoding: 'utf-8', timeout: 5000 });
+    const match = output.match(/memTotal:\s*(\d+)/);
+    return match ? Number(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function hasNativeBinary(): boolean {
   try {
     execSync('antfly --version', { stdio: 'pipe', timeout: 5000 });
@@ -155,18 +168,42 @@ export function getNativeVersion(): string | null {
 }
 
 /**
- * Pull a Termite embedding model (native binary only).
+ * Pull a Termite embedding model (native binary).
  */
 export function pullModel(model: string): void {
   execSync(`antfly termite pull ${model}`, { stdio: 'inherit' });
 }
 
 /**
- * Check if a Termite model is available locally (native binary only).
+ * Pull a Termite embedding model inside the Docker container.
+ * Uses stdio: 'inherit' so Antfly's native progress output shows through.
+ */
+export function pullModelDocker(model: string): void {
+  execSync(`docker exec ${CONTAINER_NAME} /antfly termite pull ${model}`, { stdio: 'inherit' });
+}
+
+/**
+ * Check if a Termite model is available locally (native binary).
  */
 export function hasModel(model: string): boolean {
   try {
     const output = execSync('antfly termite list', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const shortName = model.split('/').pop() ?? model;
+    return output.includes(shortName);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a Termite model is available inside the Docker container.
+ */
+export function hasModelDocker(model: string): boolean {
+  try {
+    const output = execSync(`docker exec ${CONTAINER_NAME} /antfly termite list`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
