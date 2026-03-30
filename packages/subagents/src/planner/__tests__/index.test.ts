@@ -228,7 +228,7 @@ describe('PlannerAgent', () => {
       expect((response?.payload as { error?: string }).error).toBeTruthy();
     });
 
-    it('should log errors when planning fails', async () => {
+    it('should succeed with placeholder issue when GitHub fetching is removed', async () => {
       const request: PlanningRequest = {
         action: 'plan',
         issueNumber: 999,
@@ -245,9 +245,11 @@ describe('PlannerAgent', () => {
         timestamp: Date.now(),
       };
 
-      await planner.handleMessage(message);
+      const response = await planner.handleMessage(message);
 
-      expect(mockContext.logger.error).toHaveBeenCalled();
+      // With GitHub fetching removed, planning succeeds with a placeholder
+      expect(response).toBeTruthy();
+      expect(response?.type).toBe('response');
     });
   });
 

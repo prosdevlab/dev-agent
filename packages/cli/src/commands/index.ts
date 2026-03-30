@@ -1,20 +1,15 @@
-import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   AsyncEventBus,
   ensureStorageDirectory,
-  GitIndexer,
   getStorageFilePaths,
   getStoragePath,
   type IndexUpdatedEvent,
-  LocalGitExtractor,
   MetricsStore,
   RepositoryIndexer,
   updateIndexedStats,
-  VectorStorage,
 } from '@prosdevlab/dev-agent-core';
-import { GitHubIndexer } from '@prosdevlab/dev-agent-subagents';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
@@ -25,45 +20,17 @@ import { output } from '../utils/output.js';
 import { formatFinalSummary, ProgressRenderer } from '../utils/progress.js';
 
 /**
- * Check if a command is available
- */
-function isCommandAvailable(command: string): boolean {
-  try {
-    execSync(`which ${command}`, { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Check if directory is a git repository
  */
 function isGitRepository(path: string): boolean {
   return existsSync(join(path, '.git'));
 }
 
-/**
- * Check if gh CLI is authenticated
- */
-function isGhAuthenticated(): boolean {
-  try {
-    execSync('gh auth status', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export const indexCommand = new Command('index')
-  .description('Index a repository (code, git history, GitHub issues/PRs)')
+  .description('Index a repository (code)')
   .argument('[path]', 'Repository path to index', process.cwd())
   .option('-f, --force', 'Force re-index even if unchanged', false)
   .option('-v, --verbose', 'Verbose output', false)
-  .option('--no-git', 'Skip git history indexing')
-  .option('--no-github', 'Skip GitHub issues/PRs indexing')
-  .option('--git-limit <number>', 'Max git commits to index (default: 500)', Number.parseInt, 500)
-  .option('--gh-limit <number>', 'Max GitHub issues/PRs to fetch (default: 500)', Number.parseInt)
   .action(async (repositoryPath: string, options) => {
     const spinner = ora('Checking prerequisites...').start();
 
@@ -72,35 +39,14 @@ export const indexCommand = new Command('index')
 
       // Check prerequisites upfront
       const isGitRepo = isGitRepository(resolvedRepoPath);
-      const hasGhCli = isCommandAvailable('gh');
-      const ghAuthenticated = hasGhCli && isGhAuthenticated();
-
-      // Determine what we can index
-      const canIndexGit = isGitRepo && options.git !== false;
-      const canIndexGitHub = isGitRepo && hasGhCli && ghAuthenticated && options.github !== false;
 
       // Show what will be indexed (clean output without timestamps)
       spinner.stop();
       console.log('');
       console.log(chalk.bold('Indexing Plan:'));
       console.log(`  ${chalk.green('✓')} Code (always)`);
-      if (canIndexGit) {
-        console.log(`  ${chalk.green('✓')} Git history`);
-      } else if (options.git === false) {
-        console.log(`  ${chalk.gray('○')} Git history (skipped via --no-git)`);
-      } else {
-        console.log(`  ${chalk.yellow('○')} Git history (not a git repository)`);
-      }
-      if (canIndexGitHub) {
-        console.log(`  ${chalk.green('✓')} GitHub issues/PRs`);
-      } else if (options.github === false) {
-        console.log(`  ${chalk.gray('○')} GitHub (skipped via --no-github)`);
-      } else if (!isGitRepo) {
-        console.log(`  ${chalk.yellow('○')} GitHub (not a git repository)`);
-      } else if (!hasGhCli) {
-        console.log(`  ${chalk.yellow('○')} GitHub (gh CLI not installed)`);
-      } else {
-        console.log(`  ${chalk.yellow('○')} GitHub (gh not authenticated - run "gh auth login")`);
+      if (isGitRepo) {
+        console.log(`  ${chalk.gray('○')} Git history (use git CLI directly)`);
       }
       console.log('');
 
@@ -169,8 +115,6 @@ export const indexCommand = new Command('index')
       // Initialize progress renderer
       const progressRenderer = new ProgressRenderer({ verbose: options.verbose });
       const sections: string[] = ['Scanning Repository', 'Embedding Vectors'];
-      if (canIndexGit) sections.push('Git History');
-      if (canIndexGitHub) sections.push('GitHub Issues/PRs');
       progressRenderer.setSections(sections);
 
       const startTime = Date.now();
@@ -241,83 +185,6 @@ export const indexCommand = new Command('index')
         size: 0, // Calculated on-demand in `dev stats`
       });
 
-      // Index git history if available
-      let gitStats = { commitsIndexed: 0, durationMs: 0 };
-      if (canIndexGit) {
-        const gitStartTime = Date.now();
-        const gitVectorPath = `${filePaths.vectors}-git`;
-        const gitExtractor = new LocalGitExtractor(resolvedRepoPath);
-        const gitVectorStore = new VectorStorage({ storePath: gitVectorPath });
-        await gitVectorStore.initialize();
-
-        const gitIndexer = new GitIndexer({
-          extractor: gitExtractor,
-          vectorStorage: gitVectorStore,
-        });
-
-        gitStats = await gitIndexer.index({
-          limit: options.gitLimit,
-          logger: indexLogger,
-          onProgress: (progress) => {
-            if (progress.phase === 'storing' && progress.totalCommits > 0) {
-              progressRenderer.updateSectionWithRate(
-                progress.commitsProcessed,
-                progress.totalCommits,
-                'commits',
-                gitStartTime
-              );
-            }
-          },
-        });
-        await gitVectorStore.close();
-
-        const gitDuration = (Date.now() - gitStartTime) / 1000;
-        progressRenderer.completeSection(
-          `${gitStats.commitsIndexed.toLocaleString()} commits`,
-          gitDuration
-        );
-      }
-
-      // Index GitHub issues/PRs if available
-      let ghStats = { totalDocuments: 0, indexDuration: 0 };
-      if (canIndexGitHub) {
-        const ghStartTime = Date.now();
-        let ghEmbeddingStartTime = 0;
-        const ghVectorPath = `${filePaths.vectors}-github`;
-        const ghIndexer = new GitHubIndexer({
-          vectorStorePath: ghVectorPath,
-          statePath: filePaths.githubState,
-          autoUpdate: false,
-        });
-        await ghIndexer.initialize();
-
-        ghStats = await ghIndexer.index({
-          limit: options.ghLimit,
-          logger: indexLogger,
-          onProgress: (progress) => {
-            if (progress.phase === 'fetching') {
-              progressRenderer.updateSection('Fetching issues/PRs...');
-            } else if (progress.phase === 'embedding') {
-              if (ghEmbeddingStartTime === 0) {
-                ghEmbeddingStartTime = Date.now();
-              }
-              progressRenderer.updateSectionWithRate(
-                progress.documentsProcessed,
-                progress.totalDocuments,
-                'documents',
-                ghEmbeddingStartTime
-              );
-            }
-          },
-        });
-
-        const ghDuration = (Date.now() - ghStartTime) / 1000;
-        progressRenderer.completeSection(
-          `${ghStats.totalDocuments.toLocaleString()} documents`,
-          ghDuration
-        );
-      }
-
       const totalDuration = (Date.now() - startTime) / 1000;
 
       // Finalize progress display
@@ -330,8 +197,6 @@ export const indexCommand = new Command('index')
             files: stats.filesScanned,
             documents: stats.documentsIndexed,
           },
-          git: canIndexGit ? { commits: gitStats.commitsIndexed } : undefined,
-          github: canIndexGitHub ? { documents: ghStats.totalDocuments } : undefined,
           totalDuration,
         })
       );

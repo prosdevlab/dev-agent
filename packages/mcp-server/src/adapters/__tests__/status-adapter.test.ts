@@ -2,7 +2,7 @@
  * Tests for StatusAdapter
  */
 
-import type { GitHubService, StatsService } from '@prosdevlab/dev-agent-core';
+import type { StatsService } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatusAdapter } from '../built-in/status-adapter';
 import type { AdapterContext, ToolExecutionContext } from '../types';
@@ -15,42 +15,19 @@ const createMockStatsService = () => {
   } as unknown as StatsService;
 };
 
-// Mock GitHubService
-const createMockGitHubService = () => {
-  return {
-    getStats: vi.fn().mockResolvedValue({
-      repository: 'prosdevlab/dev-agent',
-      totalDocuments: 59,
-      byType: { issue: 47, pull_request: 12 },
-      byState: { open: 35, closed: 15, merged: 9 },
-      lastIndexed: '2025-11-24T10:00:00Z',
-      indexDuration: 12400,
-    }),
-    isIndexed: vi.fn().mockResolvedValue(true),
-    index: vi.fn(),
-    search: vi.fn(),
-    getContext: vi.fn(),
-    findRelated: vi.fn(),
-    shutdown: vi.fn(),
-  } as unknown as GitHubService;
-};
-
 describe('StatusAdapter', () => {
   let adapter: StatusAdapter;
   let mockStatsService: StatsService;
-  let mockGitHubService: GitHubService;
   let mockContext: AdapterContext;
   let mockExecutionContext: ToolExecutionContext;
 
   beforeEach(() => {
     mockStatsService = createMockStatsService();
-    mockGitHubService = createMockGitHubService();
 
     adapter = new StatusAdapter({
       statsService: mockStatsService,
       repositoryPath: '/test/repo',
       vectorStorePath: '/test/.dev-agent/vectors.lance',
-      githubService: mockGitHubService,
       defaultSection: 'summary',
     });
 
@@ -101,27 +78,7 @@ describe('StatusAdapter', () => {
       expect(mockContext.logger.info).toHaveBeenCalledWith('StatusAdapter initialized', {
         repositoryPath: '/test/repo',
         defaultSection: 'summary',
-        hasGitHubService: true,
       });
-    });
-
-    it('should work without GitHub service', async () => {
-      // Create adapter without GitHub service
-      const adapterWithoutGitHub = new StatusAdapter({
-        statsService: mockStatsService,
-        repositoryPath: '/test/repo',
-        vectorStorePath: '/test/.dev-agent/vectors.lance',
-        defaultSection: 'summary',
-        // githubService not provided
-      });
-
-      await adapterWithoutGitHub.initialize(mockContext);
-      expect(mockContext.logger.info).toHaveBeenCalledWith(
-        'StatusAdapter initialized',
-        expect.objectContaining({
-          hasGitHubService: false,
-        })
-      );
     });
   });
 
@@ -180,7 +137,6 @@ describe('StatusAdapter', () => {
         const result = await adapter.execute({}, mockExecutionContext);
 
         expect(result.success).toBe(true);
-        // Check content (section/format no longer in output structure)
         expect(result.data).toContain('Dev-Agent Status');
         expect(result.data).toContain('Repository:');
         expect(result.data).toContain('2341 files indexed');
@@ -206,19 +162,6 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('not indexed');
-      });
-
-      it('should include GitHub section in summary', async () => {
-        await adapter.initialize(mockContext);
-
-        const result = await adapter.execute({}, mockExecutionContext);
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('GitHub');
-        // GitHub stats may or may not be available depending on initialization
-        const content = result.data || '';
-        const hasGitHub = content.includes('GitHub');
-        expect(hasGitHub).toBe(true);
       });
     });
 
@@ -263,7 +206,6 @@ describe('StatusAdapter', () => {
         expect(result.success).toBe(true);
         expect(result.data).toContain('Vector Indexes');
         expect(result.data).toContain('Code Index');
-        expect(result.data).toContain('GitHub Index');
         expect(result.data).toContain('1234 embeddings');
       });
 
@@ -278,51 +220,17 @@ describe('StatusAdapter', () => {
         expect(result.success).toBe(true);
         expect(result.data).toContain('Code Index');
         expect(result.data).toContain('Documents:');
-        expect(result.data).toContain('GitHub Index');
-        // GitHub section should be present, may show stats or "Not indexed"
-        const content = result.data || '';
-        const hasGitHubInfo = content.includes('Not indexed') || content.includes('Documents:');
-        expect(hasGitHubInfo).toBe(true);
       });
     });
 
     describe('github section', () => {
-      it('should return GitHub status in compact format', async () => {
+      it('should return GitHub status message', async () => {
         await adapter.initialize(mockContext);
 
         const result = await adapter.execute({ section: 'github' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('GitHub Integration');
-        // May show stats or "Not indexed" depending on initialization
-      });
-
-      it('should return GitHub status in verbose format', async () => {
-        await adapter.initialize(mockContext);
-
-        const result = await adapter.execute(
-          { section: 'github', format: 'verbose' },
-          mockExecutionContext
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('GitHub Integration');
-        // May include Configuration or Not indexed message
-      });
-
-      it('should handle GitHub not indexed', async () => {
-        // Create adapter without initializing (no GitHub indexer)
-        const newAdapter = new StatusAdapter({
-          statsService: mockStatsService,
-          repositoryPath: '/test/repo',
-          vectorStorePath: '/test/.dev-agent/vectors.lance',
-        });
-
-        const result = await newAdapter.execute({ section: 'github' }, mockExecutionContext);
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('Not indexed');
-        expect(result.data).toContain('dev gh index');
       });
     });
 
@@ -332,7 +240,6 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Health Checks');
-        expect(result.data).toContain('✅');
       });
 
       it('should return health status in verbose format', async () => {
@@ -343,7 +250,6 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Health Checks');
-        // Verbose includes details
         expect(result.data.length).toBeGreaterThan(100);
       });
     });
@@ -448,13 +354,9 @@ describe('StatusAdapter', () => {
 
   describe('storage size formatting', () => {
     it('should format bytes correctly', async () => {
-      // This is tested implicitly in the status checks
-      // We can't easily test the private method directly, but we can verify
-      // the output contains formatted storage sizes
       const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
 
       expect(result.success).toBe(true);
-      // Should contain some size format (KB, MB, GB, or B)
       expect(result.data).toMatch(/\d+(\.\d+)?\s*(B|KB|MB|GB)/);
     });
   });

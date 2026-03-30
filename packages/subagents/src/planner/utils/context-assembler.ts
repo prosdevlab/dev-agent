@@ -3,21 +3,21 @@
  * Assembles rich context packages for LLM consumption
  *
  * Philosophy: Provide raw, structured context - let the LLM do the reasoning
+ *
+ * Note: GitHub issue fetching was removed in Phase 2. Use GitHub's own MCP
+ * server or the gh CLI for issue context.
  */
 
-import type { GitIndexer, RepositoryIndexer } from '@prosdevlab/dev-agent-core';
+import type { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import type {
   CodebasePatterns,
   ContextAssemblyOptions,
   ContextMetadata,
   ContextPackage,
   IssueContext,
-  RelatedCommit,
   RelatedHistory,
   RelevantCodeContext,
 } from '../context-types';
-import type { GitHubIssue } from '../types';
-import { fetchGitHubIssue } from './github';
 
 /** Default options for context assembly */
 const DEFAULT_OPTIONS: Required<ContextAssemblyOptions> = {
@@ -32,11 +32,10 @@ const DEFAULT_OPTIONS: Required<ContextAssemblyOptions> = {
 };
 
 /**
- * Context for assembly including optional git indexer
+ * Context for assembly
  */
 export interface ContextAssemblyContext {
   indexer: RepositoryIndexer | null;
-  gitIndexer?: GitIndexer | null;
 }
 
 /**
@@ -56,10 +55,10 @@ export async function assembleContext(
 ): Promise<ContextPackage>;
 
 /**
- * Assemble a context package with git history support
+ * Assemble a context package with context object
  *
  * @param issueNumber - GitHub issue number
- * @param context - Context with indexer and optional git indexer
+ * @param context - Context with indexer
  * @param repositoryPath - Path to repository
  * @param options - Assembly options
  * @returns Complete context package
@@ -85,50 +84,45 @@ export async function assembleContext(
       ? indexerOrContext
       : { indexer: indexerOrContext as RepositoryIndexer | null };
 
-  // 1. Fetch issue with comments
-  const issue = await fetchGitHubIssue(issueNumber, repositoryPath, { includeComments: true });
-  const issueContext = convertToIssueContext(issue);
+  // GitHub issue fetching removed in Phase 2 — use GitHub MCP server
+  // or gh CLI for issue context. Create a placeholder issue context.
+  const issueContext: IssueContext = {
+    number: issueNumber,
+    title: `Issue #${issueNumber}`,
+    body: '',
+    labels: [],
+    author: 'unknown',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    state: 'open',
+    comments: [],
+  };
 
-  // 2. Search for relevant code
+  // Search for relevant code
   let relevantCode: RelevantCodeContext[] = [];
   if (opts.includeCode && context.indexer) {
-    relevantCode = await findRelevantCode(issue, context.indexer, opts.maxCodeResults);
+    relevantCode = await findRelevantCode(issueContext, context.indexer, opts.maxCodeResults);
   }
 
-  // 3. Detect codebase patterns
+  // Detect codebase patterns
   let codebasePatterns: CodebasePatterns = {};
   if (opts.includePatterns && context.indexer) {
     codebasePatterns = await detectCodebasePatterns(context.indexer);
   }
 
-  // 4. Find related history (TODO: implement when GitHub indexer is available)
+  // Related history (no longer fetched)
   const relatedHistory: RelatedHistory[] = [];
-  // if (opts.includeHistory && githubIndexer) {
-  //   relatedHistory = await findRelatedHistory(issue, githubIndexer, opts.maxHistoryResults);
-  // }
 
-  // 5. Find related git commits
-  let relatedCommits: RelatedCommit[] = [];
-  if (opts.includeGitHistory && context.gitIndexer) {
-    relatedCommits = await findRelatedCommits(issue, context.gitIndexer, opts.maxGitCommitResults);
-  }
+  // Calculate approximate token count
+  const tokensUsed = estimateTokens(issueContext, relevantCode, codebasePatterns, relatedHistory);
 
-  // 6. Calculate approximate token count
-  const tokensUsed = estimateTokens(
-    issueContext,
-    relevantCode,
-    codebasePatterns,
-    relatedHistory,
-    relatedCommits
-  );
-
-  // 7. Assemble metadata
+  // Assemble metadata
   const metadata: ContextMetadata = {
     generatedAt: new Date().toISOString(),
     tokensUsed,
     codeSearchUsed: opts.includeCode && context.indexer !== null,
-    historySearchUsed: opts.includeHistory && relatedHistory.length > 0,
-    gitHistorySearchUsed: opts.includeGitHistory && relatedCommits.length > 0,
+    historySearchUsed: false,
+    gitHistorySearchUsed: false,
     repositoryPath,
   };
 
@@ -137,29 +131,8 @@ export async function assembleContext(
     relevantCode,
     codebasePatterns,
     relatedHistory,
-    relatedCommits,
+    relatedCommits: [],
     metadata,
-  };
-}
-
-/**
- * Convert GitHubIssue to IssueContext
- */
-function convertToIssueContext(issue: GitHubIssue): IssueContext {
-  return {
-    number: issue.number,
-    title: issue.title,
-    body: issue.body || '',
-    labels: issue.labels,
-    author: issue.author || 'unknown',
-    createdAt: issue.createdAt,
-    updatedAt: issue.updatedAt,
-    state: issue.state,
-    comments: (issue.comments || []).map((c) => ({
-      author: c.author || 'unknown',
-      body: c.body || '',
-      createdAt: c.createdAt || new Date().toISOString(),
-    })),
   };
 }
 
@@ -167,7 +140,7 @@ function convertToIssueContext(issue: GitHubIssue): IssueContext {
  * Find relevant code using semantic search
  */
 async function findRelevantCode(
-  issue: GitHubIssue,
+  issue: IssueContext,
   indexer: RepositoryIndexer,
   maxResults: number
 ): Promise<RelevantCodeContext[]> {
@@ -197,7 +170,7 @@ async function findRelevantCode(
 /**
  * Build a search query from issue content
  */
-function buildSearchQuery(issue: GitHubIssue): string {
+function buildSearchQuery(issue: IssueContext): string {
   // Combine title and first part of body for search
   const bodyPreview = (issue.body || '').slice(0, 500);
 
@@ -217,7 +190,7 @@ function buildSearchQuery(issue: GitHubIssue): string {
 /**
  * Infer why a code result is relevant
  */
-function inferRelevanceReason(metadata: Record<string, unknown>, issue: GitHubIssue): string {
+function inferRelevanceReason(metadata: Record<string, unknown>, issue: IssueContext): string {
   const name = (metadata.name as string) || '';
   const type = (metadata.type as string) || '';
   const title = issue.title.toLowerCase();
@@ -240,36 +213,6 @@ function inferRelevanceReason(metadata: Record<string, unknown>, issue: GitHubIs
   }
 
   return `Semantic similarity`;
-}
-
-/**
- * Find related git commits using semantic search
- */
-async function findRelatedCommits(
-  issue: GitHubIssue,
-  gitIndexer: GitIndexer,
-  maxResults: number
-): Promise<RelatedCommit[]> {
-  // Build search query from issue title and body
-  const searchQuery = buildSearchQuery(issue);
-
-  try {
-    const commits = await gitIndexer.search(searchQuery, { limit: maxResults });
-
-    return commits.map((commit, index) => ({
-      hash: commit.shortHash,
-      subject: commit.subject,
-      author: commit.author.name,
-      date: commit.author.date, // Already an ISO string
-      filesChanged: commit.files.map((f) => f.path),
-      issueRefs: commit.refs.issueRefs,
-      // Decay relevance score by position
-      relevanceScore: Math.max(0.5, 1 - index * 0.1),
-    }));
-  } catch {
-    // Return empty array if search fails
-    return [];
-  }
 }
 
 /**
@@ -317,8 +260,7 @@ function estimateTokens(
   issue: IssueContext,
   code: RelevantCodeContext[],
   patterns: CodebasePatterns,
-  history: RelatedHistory[],
-  commits: RelatedCommit[]
+  history: RelatedHistory[]
 ): number {
   // Rough estimation: ~4 chars per token
   let chars = 0;
@@ -339,12 +281,6 @@ function estimateTokens(
 
   // History
   chars += history.reduce((sum, h) => sum + h.title.length + (h.summary?.length || 0), 0);
-
-  // Git commits
-  chars += commits.reduce(
-    (sum, c) => sum + c.subject.length + c.author.length + c.filesChanged.join('').length,
-    0
-  );
 
   return Math.ceil(chars / 4);
 }

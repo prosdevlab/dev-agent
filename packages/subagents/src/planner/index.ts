@@ -1,6 +1,9 @@
 /**
  * Planner Subagent = Strategic Planner
  * Analyzes GitHub issues and creates actionable development plans
+ *
+ * Note: GitHub issue fetching was removed in Phase 2. Use GitHub's own MCP
+ * server or the gh CLI for issue context.
  */
 
 import { validatePlanningRequest } from '../schemas/messages.js';
@@ -82,6 +85,10 @@ export class PlannerAgent implements Agent {
 
   /**
    * Create a development plan from a GitHub issue
+   *
+   * Note: GitHub issue fetching was removed in Phase 2. The planner now
+   * creates a placeholder issue context and focuses on code-context-only
+   * planning. Use GitHub's own MCP server or gh CLI for issue details.
    */
   private async createPlan(request: PlanningRequest): Promise<PlanningResult> {
     if (!this.context) {
@@ -100,7 +107,6 @@ export class PlannerAgent implements Agent {
 
     // Import utilities
     const {
-      fetchGitHubIssue,
       extractAcceptanceCriteria,
       extractTechnicalRequirements,
       inferPriority,
@@ -110,8 +116,18 @@ export class PlannerAgent implements Agent {
       calculateTotalEstimate,
     } = await import('./utils/index.js');
 
-    // 1. Fetch GitHub issue
-    const issue = await fetchGitHubIssue(request.issueNumber);
+    // GitHub issue fetching removed in Phase 2 — use GitHub MCP server
+    // or gh CLI for issue context. Create a placeholder.
+    const issue = {
+      number: request.issueNumber,
+      title: `Issue #${request.issueNumber}`,
+      body: '',
+      state: 'open' as const,
+      labels: [] as string[],
+      assignees: [] as string[],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
     // 2. Parse issue content
     const acceptanceCriteria = extractAcceptanceCriteria(issue.body);
@@ -203,7 +219,6 @@ export class PlannerAgent implements Agent {
 
   async healthCheck(): Promise<boolean> {
     // Planner is healthy if it's initialized
-    // Could check for gh CLI availability
     return this.context !== undefined;
   }
 

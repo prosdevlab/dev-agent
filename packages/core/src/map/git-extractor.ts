@@ -16,7 +16,7 @@ import type {
   GitPerson,
   GitRefs,
   GitRepositoryInfo,
-} from './types';
+} from './git-types';
 
 /**
  * Abstract interface for git data extraction.

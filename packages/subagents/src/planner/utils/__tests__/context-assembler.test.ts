@@ -2,36 +2,9 @@ import type { RepositoryIndexer, SearchResult } from '@prosdevlab/dev-agent-core
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContextPackage } from '../../context-types';
 
-// Mock execSync from child_process to avoid actual shell commands
-const mockExecSync = vi.hoisted(() => vi.fn());
-
-vi.mock('node:child_process', () => ({
-  execSync: mockExecSync,
-}));
-
-// Now we can safely import the modules
 import { assembleContext, formatContextPackage } from '../context-assembler';
 
 describe('Context Assembler', () => {
-  const mockIssue = {
-    number: 42,
-    title: 'Add user authentication',
-    body: 'We need to add JWT-based authentication to the API.\n\n## Acceptance Criteria\n- Login endpoint\n- Logout endpoint',
-    state: 'open' as const,
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-02T00:00:00Z',
-    labels: ['feature', 'security'],
-    assignees: [],
-    author: 'testuser',
-    comments: [
-      {
-        author: 'reviewer',
-        body: 'Consider using refresh tokens too',
-        createdAt: '2025-01-01T12:00:00Z',
-      },
-    ],
-  };
-
   const mockSearchResults: SearchResult[] = [
     {
       id: '1',
@@ -69,46 +42,15 @@ describe('Context Assembler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Mock execSync to return appropriate responses
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd === 'gh --version') {
-        return Buffer.from('gh version 2.0.0');
-      }
-      if (cmd.toString().includes('gh issue view')) {
-        // Return mock issue data as JSON
-        return Buffer.from(
-          JSON.stringify({
-            number: mockIssue.number,
-            title: mockIssue.title,
-            body: mockIssue.body,
-            state: mockIssue.state,
-            createdAt: mockIssue.createdAt,
-            updatedAt: mockIssue.updatedAt,
-            labels: mockIssue.labels.map((name) => ({ name })),
-            assignees: mockIssue.assignees.map((login) => ({ login })),
-            author: { login: mockIssue.author },
-            comments: mockIssue.comments.map((c) => ({
-              author: { login: c.author },
-              body: c.body,
-              createdAt: c.createdAt,
-            })),
-          })
-        );
-      }
-      return Buffer.from('');
-    });
   });
 
   describe('assembleContext', () => {
-    it('should assemble a complete context package', async () => {
+    it('should assemble a context package with placeholder issue', async () => {
       const result = await assembleContext(42, mockIndexer, '/repo');
 
+      // GitHub issue fetching removed -- placeholder issue is created
       expect(result.issue.number).toBe(42);
-      expect(result.issue.title).toBe('Add user authentication');
-      expect(result.issue.author).toBe('testuser');
-      expect(result.issue.labels).toEqual(['feature', 'security']);
-      expect(result.issue.comments).toHaveLength(1);
+      expect(result.issue.title).toBe('Issue #42');
     });
 
     it('should include relevant code from search', async () => {
@@ -123,7 +65,7 @@ describe('Context Assembler', () => {
     it('should skip code search when includeCode is false', async () => {
       const result = await assembleContext(42, mockIndexer, '/repo', {
         includeCode: false,
-        includePatterns: false, // Also disable patterns to avoid any search calls
+        includePatterns: false,
       });
 
       expect(result.relevantCode).toHaveLength(0);
@@ -149,7 +91,6 @@ describe('Context Assembler', () => {
     });
 
     it('should detect codebase patterns', async () => {
-      // Mock search to return test files
       const testIndexer = {
         search: vi.fn().mockResolvedValue([
           {
@@ -194,49 +135,15 @@ describe('Context Assembler', () => {
 
       const result = await assembleContext(42, errorIndexer, '/repo');
 
-      // Should not throw, just return empty code
       expect(result.relevantCode).toHaveLength(0);
     });
 
-    it('should infer relevance reasons correctly', async () => {
-      // Mock issue with title matching a function name
-      const customIssue = {
-        ...mockIssue,
-        title: 'Fix verifyToken function',
-      };
-
-      // Clear previous mock and set up new one for this test
-      vi.clearAllMocks();
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd === 'gh --version') {
-          return Buffer.from('gh version 2.0.0');
-        }
-        if (cmd.toString().includes('gh issue view')) {
-          return Buffer.from(
-            JSON.stringify({
-              number: customIssue.number,
-              title: customIssue.title,
-              body: customIssue.body,
-              state: customIssue.state,
-              createdAt: customIssue.createdAt,
-              updatedAt: customIssue.updatedAt,
-              labels: customIssue.labels.map((name) => ({ name })),
-              assignees: customIssue.assignees.map((login) => ({ login })),
-              author: { login: customIssue.author },
-              comments: customIssue.comments.map((c) => ({
-                author: { login: c.author },
-                body: c.body,
-                createdAt: c.createdAt,
-              })),
-            })
-          );
-        }
-        return Buffer.from('');
-      });
-
+    it('should return empty related commits and history', async () => {
       const result = await assembleContext(42, mockIndexer, '/repo');
 
-      expect(result.relevantCode[0].reason).toBe('Name matches issue title');
+      expect(result.relatedCommits).toHaveLength(0);
+      expect(result.relatedHistory).toHaveLength(0);
+      expect(result.metadata.gitHistorySearchUsed).toBe(false);
     });
   });
 
@@ -469,80 +376,6 @@ describe('Context Assembler', () => {
       const output = formatContextPackage(contextWithManyFiles);
 
       expect(output).toContain('+2 more');
-    });
-  });
-
-  describe('Git History Integration', () => {
-    const mockGitIndexer = {
-      search: vi.fn().mockResolvedValue([
-        {
-          shortHash: 'abc123',
-          subject: 'feat: add JWT auth',
-          author: { name: 'developer', date: new Date('2025-01-15') },
-          files: [{ path: 'src/auth.ts' }],
-          refs: { issueRefs: [42] },
-        },
-        {
-          shortHash: 'def456',
-          subject: 'fix: token validation',
-          author: { name: 'developer', date: new Date('2025-01-14') },
-          files: [{ path: 'src/auth.ts' }, { path: 'src/utils.ts' }],
-          refs: { issueRefs: [] },
-        },
-      ]),
-    };
-
-    it('should include related commits when git indexer is provided', async () => {
-      const result = await assembleContext(
-        42,
-        { indexer: mockIndexer, gitIndexer: mockGitIndexer as any },
-        '/repo',
-        { includeGitHistory: true }
-      );
-
-      expect(result.relatedCommits).toHaveLength(2);
-      expect(result.relatedCommits[0].hash).toBe('abc123');
-      expect(result.relatedCommits[0].subject).toBe('feat: add JWT auth');
-      expect(result.metadata.gitHistorySearchUsed).toBe(true);
-    });
-
-    it('should skip git history when includeGitHistory is false', async () => {
-      const result = await assembleContext(
-        42,
-        { indexer: mockIndexer, gitIndexer: mockGitIndexer as any },
-        '/repo',
-        { includeGitHistory: false }
-      );
-
-      expect(result.relatedCommits).toHaveLength(0);
-      expect(mockGitIndexer.search).not.toHaveBeenCalled();
-    });
-
-    it('should skip git history when git indexer is null', async () => {
-      const result = await assembleContext(
-        42,
-        { indexer: mockIndexer, gitIndexer: null },
-        '/repo',
-        { includeGitHistory: true }
-      );
-
-      expect(result.relatedCommits).toHaveLength(0);
-      expect(result.metadata.gitHistorySearchUsed).toBe(false);
-    });
-
-    it('should handle git search errors gracefully', async () => {
-      const errorGitIndexer = {
-        search: vi.fn().mockRejectedValue(new Error('Git search failed')),
-      };
-
-      const result = await assembleContext(
-        42,
-        { indexer: mockIndexer, gitIndexer: errorGitIndexer as any },
-        '/repo',
-        { includeGitHistory: true }
-      );
-
-      expect(result.relatedCommits).toHaveLength(0);
     });
   });
 });
