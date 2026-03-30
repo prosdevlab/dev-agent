@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.8.5',
-  title: 'Enhanced Pattern Analysis & Performance',
-  date: 'December 14, 2025',
+  version: '0.9.0',
+  title: 'Antfly Hybrid Search',
+  date: 'March 29, 2026',
   summary:
-    'Refactored dev_inspect with 5-10x faster pattern analysis, comprehensive code comparison across 5 pattern categories, and improved semantic search accuracy.',
-  link: '/updates#v085--enhanced-pattern-analysis--performance',
+    'Replaced LanceDB with Antfly — dev_search now uses hybrid search (BM25 + vector + RRF). New `dev setup` command handles backend installation.',
+  link: '/updates#v090--antfly-hybrid-search',
 } as const;

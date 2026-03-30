@@ -134,24 +134,24 @@ flowchart LR
     subgraph IDE["Your AI Tool"]
         A["Cursor / Claude Code"]
     end
-    
+
     subgraph Agent["dev-agent"]
         B["MCP Server"]
         C["9 Tools"]
     end
-    
-    subgraph Local["Local Storage"]
-        D["Vector DB"]
-        E["Embeddings"]
+
+    subgraph Local["Antfly (local)"]
+        D["Hybrid Search"]
+        E["BM25 + Vector + RRF"]
     end
-    
+
     A <-->|"MCP Protocol"| B
     B --> C
     C <--> D
     D <--> E
 ```
 
-**Key insight:** dev-agent returns **code snippets with context** — Claude doesn't read entire files. This is why input tokens drop by 99%.
+**Key insight:** dev-agent returns **code snippets with context** using hybrid search (keyword matching + semantic understanding) — Claude doesn't read entire files. This is why input tokens drop by 99%.
 
 ## Quick Start
 
