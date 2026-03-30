@@ -50,31 +50,32 @@ Personal tool combining deep code intelligence with specialized AI subagents. CL
 
 **Trade-off:** More complexity, but gets us real multi-language support.
 
-### Why @xenova/transformers?
+### Why Antfly Termite (ONNX)?
 
 **Problem:** Need embeddings, but want local-first.
 
 **Options considered:**
 - TensorFlow.js: Older, limited models
 - OpenAI API: Best quality but requires API key
-- @xenova/transformers: Modern, all-MiniLM-L6-v2
+- @xenova/transformers: Predecessor, now superseded
+- Antfly Termite: Local ONNX inference, BAAI/bge-small-en-v1.5
 
-**Choice:** @xenova/transformers
+**Choice:** Antfly Termite (ONNX)
 - Local (no API keys)
-- Good quality (384 dims)
-- Active development
+- Good quality (384 dims, BAAI/bge-small-en-v1.5)
+- Integrated with Antfly search backend
 
-### Why LanceDB?
+### Why Antfly?
 
-**Problem:** Need vector storage without running a server.
+**Problem:** Need vector storage and hybrid search without running a separate server.
 
 **Options considered:**
 - ChromaDB: Requires server process
 - FAISS: Python-focused
-- In-memory: Doesn't persist
-- LanceDB: Embedded, TypeScript-native
+- LanceDB: Embedded but vector-only (no BM25)
+- Antfly: Local hybrid search (BM25 + vector + RRF)
 
-**Choice:** LanceDB (embedded, no server)
+**Choice:** Antfly (local hybrid search)
 
 ### Why CLI-first?
 
@@ -143,8 +144,8 @@ interface VectorStore {
 ```
 
 **Why pluggable?** Technology changes fast. Easy to swap:
-- Embedders: transformers → OpenAI → Ollama
-- Stores: LanceDB → ChromaDB → in-memory (testing)
+- Embedders: Antfly Termite → OpenAI → Ollama
+- Stores: Antfly → ChromaDB → in-memory (testing)
 
 ### Repository Indexer (Issue #12)
 
@@ -238,8 +239,8 @@ dev-agent search "query" --json    # JSON output
 - tree-sitter (multi-language parsing)
 - ts-morph (TypeScript analysis)
 - remark (Markdown)
-- @xenova/transformers (embeddings)
-- LanceDB (vector storage)
+- Antfly Termite (ONNX embeddings, BAAI/bge-small-en-v1.5)
+- Antfly (hybrid search: BM25 + vector + RRF)
 - GitHub CLI (GitHub operations)
 
 ### CLI
@@ -264,8 +265,8 @@ dev-agent search "query" --json    # JSON output
    - Scanner registry
 
 2. **Issue #4: Vector Storage** (2 weeks)
-   - TransformersEmbedder (all-MiniLM-L6-v2)
-   - LanceDBVectorStore
+   - TermiteEmbedder (BAAI/bge-small-en-v1.5)
+   - AntflyVectorStore
    - InMemoryVectorStore (testing)
 
 3. **Issue #12: Indexer** (2 weeks)
@@ -323,9 +324,9 @@ dev-agent search "query" --json    # JSON output
 
 ```json
 {
-  "embedder": "transformers",
+  "embedder": "termite",
   "vectorStore": {
-    "type": "lancedb",
+    "type": "antfly",
     "path": ".dev-agent/vectors"
   },
   "exclude": [
@@ -343,7 +344,7 @@ dev-agent search "query" --json    # JSON output
 ```
 .dev-agent/
 ├── config.json           # User configuration
-├── vectors/              # LanceDB storage
+├── vectors/              # Antfly storage
 ├── cache/                # Model cache
 └── logs/                 # Debug logs
 ```

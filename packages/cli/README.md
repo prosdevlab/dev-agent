@@ -52,19 +52,11 @@ Options:
 
 ### Explore
 
-Explore code patterns and relationships:
+Find code similar to a file:
 
 ```bash
-# Find patterns using semantic search
-dev explore pattern "error handling" --limit 5
-
-# Find code similar to a file
-dev explore similar path/to/file.ts --limit 5
+dev search --similar-to path/to/file.ts
 ```
-
-Options:
-- `-l, --limit <number>` - Maximum results (default: 10)
-- `-t, --threshold <number>` - Minimum similarity score (default: 0.7)
 
 ### Update
 
@@ -106,8 +98,8 @@ The `.dev-agent.json` file configures the indexer:
 ```json
 {
   "repositoryPath": "/path/to/repo",
-  "vectorStorePath": ".dev-agent/vectors.lance",
-  "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+  "vectorStorePath": ".dev-agent/vectors",
+  "embeddingModel": "BAAI/bge-small-en-v1.5",
   "dimension": 384,
   "excludePatterns": [
     "**/node_modules/**",
@@ -170,19 +162,9 @@ dev search "RepositoryIndexer" --threshold 0.4
 
 ```bash
 # Find patterns in your codebase
-dev explore pattern "test coverage utilities" --threshold 0.25
-
-# Results:
-# 1. Coverage Targets (56.0% match)
-# 2. 100% Coverage on Utilities (50.8% match)
-# 3. Testing (42.3% match)
-
-# Discover error handling patterns
-dev explore pattern "error handling" --threshold 0.3
-
-# Results:
-# 1. Handle Errors Gracefully (39.3% match)
-# 2. createErrorResponse (35.9% match)
+dev search "test coverage utilities"
+dev search "error handling" --verbose
+dev search --similar-to src/utils/retry.ts
 ```
 
 ### Pro Tips

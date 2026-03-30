@@ -22,20 +22,11 @@ dev index /path/to/repo
 ```
 
 **What gets indexed:**
-- ✅ Code (always)
-- ✅ Git history (if in a git repo)
-- ✅ GitHub issues/PRs (if gh CLI installed and authenticated)
-
-Shows an upfront "indexing plan" before starting.
-
 **Options:**
 | Flag | Description |
 |------|-------------|
 | `-f, --force` | Force re-index even if unchanged |
 | `-v, --verbose` | Show verbose output |
-| `--no-git` | Skip git history indexing |
-| `--no-github` | Skip GitHub issues/PRs indexing |
-| `--git-limit <n>` | Max git commits to index (default: 500) |
 
 ### `dev search`
 
@@ -43,133 +34,17 @@ Search your indexed code semantically.
 
 ```bash
 dev search "authentication logic"
-dev search "error handling" --limit 5 --threshold 0.4
+dev search "error handling" --verbose
+dev search --similar-to src/auth.ts        # Find similar code
 ```
 
 **Options:**
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-l, --limit <n>` | Maximum results | 10 |
-| `-t, --threshold <n>` | Minimum similarity (0-1) | 0.7 |
+| `-s, --similar-to <file>` | Find code similar to a file | — |
+| `-v, --verbose` | Show detailed results | false |
 | `--json` | Output as JSON | false |
-
-**Threshold Guide:**
-- `0.7+` — Precise matches only
-- `0.4-0.6` — Balanced (good for most searches)
-- `0.25-0.3` — Exploratory (finds related concepts)
-
-### `dev explore`
-
-Explore code patterns and relationships.
-
-```bash
-# Find patterns semantically
-dev explore pattern "error handling" --limit 5
-
-# Find code similar to a file
-dev explore similar path/to/file.ts
-```
-
-**Options:**
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-l, --limit <n>` | Maximum results | 10 |
-| `-t, --threshold <n>` | Minimum similarity | 0.7 |
-
-### `dev plan`
-
-Assemble context for implementing a GitHub issue.
-
-```bash
-dev plan 42
-dev plan 42 --include-comments --include-history
-```
-
-**Options:**
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--include-comments` | Include issue comments | true |
-| `--include-history` | Include related PRs/issues | true |
-| `--token-budget <n>` | Max tokens for output | 4000 |
-
-### `dev gh`
-
-Index and search GitHub issues/PRs.
-
-```bash
-# Index GitHub metadata (also done by dev index)
-dev github index
-
-# Search issues/PRs
-dev github search "authentication bug"
-
-# Get context for an issue
-dev github context --issue 42
-```
-
-### `dev git`
-
-Index and search git commit history.
-
-```bash
-# Index git history (also done by dev index)
-dev git index
-dev git index --limit 1000 --since "6 months ago"
-
-# Semantic search over commits
-dev git search "authentication fix"
-dev git search "bug fix" --limit 5
-
-# Show indexed commit stats
-dev git stats
-```
-
-**Subcommands:**
-| Command | Description |
-|---------|-------------|
-| `dev git index` | Index git commit history |
-| `dev git search <query>` | Semantic search over commits |
-| `dev git stats` | Show indexed commit count |
-
-**Index Options:**
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--limit <n>` | Max commits to index | 500 |
-| `--since <date>` | Only index commits after date | - |
-
-**Search Options:**
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--limit <n>` | Max results | 10 |
-| `--json` | Output as JSON | false |
-
-### `dev update`
-
-Incrementally update the index with changed files. Much faster than full indexing - typically completes in seconds.
-
-```bash
-dev update
-dev update -v  # Show what files changed
-```
-
-**Options:**
-| Flag | Description |
-|------|-------------|
-| `-v, --verbose` | Show verbose output and which files changed |
-
-### `dev stats`
-
-Show indexing statistics.
-
-```bash
-dev stats
-dev stats --json
-```
-
-**Options:**
-| Flag | Description |
-|------|-------------|
-| `--json` | Output as JSON |
 
 ### `dev clean`
 
@@ -268,8 +143,8 @@ The `.dev-agent.json` file configures the indexer:
 ```json
 {
   "repositoryPath": "/path/to/repo",
-  "vectorStorePath": ".dev-agent/vectors.lance",
-  "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+  "vectorStorePath": ".dev-agent/vectors",
+  "embeddingModel": "BAAI/bge-small-en-v1.5",
   "dimension": 384,
   "excludePatterns": [
     "**/node_modules/**",
@@ -293,11 +168,8 @@ dev index
 # Search for code
 dev search "user authentication"
 
-# Search git history
-dev git search "authentication fix"
-
-# View statistics
-dev stats
+# Explore code patterns
+dev explore pattern "error handling"
 ```
 
 ### Integration with Cursor
@@ -317,18 +189,15 @@ dev mcp install --cursor
 ```bash
 # Get file paths from search
 dev search "coordinator" --json | jq '.[].metadata.path' | sort -u
-
-# Check if indexed
-dev stats --json | jq '.filesIndexed'
 ```
 
 ### Exploratory Search
 
 ```bash
 # Lower threshold for broader matches
-dev search "architectural patterns" --threshold 0.25 --limit 10
+dev search "architectural patterns" --limit 10
 
 # Find similar code
-dev explore similar src/utils/retry.ts --threshold 0.3
+dev search --similar-to src/utils/retry.ts
 ```
 

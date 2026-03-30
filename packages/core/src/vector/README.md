@@ -1,13 +1,13 @@
 # Vector Storage System
 
-Local-first semantic search powered by **LanceDB** and **Transformers.js**.
+Local-first semantic search powered by **Antfly** and **Antfly Termite (ONNX)**.
 
 ## Overview
 
 The vector storage system provides semantic search capabilities for code and documentation. It combines:
 
-- **LanceDB**: Embedded vector database with efficient columnar storage
-- **Transformers.js**: Local ML model (all-MiniLM-L6-v2) for generating embeddings
+- **Antfly**: Hybrid search backend with BM25 + vector search and RRF fusion
+- **Antfly Termite (ONNX)**: Local ML model (BAAI/bge-small-en-v1.5) for generating embeddings
 - **Zero configuration**: No API keys, servers, or external dependencies
 - **Offline-capable**: Models cached locally after first download
 
@@ -23,18 +23,18 @@ The vector storage system provides semantic search capabilities for code and doc
         │                           │
         ▼                           ▼
 ┌───────────────────┐      ┌──────────────────┐
-│ TransformersEmbedder│      │ LanceDBVectorStore│
-│  - all-MiniLM-L6-v2 │      │  - Vector search  │
-│  - 384 dimensions   │      │  - Metadata       │
-│  - Local inference  │      │  - Persistence    │
+│ TermiteEmbedder   │      │ AntflyVectorStore │
+│  - bge-small-en    │      │  - Hybrid search  │
+│  - 384 dimensions  │      │  - BM25 + vector  │
+│  - Local inference │      │  - Persistence    │
 └───────────────────┘      └──────────────────┘
 ```
 
 ### Key Components
 
 1. **VectorStorage** - Main interface for semantic search
-2. **TransformersEmbedder** - Converts text to 384-dim vectors
-3. **LanceDBVectorStore** - Stores and searches vectors efficiently
+2. **TermiteEmbedder** - Converts text to 384-dim vectors via Antfly Termite (ONNX)
+3. **AntflyVectorStore** - Stores and searches vectors via Antfly hybrid search
 
 ## Usage Examples
 
@@ -43,9 +43,9 @@ The vector storage system provides semantic search capabilities for code and doc
 ```typescript
 import { VectorStorage } from '@prosdevlab/dev-agent-core';
 
-// Initialize with default settings (all-MiniLM-L6-v2, 384 dimensions)
+// Initialize with default settings (BAAI/bge-small-en-v1.5, 384 dimensions)
 const storage = new VectorStorage({
-  storePath: './vector-data/my-project.lance',
+  storePath: './vector-data/my-project',
 });
 
 await storage.initialize();
@@ -217,7 +217,7 @@ const documents = scanResult.documents.map((doc) => ({
 
 // 3. Initialize vector storage
 const storage = new VectorStorage({
-  storePath: './vector-data/my-repo.lance',
+  storePath: './vector-data/my-repo',
 });
 await storage.initialize();
 
@@ -255,16 +255,16 @@ await storage.close();
 
 ### Comparison to Alternatives
 
-| Feature | Our Approach (LanceDB) | Hash-based (claude-flow) |
+| Feature | Our Approach (Antfly) | Hash-based (claude-flow) |
 |---------|------------------------|--------------------------|
-| **Search Type** | Semantic similarity | Lexical pattern matching |
+| **Search Type** | Hybrid (BM25 + vector + RRF) | Lexical pattern matching |
 | **Query Time** | ~10-20ms | <1ms |
 | **Quality** | Finds conceptually similar code | Requires lexical overlap |
-| **Setup** | Download 50MB model once | Zero setup |
+| **Setup** | `dev setup` (one-time) | Zero setup |
 | **Use Case** | Code intelligence, RAG | Pattern cache, exact match |
-| **Offline** | ✅ Full offline after download | ✅ Always offline |
+| **Offline** | ✅ Full offline after setup | ✅ Always offline |
 
-**Why LanceDB for Code Intelligence?**
+**Why Antfly for Code Intelligence?**
 
 ```typescript
 // Semantic search finds these as related even with different words:
@@ -298,7 +298,7 @@ class VectorStorage {
   // Get document by ID
   getDocument(id: string): Promise<EmbeddingDocument | null>
   
-  // Delete documents (not yet implemented for LanceDB)
+  // Delete documents
   deleteDocuments(ids: string[]): Promise<void>
   
   // Get statistics
@@ -313,8 +313,8 @@ class VectorStorage {
 
 ```typescript
 interface VectorStorageConfig {
-  storePath: string;           // Path to LanceDB store
-  embeddingModel?: string;     // Default: 'Xenova/all-MiniLM-L6-v2'
+  storePath: string;           // Path to Antfly store
+  embeddingModel?: string;     // Default: 'BAAI/bge-small-en-v1.5'
   dimension?: number;          // Default: 384
 }
 
@@ -348,8 +348,8 @@ interface VectorStats {
 
 ```typescript
 const storage = new VectorStorage({
-  storePath: './data.lance',
-  embeddingModel: 'Xenova/all-MiniLM-L12-v2', // Larger model
+  storePath: './data',
+  embeddingModel: 'BAAI/bge-small-en-v1.5',
   dimension: 384,
 });
 ```
@@ -359,10 +359,10 @@ const storage = new VectorStorage({
 For more control, use the components directly:
 
 ```typescript
-import { TransformersEmbedder, LanceDBVectorStore } from '@prosdevlab/dev-agent-core';
+import { TermiteEmbedder, AntflyVectorStore } from '@prosdevlab/dev-agent-core';
 
 // 1. Create embedder
-const embedder = new TransformersEmbedder();
+const embedder = new TermiteEmbedder();
 await embedder.initialize();
 
 // 2. Generate embeddings
@@ -370,7 +370,7 @@ const texts = ['First text', 'Second text'];
 const embeddings = await embedder.embedBatch(texts);
 
 // 3. Create store
-const store = new LanceDBVectorStore('./data.lance');
+const store = new AntflyVectorStore('./data');
 await store.initialize();
 
 // 4. Store vectors
@@ -390,7 +390,7 @@ const results = await store.search(queryEmbedding, { limit: 5 });
 ### Batch Size Tuning
 
 ```typescript
-const embedder = new TransformersEmbedder();
+const embedder = new TermiteEmbedder();
 await embedder.initialize();
 
 // Default is 32, adjust based on memory constraints
@@ -467,16 +467,13 @@ async function indexNewFile(filePath: string) {
 
 ### Current Limitations
 
-1. **Delete operation**: Not yet implemented for LanceDB (requires API update)
-2. **Model size**: 50MB download on first run (cached thereafter)
+1. **Model size**: Download on first run (cached thereafter)
 3. **Context length**: Model supports ~512 tokens (use summaries for long docs)
 4. **Multi-language**: Single model for all languages (language-specific models possible)
 
 ### Future Enhancements
 
-- [ ] Implement delete operation when LanceDB API stabilizes
 - [ ] Add support for larger embedding models (768, 1024 dimensions)
-- [ ] Implement hybrid search (semantic + keyword)
 - [ ] Add re-ranking for improved precision
 - [ ] Support for incremental updates (modify existing documents)
 - [ ] Metadata filtering in search queries
@@ -513,7 +510,7 @@ await storage.initialize(); // Will re-attempt download
 
 ```typescript
 // Reduce batch size for memory-constrained environments
-const embedder = new TransformersEmbedder();
+const embedder = new TermiteEmbedder();
 embedder.setBatchSize(8); // Lower batch size
 ```
 
@@ -521,7 +518,7 @@ embedder.setBatchSize(8); // Lower batch size
 
 ```typescript
 // Ensure model is initialized once and reused
-const storage = new VectorStorage({ storePath: './data.lance' });
+const storage = new VectorStorage({ storePath: './data' });
 await storage.initialize(); // Do this once
 
 // Reuse for multiple operations

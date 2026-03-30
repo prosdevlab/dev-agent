@@ -125,8 +125,8 @@ tracker.failRequest(ctx.requestId, 'Timeout after 30s');
 Track parent-child relationships:
 
 ```typescript
-const parent = tracker.startRequest('dev_plan', { issue: 42 });
-const child = tracker.startRequest('dev_inspect', { action: 'compare' }, parent.requestId);
+const parent = tracker.startRequest('dev_search', { query: 'auth' });
+const child = tracker.startRequest('dev_patterns', { action: 'compare' }, parent.requestId);
 // child.parentId === parent.requestId
 ```
 
@@ -144,8 +144,8 @@ const metrics = tracker.getMetrics();
 //   p99Duration: 890,
 //   byTool: {
 //     'dev_search': { count: 500, avgDuration: 100 },
-//     'dev_inspect': { count: 300, avgDuration: 200 },
-//     'dev_plan': { count: 200, avgDuration: 180 }
+//     'dev_patterns': { count: 300, avgDuration: 200 },
+//     'dev_refs': { count: 200, avgDuration: 180 }
 //   }
 // }
 ```

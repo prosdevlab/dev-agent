@@ -45,7 +45,7 @@ import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 // Initialize indexer
 const indexer = new RepositoryIndexer({
   repositoryPath: '/path/to/repo',
-  vectorStorePath: './.dev-agent/vectors.lance',
+  vectorStorePath: './.dev-agent/vectors',
 });
 
 await indexer.initialize();
@@ -109,7 +109,7 @@ const indexer = new RepositoryIndexer({
   vectorStorePath: './.vectors/my-repo.lance',
   
   // Custom embedding model
-  embeddingModel: 'Xenova/all-MiniLM-L6-v2',
+  embeddingModel: 'BAAI/bge-small-en-v1.5',
   embeddingDimension: 384,
   
   // Batch size for embedding generation
@@ -167,8 +167,8 @@ if (stats.errors.length > 0) {
 ```typescript
 {
   repositoryPath: '/Users/dev/my-project',
-  vectorStorePath: './.dev-agent/vectors.lance',
-  embeddingModel: 'Xenova/all-MiniLM-L6-v2',
+  vectorStorePath: './.dev-agent/vectors',
+  embeddingModel: 'BAAI/bge-small-en-v1.5',
   embeddingDimension: 384,
   batchSize: 32,
   excludePatterns: ['**/node_modules/**'],
@@ -238,7 +238,7 @@ async function indexRepository(repoPath: string) {
   // Create indexer
   const indexer = new RepositoryIndexer({
     repositoryPath: repoPath,
-    vectorStorePath: path.join(repoPath, '.dev-agent', 'vectors.lance'),
+    vectorStorePath: path.join(repoPath, '.dev-agent', 'vectors'),
     batchSize: 32,
     excludePatterns: [
       '**/node_modules/**',
@@ -318,7 +318,7 @@ The indexer maintains state for incremental updates:
 ```typescript
 {
   version: "1.0.0",
-  embeddingModel: "Xenova/all-MiniLM-L6-v2",
+  embeddingModel: "BAAI/bge-small-en-v1.5",
   embeddingDimension: 384,
   repositoryPath: "/path/to/repo",
   lastIndexTime: "2025-11-22T10:00:00.000Z",
@@ -443,7 +443,7 @@ interface IndexProgress {
 // Simple setup works great for most repos
 const indexer = new RepositoryIndexer({
   repositoryPath: './my-repo',
-  vectorStorePath: './.dev-agent/vectors.lance',
+  vectorStorePath: './.dev-agent/vectors',
 });
 ```
 
@@ -547,7 +547,7 @@ const stats = await indexer.index({
 // Increase batch size (uses more memory)
 const indexer = new RepositoryIndexer({
   repositoryPath: './repo',
-  vectorStorePath: './vectors.lance',
+  vectorStorePath: './vectors',
   batchSize: 64,  // Default is 32
 });
 ```
@@ -558,7 +558,7 @@ const indexer = new RepositoryIndexer({
 // Decrease batch size
 const indexer = new RepositoryIndexer({
   repositoryPath: './repo',
-  vectorStorePath: './vectors.lance',
+  vectorStorePath: './vectors',
   batchSize: 16,  // Lower batch size
 });
 ```

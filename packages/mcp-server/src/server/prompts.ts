@@ -41,44 +41,6 @@ export class PromptRegistry {
    * Register default prompts that ship with dev-agent
    */
   private registerDefaultPrompts(): void {
-    // Analyze GitHub Issue
-    this.register(
-      {
-        name: 'analyze-issue',
-        description: 'Analyze a GitHub issue and create an implementation plan',
-        arguments: [
-          {
-            name: 'issue_number',
-            description: 'GitHub issue number to analyze',
-            required: true,
-          },
-          {
-            name: 'detail_level',
-            description: 'Level of detail for the plan (simple or detailed)',
-            required: false,
-          },
-        ],
-      },
-      (args) => ({
-        description: `Analyze GitHub issue #${args.issue_number} and create implementation plan`,
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Please analyze GitHub issue #${args.issue_number} and create a detailed implementation plan.
-
-Steps:
-1. Use dev_gh with action "context" to get full issue details and related items
-2. Use dev_search to find relevant code that needs to be modified
-3. Use dev_plan to generate a structured implementation plan${args.detail_level ? ` with detailLevel "${args.detail_level}"` : ''}
-4. Summarize the approach, key files, and estimated complexity`,
-            },
-          },
-        ],
-      })
-    );
-
     // Search for Code Pattern
     this.register(
       {
@@ -137,11 +99,9 @@ Then provide:
               text: `Provide a comprehensive overview of the repository status:
 
 1. Use dev_status with section "summary" and format "verbose" for detailed stats
-2. Use dev_gh with action "search" to find recent open issues (limit 5)
-3. Summarize:
+2. Summarize:
    - Repository health (indexing status, storage size)
    - Code metrics (files, components, vectors)
-   - GitHub activity (open issues, recent PRs)
    - Any recommendations for maintenance`,
             },
           },
@@ -176,7 +136,7 @@ Then provide:
               type: 'text',
               text: `Find code that is similar to "${args.file_path}":
 
-Use dev_inspect with:
+Use dev_patterns with:
 - query: "${args.file_path}"${args.threshold ? `\n- threshold: ${args.threshold}` : ''}
 - format: "verbose"
 
@@ -185,55 +145,6 @@ Then explain:
 2. Other files with similar patterns
 3. How they compare (consistent vs different patterns)
 4. Opportunities for refactoring or code reuse`,
-            },
-          },
-        ],
-      })
-    );
-
-    // Search GitHub Issues/PRs
-    this.register(
-      {
-        name: 'search-github',
-        description: 'Search GitHub issues and pull requests by topic',
-        arguments: [
-          {
-            name: 'query',
-            description:
-              'What to search for (e.g., "authentication bug", "performance improvement")',
-            required: true,
-          },
-          {
-            name: 'type',
-            description: 'Filter by type: "issue" or "pull_request"',
-            required: false,
-          },
-          {
-            name: 'state',
-            description: 'Filter by state: "open", "closed", or "merged"',
-            required: false,
-          },
-        ],
-      },
-      (args) => ({
-        description: `Search GitHub for: ${args.query}`,
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Search GitHub for "${args.query}":
-
-Use dev_gh with:
-- action: "search"
-- query: "${args.query}"${args.type ? `\n- type: "${args.type}"` : ''}${args.state ? `\n- state: "${args.state}"` : ''}
-- limit: 10
-
-Provide:
-1. Summary of relevant items found
-2. Key themes or patterns
-3. Status overview (how many open vs closed)
-4. Suggestions for next steps`,
             },
           },
         ],
@@ -264,7 +175,7 @@ Provide:
 
 Use dev_refs to find what calls or is called by functions in this file.
 
-Alternatively, use dev_inspect with:
+Alternatively, use dev_patterns with:
 - query: "${args.file_path}"
 - format: "verbose"
 
@@ -276,54 +187,6 @@ Then explain:
 3. Key integration points
 4. Impact analysis (what breaks if this changes)
 5. Refactoring considerations`,
-            },
-          },
-        ],
-      })
-    );
-
-    // Implementation Planning
-    this.register(
-      {
-        name: 'create-plan',
-        description: 'Create detailed implementation plan for a GitHub issue',
-        arguments: [
-          {
-            name: 'issue_number',
-            description: 'GitHub issue number to plan for',
-            required: true,
-          },
-          {
-            name: 'detail_level',
-            description: 'Plan detail level: "simple" or "detailed" (default)',
-            required: false,
-          },
-          {
-            name: 'use_explorer',
-            description: 'Use semantic search to find relevant code (true/false, default: true)',
-            required: false,
-          },
-        ],
-      },
-      (args) => ({
-        description: `Create implementation plan for issue #${args.issue_number}`,
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Create an implementation plan for GitHub issue #${args.issue_number}:
-
-Use dev_plan with:
-- issue: ${args.issue_number}${args.detail_level ? `\n- detailLevel: "${args.detail_level}"` : ''}${args.use_explorer === 'false' ? '\n- useExplorer: false' : ''}
-
-The tool will:
-1. Fetch the issue details
-2. Find relevant code using semantic search
-3. Break down the work into specific tasks
-4. Estimate complexity and dependencies
-
-Review the plan and suggest any modifications or improvements.`,
             },
           },
         ],

@@ -70,17 +70,17 @@ export class InspectAdapter extends ToolAdapter {
 
   getToolDefinition(): ToolDefinition {
     return {
-      name: 'dev_inspect',
+      name: 'dev_patterns',
       description:
-        'Inspect a file for pattern analysis. Finds similar code and compares patterns ' +
-        '(error handling, naming, types, structure). Returns facts about how this file ' +
-        'compares to similar code, without making judgments.',
+        'Analyze coding patterns in a file against the codebase. Compares import style, ' +
+        'error handling, type coverage, test coverage, and file size against similar files. ' +
+        'Use for code reviews and consistency checks.',
       inputSchema: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'File path to inspect (e.g., "src/auth/middleware.ts")',
+            description: 'File path to analyze (e.g., "src/auth/middleware.ts")',
           },
           limit: {
             type: 'number',
@@ -88,13 +88,6 @@ export class InspectAdapter extends ToolAdapter {
             default: this.defaultLimit,
             minimum: 1,
             maximum: 50,
-          },
-          threshold: {
-            type: 'number',
-            description: `Similarity threshold 0-1 (default: ${this.defaultThreshold})`,
-            default: this.defaultThreshold,
-            minimum: 0,
-            maximum: 1,
           },
           format: {
             type: 'string',
@@ -116,13 +109,12 @@ export class InspectAdapter extends ToolAdapter {
       return validation.error;
     }
 
-    const { query, limit, threshold, format } = validation.data;
+    const { query, limit, format } = validation.data;
 
     try {
-      context.logger.debug('Executing file inspection', {
+      context.logger.debug('Executing pattern analysis', {
         query,
         limit,
-        threshold,
         format,
       });
 
@@ -130,7 +122,7 @@ export class InspectAdapter extends ToolAdapter {
       const { content, similarFilesCount, patternsAnalyzed } = await this.inspectFile(
         query,
         limit,
-        threshold,
+        0, // No threshold — let the pattern service decide relevance
         format
       );
 

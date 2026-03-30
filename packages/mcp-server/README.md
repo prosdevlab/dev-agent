@@ -122,55 +122,18 @@ The MCP server provides 5 powerful adapters (tools) and 8 guided prompts:
    - GitHub integration status
    - Health checks
 
-3. **`dev_plan`** - Generate implementation plans from GitHub issues
-   - Fetch issue details
-   - Find relevant code
-   - Break down into tasks
-
-4. **`dev_inspect`** - File analysis and pattern validation
+3. **`dev_patterns`** - File analysis and pattern validation
    - Compare similar implementations
    - Validate pattern consistency
    - File-focused deep analysis
 
-5. **`dev_gh`** - GitHub issue and PR search
-   - Semantic search with filters
-   - Full context retrieval
-   - Offline operation with cache
-   - **Auto-reload**: Automatically picks up new data when `dev github index` runs
-
-### Auto-Reload Feature
-
-The GitHub adapter automatically reloads index data when it detects changes, eliminating the need to restart the MCP server:
-
-- **How it works**: Monitors GitHub state file modification time
-- **When it reloads**: On next query after `dev github index` updates the data
-- **No user action required**: Changes are picked up automatically
-- **Efficient**: Only checks file timestamps (no polling)
-
-**Example workflow:**
-```bash
-# 1. Query GitHub data in Claude Code/Cursor
-> Use dev_gh to search for "authentication issues"
-
-# 2. Update the index (in terminal)
-$ dev github index
-✓ Indexed 59 documents (32 issues + 27 PRs)
-
-# 3. Query again - new data appears automatically!
-> Use dev_gh to search for "authentication issues"
-# Results now include newly created issues #58, #59
-```
-
 ### Prompts (Guided Workflows)
 
-1. **`analyze-issue`** - Full issue analysis with implementation plan
-2. **`find-pattern`** - Search codebase for specific patterns
-3. **`repo-overview`** - Comprehensive repository health dashboard
-4. **`find-similar`** - Find code similar to a file
-5. **`search-github`** - Search issues/PRs by topic
-6. **`explore-relationships`** - Analyze file dependencies
-7. **`create-plan`** - Generate detailed task breakdown
-8. **`quick-search`** - Fast semantic code search
+1. **`find-pattern`** - Search codebase for specific patterns
+2. **`repo-overview`** - Comprehensive repository health dashboard
+3. **`find-similar`** - Find code similar to a file
+4. **`explore-relationships`** - Analyze file dependencies
+5. **`quick-search`** - Fast semantic code search
 
 All tools include **token cost footers** (🪙) for real-time cost tracking!
 
@@ -395,22 +358,16 @@ All adapters are fully tested and production-ready:
   - GitHub integration status (auto-reloads on change)
   - Health checks and storage metrics
 
-- **PlanAdapter** (`dev_plan`) - Implementation planning from GitHub issues
+
   - Issue fetching and analysis
   - Semantic code search for relevant files
   - Task breakdown with complexity estimates
 
-- **InspectAdapter** (`dev_inspect`) - File analysis
+- **InspectAdapter** (`dev_patterns`) - File analysis
   - Compare similar implementations
   - Pattern consistency checking
   - Relationship mapping
 
-- **GitHubAdapter** (`dev_gh`) - GitHub issue and PR management
-  - Semantic search with filters
-  - Full context retrieval
-  - Works offline with cached data
-  - **Auto-reload**: Automatically picks up index updates without restart
-  - Token cost display: 🪙 ~36 tokens (compact) to ~462 tokens (verbose)
 
 ## Configuration
 

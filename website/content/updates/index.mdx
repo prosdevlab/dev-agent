@@ -9,6 +9,22 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.1 — Tool Refinements & Docs Cleanup
+
+*March 30, 2026*
+
+**Cleaned up stale references, renamed `dev_inspect` → `dev_patterns`, merged `dev explore` into `dev search`.**
+
+- `dev_inspect` renamed to `dev_patterns` — focused on pattern analysis, removed redundant similar-files feature
+- `dev explore` removed — `dev search --similar-to <file>` replaces it
+- Search threshold default fixed (0.7 → 0) for RRF fusion scores
+- Scanner exclusions expanded: `.env*`, `*.min.js`, `*.d.ts`, `generated/`, `.terraform/`, `.claude/`
+- Removed 3 stale MCP prompts (analyze-issue, search-github, create-plan)
+- Swept all docs for LanceDB/@xenova/transformers → Antfly/Termite references
+- 1,620 tests passing, 0 failures
+
+---
+
 ## v0.10.0 — CLI UX Overhaul & Antfly Resilience
 
 *March 30, 2026*
@@ -136,29 +152,29 @@ After:  Scanner → Antfly (embed + store + hybrid search)
 
 *December 14, 2025*
 
-**Refactored `dev_inspect` with 5-10x faster pattern analysis and comprehensive code comparison.**
+**Refactored `dev_patterns` with 5-10x faster pattern analysis and comprehensive code comparison.**
 
 ### What's Changed
 
-**🔄 Simplified `dev_inspect` Tool**
+**🔄 Simplified `dev_patterns` Tool**
 
-The `action` parameter has been streamlined. `dev_inspect` is now a single-purpose tool that automatically:
+The `action` parameter has been streamlined. `dev_patterns` is now a single-purpose tool that automatically:
 - Finds similar files using semantic search
 - Analyzes and compares 5 pattern categories
 
 ```bash
 # Before (v0.8.4)
-dev_inspect { action: "compare", query: "src/auth.ts" }
+dev_patterns { action: "compare", query: "src/auth.ts" }
 
 # After (v0.8.5) - Simpler!
-dev_inspect { query: "src/auth.ts" }
+dev_patterns { query: "src/auth.ts" }
 ```
 
 ### What's New
 
 **🔍 Comprehensive Pattern Analysis**
 
-`dev_inspect` now analyzes 5 pattern categories automatically:
+`dev_patterns` now analyzes 5 pattern categories automatically:
 
 1. **Import Style** — ESM, CJS, mixed, or unknown
 2. **Error Handling** — throw, result types, callbacks, or unknown
@@ -242,7 +258,7 @@ dev_inspect { query: "src/auth.ts" }
 - Complete rewrite of dev-inspect.mdx
 - Updated README.md with pattern categories
 - Updated CLAUDE.md with new descriptions
-- Migration guide from dev_explore to dev_inspect
+- Migration guide from dev_explore to dev_patterns
 
 ### Testing
 
@@ -256,13 +272,13 @@ dev_inspect { query: "src/auth.ts" }
 **API Simplification:**
 ```typescript
 // Old (v0.8.4) - Had action parameter
-dev_inspect({ 
+dev_patterns({ 
   action: "compare",
   query: "src/auth.ts" 
 })
 
 // New (v0.8.5) - Streamlined!
-dev_inspect({ 
+dev_patterns({ 
   query: "src/auth.ts" 
 })
 ```
@@ -302,9 +318,7 @@ Eliminated CLI commands that duplicate git/GitHub functionality:
 Dev-agent's **unique value** is semantic understanding:
 
 - ✅ **Semantic code search** (`dev_search`) — Find code by meaning, not keywords
-- ✅ **Semantic commit search** (`dev_history`) — Search git history by concept
-- ✅ **Code structure analysis** (`dev_map`, `dev_inspect`) — AST + embeddings
-- ✅ **GitHub context** (`dev_plan`, `dev_gh`) — Cross-reference issues with code
+- ✅ **Code structure analysis** (`dev_map`, `dev_patterns`) — AST + embeddings
 
 Git analytics (ownership, activity) are better served by existing tools:
 - Git CLI has excellent built-in analytics
@@ -315,11 +329,11 @@ Git analytics (ownership, activity) are better served by existing tools:
 
 **Core semantic tools remain:**
 - `dev_search` — Semantic code search
-- `dev_history` — Semantic commit search
+- `dev_refs` — Relationship queries (callers/callees)
 - `dev_map` — Codebase structure with change frequency
-- `dev_plan` — GitHub issue context assembly
-- `dev_inspect` — File analysis (similarity + pattern checking)
-- `dev_gh` — GitHub semantic search
+- `dev_patterns` — File analysis (similarity + pattern checking)
+- `dev_status` — Repository indexing status
+- `dev_health` — Server health checks
 
 **Supporting infrastructure:**
 - `code_metadata` table — Introspection of indexed code (LOC, functions, imports)
@@ -1032,11 +1046,11 @@ Hot Paths (most referenced):
 |------|---------|
 | `dev_search` | Semantic code search |
 | `dev_plan` | Context assembly for issues |
-| `dev_inspect` | File analysis & pattern discovery |
+| `dev_patterns` | File analysis & pattern discovery |
 | `dev_gh` | GitHub issue/PR search |
 | `dev_status` | Repository health |
 
-> **Note:** `dev_inspect` was originally named `dev_explore` at launch. It was renamed and enhanced in v0.8.5 with comprehensive pattern analysis.
+> **Note:** `dev_patterns` was originally named `dev_explore` at launch. It was renamed and enhanced in v0.8.5 with comprehensive pattern analysis.
 
 ### Installation
 

@@ -19,17 +19,11 @@ Before starting development, familiarize yourself with our coding standards:
 git checkout main
 git pull origin main
 
-# Use GitHub Context to find what to work on next
-dev github search "state:open label:\"Epic: MCP Integration\"" --type issue
-
-# Or use gh CLI directly
+# Use gh CLI to find what to work on next
 gh issue list --milestone "Epic #3: MCP Integration" --state open
 
-# The tool helps you:
-# - Find open issues by epic/milestone
-# - See issue dependencies
-# - Prioritize based on labels
-# - Avoid duplicate work
+# Or use dev_gh MCP tool to search semantically
+# dev_gh: { action: "search", query: "open MCP integration issues" }
 ```
 
 ### 2. Start New Feature
@@ -42,28 +36,18 @@ git checkout -b feat/feature-name
 # Done via todo_write tool in Claude
 ```
 
-### 3. Planning Phase (Dogfooding! 🐕🍽️)
+### 3. Planning Phase
 
 ```bash
 # Read the issue requirements
 gh issue view <issue-number>
 
-# Use the Planner to break down the work
-dev plan <issue-number> --json
+# Use the dev_plan MCP tool to assemble context
+# dev_plan: { issue: <issue-number> }
 
-# Review the plan and adjust as needed
-# The planner will:
-# - Break issue into specific tasks
-# - Find relevant code locations
-# - Estimate effort
-# - Suggest implementation order
+# Or write a plan in .claude/da-plans/ for non-trivial features
+# and run the plan-reviewer agent before implementation
 ```
-
-**Why dogfood the Planner?**
-- ✅ Tests our own tool in real scenarios
-- ✅ Identifies bugs and missing features
-- ✅ Improves estimation accuracy over time
-- ✅ Validates usefulness for end users
 
 ### 4. Implementation Phase
 

@@ -19,7 +19,7 @@ explore
   .description('Search for code patterns using semantic search')
   .argument('<query>', 'Pattern to search for')
   .option('-l, --limit <number>', 'Number of results', '10')
-  .option('-t, --threshold <number>', 'Similarity threshold (0-1)', '0.7')
+  .option('-t, --threshold <number>', 'Minimum score', '0')
   .action(async (query: string, options) => {
     const spinner = ora('Searching for patterns...').start();
 
@@ -68,7 +68,7 @@ explore
 
         console.log(chalk.white(`${i + 1}. ${meta.name || meta.type}`));
         console.log(chalk.gray(`   ${meta.path}${meta.startLine ? `:${meta.startLine}` : ''}`));
-        console.log(chalk.green(`   ${(result.score * 100).toFixed(1)}% match\n`));
+        console.log('');
       }
 
       await indexer.close();
@@ -85,7 +85,7 @@ explore
   .description('Find code similar to a file')
   .argument('<file>', 'File path')
   .option('-l, --limit <number>', 'Number of results', '5')
-  .option('-t, --threshold <number>', 'Similarity threshold (0-1)', '0.5')
+  .option('-t, --threshold <number>', 'Minimum score', '0')
   .action(async (file: string, options) => {
     const spinner = ora('Finding similar code...').start();
 
@@ -156,7 +156,7 @@ explore
 
         console.log(chalk.white(`${i + 1}. ${meta.name || meta.type}`));
         console.log(chalk.gray(`   ${meta.path}${meta.startLine ? `:${meta.startLine}` : ''}`));
-        console.log(chalk.green(`   ${(result.score * 100).toFixed(1)}% similar\n`));
+        console.log('');
       }
 
       await indexer.close();

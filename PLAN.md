@@ -30,8 +30,8 @@ Dev-agent provides semantic code search, codebase intelligence, and GitHub integ
 |---------|--------|---------|
 | TypeScript scanner (ts-morph) | ✅ Done | `@prosdevlab/dev-agent-core` |
 | Repository indexer | ✅ Done | `@prosdevlab/dev-agent-core` |
-| Vector storage (LanceDB) | ✅ Done | `@prosdevlab/dev-agent-core` |
-| Embeddings (@xenova/transformers) | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Vector storage (Antfly) | ✅ Done | `@prosdevlab/dev-agent-core` |
+| Embeddings (Antfly Termite) | ✅ Done | `@prosdevlab/dev-agent-core` |
 | Semantic search | ✅ Done | `@prosdevlab/dev-agent-core` |
 | CLI interface | ✅ Done | `@prosdevlab/dev-agent-cli` |
 | Centralized logging | ✅ Done | `@prosdevlab/kero` |
@@ -44,7 +44,7 @@ Dev-agent provides semantic code search, codebase intelligence, and GitHub integ
 | Adapter framework | ✅ Done | `@prosdevlab/dev-agent-mcp` |
 | `dev_search` - Semantic code search | ✅ Done | MCP adapter |
 | `dev_status` - Repository status | ✅ Done | MCP adapter |
-| `dev_inspect` - File analysis | ✅ Done | MCP adapter |
+| `dev_patterns` - File analysis | ✅ Done | MCP adapter |
 | `dev_plan` - Issue planning | ✅ Done | MCP adapter |
 | `dev_gh` - GitHub search | ✅ Done | MCP adapter |
 | `dev_health` - Health checks | ✅ Done | MCP adapter |
@@ -219,7 +219,7 @@ Git history is valuable context that LLMs can't easily access. We add intelligen
 | Phase | Tool | Status |
 |-------|------|--------|
 | 1 (v0.4.4) | `dev_search` | ✅ Done |
-| 2 | `dev_refs`, `dev_inspect` | ✅ Done |
+| 2 | `dev_refs`, `dev_patterns` | ✅ Done |
 | 3 | `dev_map`, `dev_status` | ✅ Done |
 
 **Implementation (Phase 1):**
@@ -234,7 +234,7 @@ Git history is valuable context that LLMs can't easily access. We add intelligen
 |------|--------|
 | Improved dev_search description ("USE THIS FIRST") | ✅ Done |
 | Improved dev_map description (vs list_dir) | ✅ Done |
-| Improved dev_inspect description (file analysis) | ✅ Done |
+| Improved dev_patterns description (file analysis) | ✅ Done |
 | Improved dev_refs description (specific symbols) | ✅ Done |
 | All 9 adapters registered in CLI | ✅ Done |
 
@@ -399,13 +399,13 @@ packages/core/
 
 ---
 
-## Next: Advanced LanceDB Visualizations (v0.7.2)
+## Next: Advanced Vector Visualizations (v0.7.2)
 
 > Making vector embeddings visible and explorable.
 
 ### Philosophy
 
-LanceDB stores 384-dimensional embeddings for semantic search, but these are invisible to users. Advanced visualizations reveal:
+Antfly stores 384-dimensional embeddings for semantic search, but these are invisible to users. Advanced visualizations reveal:
 - **Where code lives** in semantic space (2D projections)
 - **What's related** beyond imports (similarity networks)
 - **How embeddings evolve** over time (drift tracking)
@@ -456,7 +456,7 @@ New API Routes
     ├─ GET /api/embeddings/quality (coverage metrics)
     └─ GET /api/embeddings/search-history (query analysis)
     ↓
-LanceDB + Vector Analysis
+Antfly + Vector Analysis
     └─ Dimensionality reduction, similarity queries, metrics
 ```
 
@@ -552,14 +552,14 @@ These were in the original plan but have been deprioritized or reconsidered:
 - **Build:** Turborepo
 - **Linting:** Biome
 - **Testing:** Vitest (1379+ tests)
-- **Vector Storage:** LanceDB (embedded, no server)
-- **Embeddings:** @xenova/transformers (all-MiniLM-L6-v2)
+- **Vector Storage:** Antfly (hybrid search: BM25 + vector + RRF)
+- **Embeddings:** Antfly Termite (ONNX, BAAI/bge-small-en-v1.5)
 - **AI Integration:** MCP (Model Context Protocol)
 - **Code Analysis:** ts-morph (TypeScript Compiler API)
 
 ### Considered but Not Adopted
-- ChromaDB → LanceDB (embedded is simpler)
-- TensorFlow.js → @xenova/transformers (better models)
+- ChromaDB → Antfly (hybrid search is better)
+- TensorFlow.js → Antfly Termite (local ONNX, better models)
 - Express → MCP (protocol is the interface)
 
 ---

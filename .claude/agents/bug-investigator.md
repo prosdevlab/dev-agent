@@ -36,8 +36,7 @@ User Command → Commander.js → Core Service → Scanner/Vector/GitHub
 
 **Indexing path:**
 ```
-dev index . → Indexer → Scanner (ts-morph/tree-sitter) → Vector Storage (LanceDB)
-  → Embedding (@xenova/transformers) → Persisted Index
+dev index → Indexer → Scanner (ts-morph/tree-sitter) → Antfly (embed + store + hybrid search)
 ```
 
 ### Phase 3: Identify Root Cause

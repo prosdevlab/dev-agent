@@ -30,7 +30,6 @@ dev-agent doesn't just search — it **bundles context** so Claude reads less:
 | What dev-agent does | Manual equivalent | Savings |
 |---------------------|-------------------|---------|
 | Returns code snippets in search | Read entire files | 99% fewer input tokens |
-| `dev_plan` bundles issue + code + commits | 5-10 separate tool calls | 29% cost reduction |
 | Semantic search finds relevant code | grep chains + manual filtering | 42% cost reduction |
 
 **The harder the task, the bigger the savings.**
@@ -41,7 +40,7 @@ dev-agent doesn't just search — it **bundles context** so Claude reads less:
 |-----------|--------------|--------------|-----|
 | **Debugging** | **42%** | 37% | Semantic search beats grep for "where is the bug?" |
 | **Exploration** | **44%** | 19% | Find code by meaning, not keywords |
-| **Implementation** | **29%** | 22% | `dev_plan` bundles context in one call |
+| **Implementation** | **29%** | 22% | Semantic search finds relevant code |
 | **Simple lookup** | ~0% | ~0% | Both approaches are fast |
 
 <Callout type="warning">
@@ -94,39 +93,6 @@ We asked Claude Code: *"Debug why search returns duplicates"*
   **Same root cause identified. 42% cheaper. 37% faster.**
 </Callout>
 
-## Context bundling: `dev_plan`
-
-For implementation tasks, `dev_plan` bundles everything in one call:
-
-<Tabs items={['Without dev-agent', 'With dev-agent']}>
-  <Tabs.Tab>
-    **Claude's approach for "Implement issue #61":**
-    ```bash
-    gh issue view 61 --json title,body    # Fetch issue
-    grep "--json" -r packages/cli         # Find existing flags
-    Read search.ts                        # Check implementation
-    Read mcp.ts                           # Check implementation  
-    Read config.ts                        # Check file writes
-    # ... 5+ more tool calls
-    ```
-    
-    **Result:** $0.55, 5.7 minutes
-  </Tabs.Tab>
-  <Tabs.Tab>
-    **Claude's approach:**
-    ```bash
-    dev_plan --issue 61
-    # Returns in ONE call:
-    # - Issue details + comments
-    # - Relevant code snippets
-    # - Related commits (5 found)
-    # - Codebase patterns
-    ```
-    
-    **Result:** $0.39, 4.5 minutes (**29% cheaper**)
-  </Tabs.Tab>
-</Tabs>
-
 ## How it works
 
 ```mermaid
@@ -137,7 +103,7 @@ flowchart LR
 
     subgraph Agent["dev-agent"]
         B["MCP Server"]
-        C["9 Tools"]
+        C["6 Tools"]
     end
 
     subgraph Local["Antfly (local)"]
@@ -177,17 +143,14 @@ dev mcp install           # For Claude Code
 ```
 </Steps>
 
-## 9 MCP Tools
+## 6 MCP Tools
 
 | Tool | What it does |
 |------|--------------|
 | [`dev_search`](/docs/tools/dev-search) | Semantic code search — returns snippets, not just paths |
-| [`dev_plan`](/docs/tools/dev-plan) | **Context bundling** — issue + code + commits in one call |
 | [`dev_refs`](/docs/tools/dev-refs) | Find callers/callees of any function |
 | [`dev_map`](/docs/tools/dev-map) | Codebase structure with change frequency |
-| [`dev_history`](/docs/tools/dev-history) | Semantic search over git commits |
-| [`dev_inspect`](/docs/tools/dev-inspect) | Inspect files (compare implementations, check patterns) |
-| [`dev_gh`](/docs/tools/dev-gh) | Search GitHub issues/PRs semantically |
+| [`dev_patterns`](/docs/tools/dev-inspect) | Inspect files (compare implementations, check patterns) |
 | [`dev_status`](/docs/tools/dev-status) | Repository indexing status |
 | [`dev_health`](/docs/tools/dev-health) | Server health checks |
 
@@ -203,7 +166,6 @@ dev mcp install           # For Claude Code
 
 ## Features
 
-- **Context Bundling** — `dev_plan` replaces 5-10 tool calls with one
 - **Code Snippets** — Search returns code, not just file paths
 - **Multi-Language** — TypeScript, JavaScript, Go, Markdown
 - **100% Local** — Your code never leaves your machine

@@ -32,7 +32,6 @@ export const InspectArgsSchema = z
   .object({
     query: z.string().min(1, 'Query must be a non-empty string (file path)'),
     limit: z.number().int().min(1).max(50).default(10),
-    threshold: z.number().min(0).max(1).default(0.7),
     format: FormatSchema.default('compact'),
   })
   .strict(); // Reject unknown properties

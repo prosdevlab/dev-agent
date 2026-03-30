@@ -1,7 +1,7 @@
 /**
  * InspectAdapter Unit Tests
  *
- * Tests for the refactored single-purpose dev_inspect tool
+ * Tests for the refactored single-purpose dev_patterns tool
  */
 
 import * as path from 'node:path';
@@ -51,7 +51,7 @@ describe('InspectAdapter', () => {
     it('should return correct tool definition', () => {
       const definition = adapter.getToolDefinition();
 
-      expect(definition.name).toBe('dev_inspect');
+      expect(definition.name).toBe('dev_patterns');
       expect(definition.description).toContain('pattern');
       expect(definition.description).toContain('similar');
       expect(definition.inputSchema.required).toContain('query');
@@ -99,19 +99,6 @@ describe('InspectAdapter', () => {
       expect(result.error?.code).toBe('INVALID_PARAMS');
     });
 
-    it('should reject invalid threshold', async () => {
-      const result = await adapter.execute(
-        {
-          query: 'src/test.ts',
-          threshold: 1.5,
-        },
-        mockContext
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe('INVALID_PARAMS');
-    });
-
     it('should accept valid inputs', async () => {
       vi.mocked(mockSearchService.findSimilar).mockResolvedValue([
         {
@@ -126,7 +113,6 @@ describe('InspectAdapter', () => {
         {
           query: 'modern-typescript.ts',
           limit: 10,
-          threshold: 0.7,
           format: 'compact',
         },
         mockContext
@@ -134,7 +120,6 @@ describe('InspectAdapter', () => {
 
       expect(result.success).toBe(true);
       expect(typeof result.data).toBe('string');
-      // Metadata contains counts
       expect(result.metadata).toHaveProperty('similar_files_count');
       expect(result.metadata).toHaveProperty('patterns_analyzed');
     });
@@ -169,7 +154,7 @@ describe('InspectAdapter', () => {
       expect(result.success).toBe(true);
       expect(mockSearchService.findSimilar).toHaveBeenCalledWith('modern-typescript.ts', {
         limit: 15, // default 10 + 5 buffer for extension filtering
-        threshold: 0.7,
+        threshold: 0,
       });
       // With mock data (files don't exist), counts may be 0
       expect(result.metadata?.similar_files_count).toBeGreaterThanOrEqual(0);
@@ -270,27 +255,9 @@ describe('InspectAdapter', () => {
       expect(result.success).toBe(true);
       expect(mockSearchService.findSimilar).toHaveBeenCalledWith('modern-typescript.ts', {
         limit: 10, // 5 + 5 buffer for extension filtering
-        threshold: 0.7,
+        threshold: 0,
       });
-      // With mock data (files don't exist), count may vary
       expect(result.metadata?.similar_files_count).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should apply threshold correctly', async () => {
-      vi.mocked(mockSearchService.findSimilar).mockResolvedValue([]);
-
-      await adapter.execute(
-        {
-          query: 'modern-typescript.ts',
-          threshold: 0.9,
-        },
-        mockContext
-      );
-
-      expect(mockSearchService.findSimilar).toHaveBeenCalledWith('modern-typescript.ts', {
-        limit: 15, // default 10 + 5 buffer
-        threshold: 0.9,
-      });
     });
   });
 

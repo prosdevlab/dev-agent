@@ -55,7 +55,7 @@ Every finding MUST include confidence: **HIGH** (verified from code), **MEDIUM**
 
 ### Tier 2 (Standard+ Effort)
 - [ ] Scanner handles malformed source files gracefully (ts-morph, tree-sitter)
-- [ ] Vector storage operations handle LanceDB connection failures
+- [ ] Vector storage operations handle Antfly connection failures
 - [ ] MCP adapter responses follow the expected schema
 - [ ] Event bus listeners cleaned up properly (no memory leaks)
 - [ ] Subagent coordinator handles agent failures without crashing
