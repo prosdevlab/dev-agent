@@ -22,16 +22,22 @@ when I run `dev index .`,
 I should see clear progress and have searchable code when it completes,
 so that I can immediately ask my AI tools about the codebase.
 
-**US-4: Ongoing development**
+**US-4: Ongoing development (automatic)**
 As a developer actively writing code,
-when I save files and switch to my AI tool,
-my recent changes should be searchable without running any command,
-so that the AI always has current context.
+when I save a file,
+the MCP server's file watcher should detect the change and re-index automatically,
+so that the AI always has current context without me running any command.
+
+**US-4b: MCP server restart catchup**
+As a developer whose MCP server restarted (editor restart, system reboot),
+when the MCP server starts back up,
+it should detect what changed while it was off and re-index only those files,
+so that I don't need a full re-index after every restart.
 
 **US-5: Coming back to a project**
 As a developer returning to a project after days/weeks,
-when I run `dev index .` again,
-it should only process what changed (fast incremental),
+when the MCP server starts,
+it should catch up on all changes since last run (fast incremental),
 so that I'm not waiting for a full re-index.
 
 **US-6: Large codebase**
@@ -60,19 +66,11 @@ when my AI tool calls `dev_search`,
 the exact function should be the top result (BM25 keyword match),
 so that exact lookups are instant and precise.
 
-**~~US-10: Search git history~~ (DEPRECATED)**
-Git history is better served by `git log`, `git blame`, and AI tools running git
-commands directly. Removed in Phase 2.
-
-**~~US-11: Search GitHub issues~~ (DEPRECATED)**
-GitHub issues/PRs are better served by GitHub's own MCP server and the `gh` CLI.
-Removed in Phase 2.
-
 ## Lifecycle
 
 **US-12: No babysitting**
 As a developer using dev-agent day-to-day,
-I should never need to think about Antfly, servers, or background processes,
+I should never need to think about Antfly, servers, watchers, or background processes,
 so that dev-agent feels like a native part of my workflow.
 
 **US-13: Transparent status**
@@ -98,3 +96,16 @@ so that search results are scoped to the right project.
 As a developer switching between projects in Cursor,
 dev-agent should automatically use the right index for the current workspace,
 so that I don't need to re-configure anything.
+
+**US-17: Multiple editor windows**
+As a developer with two Cursor windows open on the same repo,
+both MCP server instances should work without conflicts,
+so that I don't get errors or corrupted data.
+
+## Deprecated
+
+The following were removed in Phase 2. Git history and GitHub issues are better
+served by their native tools (`git` CLI, `gh` CLI, GitHub MCP server).
+
+- ~~US-10: Search git history~~ — use `git log`, `git blame`, AI can run git directly
+- ~~US-11: Search GitHub issues~~ — use GitHub MCP server, `gh` CLI, or Linear/Jira MCP
