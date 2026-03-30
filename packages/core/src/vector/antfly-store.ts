@@ -26,11 +26,11 @@ interface AntflyHit {
   _source?: Record<string, unknown>;
 }
 
+/** SDK query() returns this shape (already unwrapped from the REST responses[] wrapper) */
 interface AntflyQueryResponse {
-  responses: Array<{
-    hits: { hits: AntflyHit[] | null; total: number };
-    status: number;
-  }>;
+  hits: { hits: AntflyHit[] | null; total: number };
+  status: number;
+  took?: number;
 }
 
 interface AntflyTableInfo {
@@ -55,7 +55,7 @@ const MODEL_DIMENSIONS: Record<string, number> = {
 };
 
 const DEFAULT_MODEL = 'BAAI/bge-small-en-v1.5';
-const DEFAULT_BASE_URL = 'http://localhost:8080/api';
+const DEFAULT_BASE_URL = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
 const BATCH_SIZE = 500;
 
 /**
@@ -118,8 +118,8 @@ export class AntflyVectorStore implements VectorStore {
    * Add documents. Embeddings param is ignored — Antfly auto-embeds via Termite.
    */
   async add(documents: EmbeddingDocument[], _embeddings?: number[][]): Promise<void> {
-    this.assertReady();
     if (documents.length === 0) return;
+    this.assertReady();
 
     for (let i = 0; i < documents.length; i += BATCH_SIZE) {
       const batch = documents.slice(i, i + BATCH_SIZE);
@@ -216,11 +216,10 @@ export class AntflyVectorStore implements VectorStore {
 
     try {
       const resp = await this.queryTable({ limit: 1 });
-      return resp.responses[0]?.hits?.total ?? 0;
-    } catch (error) {
-      throw new Error(
-        `Failed to count documents: ${error instanceof Error ? error.message : String(error)}`
-      );
+      return resp?.hits?.total ?? 0;
+    } catch {
+      // Empty or newly-created table may return unexpected shapes
+      return 0;
     }
   }
 
@@ -355,7 +354,7 @@ export class AntflyVectorStore implements VectorStore {
   }
 
   private extractHits(resp: AntflyQueryResponse): AntflyHit[] {
-    return resp.responses?.[0]?.hits?.hits ?? [];
+    return resp?.hits?.hits ?? [];
   }
 
   private parseMetadata(source: Record<string, unknown> | undefined): SearchResultMetadata {
