@@ -27,8 +27,6 @@ dev mcp install           # For Claude Code
 ## Features
 
 - 🔍 **Semantic Code Search** - Natural language queries across your codebase
-- 🐙 **GitHub Integration** - Search issues/PRs with semantic understanding
-- 📋 **Implementation Planning** - Generate plans from GitHub issues with code context
 - 🔎 **Code Exploration** - Discover patterns, find similar code, analyze relationships
 - 💚 **Health Monitoring** - Check component status and system health
 - 📊 **Repository Status** - View indexing progress and statistics
@@ -38,16 +36,15 @@ dev mcp install           # For Claude Code
 When integrated with Cursor or Claude Code, you get 6 powerful tools:
 
 - `dev_search` - Semantic code search
+- `dev_refs` - Find callers/callees of functions
+- `dev_map` - Codebase structure with change frequency
+- `dev_patterns` - File analysis and pattern checking
 - `dev_status` - Repository status and health
-- `dev_inspect` - File analysis and pattern checking
-- `dev_plan` - Implementation planning from issues
-- `dev_gh` - GitHub issue/PR search
 - `dev_health` - Component health checks
 
 ## Requirements
 
 - Node.js >= 22 (LTS)
-- For GitHub integration: [GitHub CLI](https://cli.github.com/)
 
 ## Production Features
 
@@ -86,8 +83,8 @@ dev <command> --help           # Help for specific command
 ## How It Works
 
 1. **Index** - Scans your TypeScript/JavaScript codebase and builds semantic vectors
-2. **Search** - Uses local embeddings (all-MiniLM-L6-v2) for semantic understanding
-3. **Store** - LanceDB vector storage, all data stays on your machine
+2. **Search** - Uses local embeddings (BAAI/bge-small-en-v1.5) for semantic understanding
+3. **Store** - Antfly hybrid search (BM25 + vector), all data stays on your machine
 4. **Integrate** - MCP protocol connects to Cursor/Claude Code
 5. **Query** - AI tools can now understand your codebase semantically
 
@@ -102,8 +99,8 @@ All processing happens on your machine:
 ## Technology
 
 - **Analysis:** TypeScript Compiler API + ts-morph
-- **Embeddings:** @xenova/transformers (all-MiniLM-L6-v2)
-- **Vector Storage:** LanceDB
+- **Embeddings:** Antfly Termite (ONNX, BAAI/bge-small-en-v1.5)
+- **Vector Storage:** Antfly (hybrid search: BM25 + vector + RRF)
 - **GitHub:** GitHub CLI for local metadata
 - **Protocol:** Model Context Protocol (MCP)
 
@@ -113,14 +110,8 @@ All processing happens on your machine:
 # Find authentication-related code
 dev_search: "JWT token validation middleware"
 
-# Plan implementation from GitHub issue
-dev_plan: issue #42
-
 # Find similar code patterns
-dev_inspect: { action: "compare", query: "src/auth/middleware.ts" }
-
-# Search GitHub issues semantically
-dev_gh: search "memory leak in vector storage"
+dev_patterns: { action: "compare", query: "src/auth/middleware.ts" }
 
 # Check system health
 dev_health: verbose

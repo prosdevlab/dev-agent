@@ -4,7 +4,6 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { cleanCommand } from './commands/clean.js';
 import { compactCommand } from './commands/compact.js';
-import { exploreCommand } from './commands/explore.js';
 import { indexCommand } from './commands/index.js';
 import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
@@ -27,7 +26,6 @@ program
 // Register commands
 program.addCommand(indexCommand);
 program.addCommand(searchCommand);
-program.addCommand(exploreCommand);
 program.addCommand(mapCommand);
 program.addCommand(compactCommand);
 program.addCommand(cleanCommand);

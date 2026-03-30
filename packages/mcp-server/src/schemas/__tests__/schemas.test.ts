@@ -36,7 +36,6 @@ describe('InspectArgsSchema', () => {
     if (result.success) {
       expect(result.data).toMatchObject({
         limit: 10,
-        threshold: 0.7,
         format: 'compact',
       });
     }
@@ -54,15 +53,6 @@ describe('InspectArgsSchema', () => {
     const result = InspectArgsSchema.safeParse({
       query: 'test',
       limit: 200,
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject out-of-range threshold', () => {
-    const result = InspectArgsSchema.safeParse({
-      query: 'test',
-      threshold: 1.5,
     });
 
     expect(result.success).toBe(false);

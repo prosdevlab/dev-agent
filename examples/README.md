@@ -8,7 +8,7 @@ Real-world usage patterns for dev-agent MCP tools.
 # Install dev-agent
 npm install -g dev-agent
 
-# Index your repository (code, git history, GitHub)
+# Index your repository
 cd /path/to/your/project
 dev index
 
@@ -118,100 +118,18 @@ dev_map:
 
 ---
 
-### `dev_history` - Git History Search ✨ v0.4
-
-Semantic search over git commits:
-
-```
-# Search commits by meaning
-dev_history:
-  query: "authentication token fix"
-
-# Get file history
-dev_history:
-  mode: "file"
-  file: "src/auth/middleware.ts"
-
-# Filter by author
-dev_history:
-  query: "performance optimization"
-  author: "alice"
-
-# Recent commits only
-dev_history:
-  query: "bug fix"
-  since: "30 days ago"
-```
-
-**Output shows:**
-- Commits with relevance scores
-- Author and date
-- Changed files
-- Issue/PR references extracted from messages
-
----
-
-### `dev_plan` - Context Assembly
-
-Get rich context for implementing a GitHub issue:
-
-```
-# Basic context
-dev_plan:
-  issue: 42
-
-# Full context package (v0.4+)
-dev_plan:
-  issue: 42
-  includeCode: true
-  includeHistory: true
-  includePatterns: true
-```
-
-**Returns:**
-- Issue details (title, body, labels, comments)
-- Relevant code snippets from semantic search
-- **Related commits** from git history (v0.4+)
-- Codebase patterns (test conventions, etc.)
-- Related issues/PRs
-
----
-
-### `dev_gh` - GitHub Search
-
-Search issues and PRs semantically:
-
-```
-# Search issues
-dev_gh:
-  action: "search"
-  query: "authentication bugs"
-
-# Get specific issue
-dev_gh:
-  action: "get"
-  number: 42
-```
-
-**First, index GitHub:**
-```bash
-dev github index
-```
-
----
-
-### `dev_inspect` - File Analysis
+### `dev_patterns` - File Analysis
 
 Inspect files and compare implementations:
 
 ```
 # Compare similar implementations
-dev_inspect:
+dev_patterns:
   action: "compare"
   query: "src/utils/retry.ts"
 
 # Validate pattern consistency (coming soon)
-dev_inspect:
+dev_patterns:
   action: "validate"
   query: "src/hooks/useAuth.ts"
 ```
@@ -277,28 +195,6 @@ dev_health:
    dev_refs: { name: "suspectFunction", direction: "callees" }
    ```
 
-3. **Find related commits:**
-   ```
-   dev_history: { query: "similar bug fix" }
-   ```
-
-4. **Find similar issues:**
-   ```
-   dev_gh: { action: "search", query: "similar error" }
-   ```
-
-### Implementing a GitHub Issue
-
-1. **Get full context:**
-   ```
-   dev_plan: { issue: 123 }
-   ```
-
-2. **Search for relevant patterns:**
-   ```
-   dev_search: { query: "feature type from issue" }
-   ```
-
 ### Code Review Prep
 
 1. **Understand the change area:**
@@ -306,12 +202,7 @@ dev_health:
    dev_map: { focus: "path/to/changed/dir", includeChangeFrequency: true }
    ```
 
-2. **Check file history:**
-   ```
-   dev_history: { mode: "file", file: "path/to/changed/file.ts" }
-   ```
-
-3. **Check impact:**
+2. **Check impact:**
    ```
    dev_refs: { name: "changedFunction", direction: "callers" }
    ```
@@ -338,9 +229,6 @@ dev_health:
 # After major changes
 dev index
 
-# After new issues/PRs
-dev github index
-
 # Check health
 dev_health
 ```
@@ -356,17 +244,8 @@ dev index
 # Search code
 dev search "authentication" --limit 5 --threshold 0.4
 
-# Search git history
-dev git search "authentication fix"
-
-# Check stats
-dev stats
-
-# Explore patterns
-dev explore pattern "error handling"
-
-# Find similar code
-dev explore similar src/utils/retry.ts
+# View codebase map
+dev map --depth 3
 ```
 
 ---
@@ -387,16 +266,6 @@ dev mcp install
 # Tools available immediately
 ```
 
-### In Scripts
-
-```bash
-# JSON output for scripting
-dev search "coordinator" --json | jq '.[].metadata.path'
-
-# Check if indexed
-dev stats --json | jq '.filesIndexed'
-```
-
 ---
 
 ## Troubleshooting
@@ -404,8 +273,8 @@ dev stats --json | jq '.filesIndexed'
 ### "No results found"
 
 ```bash
-# Check if indexed
-dev stats
+# Check status
+dev_status
 
 # Re-index
 dev index

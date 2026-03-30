@@ -350,7 +350,7 @@ dev index
 
 ## GitHub Integration
 
-### `dev github index` fails
+### GitHub indexing fails
 
 **Common causes:**
 
@@ -382,11 +382,7 @@ Failed to fetch issues: spawnSync /bin/sh ENOBUFS
 
 1. **Use lower limit (recommended):**
    ```bash
-   # For main index command
    dev index --gh-limit 100
-
-   # For dedicated GitHub indexing
-   dev github index --limit 100
    ```
 
 2. **Adjust limit based on repository size:**
@@ -394,60 +390,10 @@ Failed to fetch issues: spawnSync /bin/sh ENOBUFS
    - Medium repos (50-200 issues/PRs): Use `--gh-limit 200`
    - Large repos (200+ issues/PRs): Use `--gh-limit 100` or lower
 
-3. **Index in batches:**
-   ```bash
-   # Index open items only (usually smaller)
-   dev github index --state open --limit 500
-   
-   # Then index closed items with lower limit
-   dev github index --state closed --limit 100
-   ```
-
 **Technical details:**
 - Default limit reduced to 500 (from 1000) to prevent buffer overflow
 - Buffer size increased to 50MB for large payloads
 - Helpful error messages now guide users to use `--gh-limit` flag
-
-### `dev_gh` tool not finding issues
-
-**Diagnosis:**
-
-1. **Check if GitHub is indexed:**
-   ```
-   Use dev_status tool - should show GitHub section
-   ```
-
-2. **Verify state file exists:**
-   ```bash
-   ls -la ~/.dev-agent/indexes/*/github-state.json
-   ```
-
-3. **Re-index:**
-   ```bash
-   dev github index
-   ```
-
-**Note:** The `dev_gh` tool automatically reloads when you run `dev github index` - no restart needed!
-
-### GitHub index is stale
-
-**Check age:**
-```
-Use dev_health tool - warns if GitHub index >24h old
-```
-
-**Solution:**
-```bash
-dev github index
-```
-
-**Automation (optional):**
-```bash
-# Add to crontab for daily updates
-0 9 * * * cd /path/to/repo && dev github index
-```
-
----
 
 ## Performance Issues
 
@@ -456,9 +402,7 @@ dev github index
 **Expected:**
 - `dev_search`: 100-500ms
 - `dev_status`: 50-100ms
-- `dev_inspect`: 200-800ms
-- `dev_plan`: 5-15 seconds
-- `dev_gh`: 100-300ms
+- `dev_patterns`: 200-800ms
 
 **If slower:**
 
@@ -534,7 +478,6 @@ Use dev_health tool to check component status
 ```bash
 # Re-index everything
 dev index
-dev github index
 
 # Restart MCP server
 ```
@@ -546,9 +489,7 @@ dev github index
 **Solution:**
 Check the tool's input schema:
 - `dev_search`: Requires `query` (string)
-- `dev_inspect`: Requires `action` and `query` (file path)
-- `dev_plan`: Requires `issue` (number)
-- `dev_gh`: Requires `action`
+- `dev_patterns`: Requires `action` and `query` (file path)
 
 ### "Adapter not found"
 
@@ -655,7 +596,7 @@ dev mcp start --verbose
 # In another terminal, send test message
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | dev mcp start
 
-# Should list all 9 tools: dev_search, dev_refs, dev_map, dev_history, dev_status, dev_plan, dev_inspect, dev_gh, dev_health
+# Should list all 6 tools: dev_search, dev_refs, dev_map, dev_patterns, dev_status, dev_health
 ```
 
 ### Inspect storage
@@ -689,7 +630,6 @@ rm -rf ~/.dev-agent/indexes/*
 # Re-index your repositories
 cd /path/to/your/repo
 dev index
-dev github index
 
 # Reinstall MCP
 dev mcp install --cursor  # or without --cursor for Claude Code
@@ -755,7 +695,6 @@ npm update -g dev-agent
 # Re-index repositories (recommended)
 cd /path/to/your/repo
 dev index
-dev github index
 
 # Restart AI tool
 ```
@@ -864,7 +803,7 @@ dev_health
 
 3. **Selective indexing:**
    - Only index repos you actively work on
-   - GitHub index optional (only if using `dev_gh`)
+   - GitHub index optional
 
 ---
 
@@ -875,7 +814,7 @@ dev_health
 **Solution:**
 - Index at monorepo root
 - Search works across all projects
-- Use `dev_inspect` to analyze specific files
+- Use `dev_patterns` to analyze specific files
 
 ### Non-git repositories
 
@@ -890,7 +829,7 @@ dev_health
 dev index
 
 # Skip GitHub indexing
-# Just use dev_search, dev_status, dev_inspect, dev_plan
+# Just use dev_search, dev_status, dev_patterns
 ```
 
 ### Very large files (>10MB)
@@ -944,7 +883,7 @@ dev index
 
 **GitHub Index Stale:**
 ```bash
-dev github index
+dev index
 ```
 
 **Repository Not Accessible:**

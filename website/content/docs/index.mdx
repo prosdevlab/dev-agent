@@ -8,8 +8,7 @@ We built this for ourselves. When exploring large codebases, we found AI tools s
 
 1. **Indexes your codebase** locally with embeddings (all-MiniLM-L6-v2)
 2. **Returns code snippets** — not just file paths, reducing input tokens by 99%
-3. **Bundles context** — `dev_plan` assembles issue + code + commits in one call
-4. **Integrates with GitHub** to search issues and PRs semantically
+3. **Provides semantic search** — find code by meaning, not just keywords
 
 ## Measured impact
 
@@ -19,7 +18,7 @@ We benchmarked dev-agent against baseline Claude Code across different task type
 |-----------|--------------|--------------|-----|
 | **Debugging** | **42%** | 37% | Semantic search beats grep chains |
 | **Exploration** | **44%** | 19% | Find code by meaning |
-| **Implementation** | **29%** | 22% | Context bundling via `dev_plan` |
+| **Implementation** | **29%** | 22% | Semantic search finds relevant code |
 
 **Key insight:** Savings scale with task complexity. Simple lookups show no improvement; complex debugging shows 42% cost reduction.
 
@@ -30,17 +29,14 @@ We benchmarked dev-agent against baseline Claude Code across different task type
 | What dev-agent does | Manual equivalent | Impact |
 |---------------------|-------------------|--------|
 | Returns code snippets in search | Read entire files | 99% fewer input tokens |
-| `dev_plan` bundles issue + code + commits | 5-10 separate tool calls | 29% cost reduction |
 | Semantic search finds relevant code | grep chains + filtering | 42% cost reduction |
 
 ## Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **Context Bundling** | `dev_plan` replaces 5-10 tool calls with one |
 | **Code Snippets** | Search returns code, not just file paths |
 | **Semantic Search** | Find code by meaning, not keywords |
-| **Git History** | Semantic search over commits |
 | **100% Local** | Your code never leaves your machine |
 
 ## Architecture
@@ -49,7 +45,7 @@ dev-agent is a monorepo:
 
 - **@prosdevlab/dev-agent-core** — Scanning, vector storage, GitHub integration
 - **@prosdevlab/dev-agent-cli** — Command-line interface
-- **@prosdevlab/dev-agent-mcp** — MCP server with 9 tool adapters
+- **@prosdevlab/dev-agent-mcp** — MCP server with 6 tool adapters
 - **@prosdevlab/dev-agent-subagents** — Planner, explorer agents
 
 ## Next Steps

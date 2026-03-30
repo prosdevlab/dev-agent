@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.0',
-  title: 'CLI UX Overhaul & Antfly Resilience',
+  version: '0.10.1',
+  title: 'Tool Refinements & Docs Cleanup',
   date: 'March 30, 2026',
   summary:
-    '7x faster indexing, native-first Antfly, auto-recovery, cleaner search/map output, new `dev reset` command.',
-  link: '/updates#v0100--cli-ux-overhaul--antfly-resilience',
+    'Renamed dev_inspect → dev_patterns, merged dev explore into dev search, fixed search thresholds, expanded scanner exclusions.',
+  link: '/updates#v0101--tool-refinements--docs-cleanup',
 } as const;

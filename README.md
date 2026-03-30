@@ -10,15 +10,12 @@
 
 ## What it does
 
-dev-agent indexes your codebase and provides 9 MCP tools to AI assistants. Instead of AI tools grepping through files, they can ask conceptual questions like "where do we handle authentication?"
+dev-agent indexes your codebase and provides 6 MCP tools to AI assistants. Instead of AI tools grepping through files, they can ask conceptual questions like "where do we handle authentication?"
 
 - `dev_search` — Semantic code search by meaning
-- `dev_refs` — Find callers/callees of functions  
+- `dev_refs` — Find callers/callees of functions
 - `dev_map` — Codebase structure with change frequency
-- `dev_history` — Semantic search over git commits
-- `dev_plan` — Assemble context for GitHub issues
-- `dev_inspect` — Inspect files (compare similar code, check patterns)
-- `dev_gh` — Search GitHub issues/PRs semantically
+- `dev_patterns` — Inspect files (compare similar code, check patterns)
 - `dev_status` / `dev_health` — Monitoring
 
 ## Measured results
@@ -130,37 +127,7 @@ Show hot areas with recent changes
     │   └── exports: class MCPServer, function createAdapter(config): Adapter
 ```
 
-### `dev_history` - Git History Search ✨ New in v0.4
-Semantic search over git commit history.
-
-```
-Find commits about authentication token fixes
-Show history for src/auth/middleware.ts
-```
-
-**Features:**
-- **Semantic search:** Find commits by meaning, not just text
-- **File history:** Track changes with rename detection
-- **Issue/PR refs:** Extracted from commit messages
-- **Token-budgeted output**
-
-### `dev_plan` - Context Assembly ✨ Enhanced in v0.4
-Assemble rich context for implementing GitHub issues.
-
-```
-Assemble context for issue #42
-```
-
-**Returns:**
-- Full issue with comments
-- Relevant code snippets from semantic search
-- **Related commits** from git history (new in v0.4)
-- Detected codebase patterns (test naming, locations)
-- Metadata (tokens, timing)
-
-**Note:** This tool no longer generates task breakdowns. It provides comprehensive context so the AI assistant can create better plans.
-
-### `dev_inspect` - File Analysis
+### `dev_patterns` - File Analysis
 Inspect files for pattern analysis. Finds similar code and compares patterns (error handling, type coverage, imports, testing).
 
 ```
@@ -177,14 +144,6 @@ Check how src/hooks/useAuth.ts compares to similar hooks
 
 ### `dev_status` - Repository Status
 View indexing status, component health, and repository information.
-
-### `dev_gh` - GitHub Search
-Search issues and PRs with semantic understanding.
-
-```
-Find authentication-related bugs
-Search for performance issues in closed PRs
-```
 
 ### `dev_health` - Health Monitoring
 Check MCP server and component health.
@@ -244,24 +203,19 @@ npm link
 dev index
 dev index --no-github               # Skip GitHub indexing
 
-# Incremental updates (only changed files) - much faster, typically seconds
-dev update                            # Fast incremental reindexing
-dev update -v                         # Verbose output showing what changed
-
 # Semantic search
 dev search "how do agents communicate"
-dev search "error handling" --threshold 0.3
+dev search "error handling" --verbose
+dev search --similar-to src/auth.ts        # Find similar code
 
-# Git history search
-dev git search "authentication fix"   # Semantic search over commits
-dev git stats                         # Show indexed commit count
+# Codebase structure
+dev map
 
-# GitHub integration
-dev github index                          # Index issues and PRs (also done by dev index)
-dev github search "authentication bug"    # Semantic search
-
-# View statistics
-dev stats
+# Storage management
+dev storage path                      # Show storage path
+dev storage size                      # Show storage size
+dev compact                           # Compact vector database
+dev clean --force                     # Remove all indexed data
 
 # MCP management
 dev mcp install --cursor              # Install for Cursor
@@ -327,9 +281,7 @@ dev index
 
 **Search results are outdated:**
 ```bash
-# Update index with recent file changes
-dev update
-# Or do a full reindex if needed
+# Re-index to pick up recent file changes
 dev index
 ```
 
@@ -407,14 +359,11 @@ pnpm typecheck
   - Build-time validation to prevent silent WASM dependency failures
   - Infrastructure for future Python/Rust support
 - **v0.4.0** - Intelligent Git History release
-  - New `dev_history` tool for semantic commit search
   - Enhanced `dev_map` with change frequency indicators (🔥 hot, ✏️ active)
-  - Enhanced `dev_plan` with related commits from git history
   - New `GitIndexer` and `LocalGitExtractor` in core
 - **v0.3.0** - Context Quality release
   - New `dev_refs` tool for relationship queries
   - Enhanced `dev_map` with hot paths, smart depth, signatures
-  - Refactored `dev_plan` to context assembly
 - **v0.2.0** - Richer search results with snippets and imports
 - **v0.1.0** - Initial release
 

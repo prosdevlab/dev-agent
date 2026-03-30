@@ -48,7 +48,7 @@ Show me the repository status
 - `section`: `summary`, `repo`, `indexes`, `github`, `health` (default: `summary`)
 - `format`: `compact` (default) or `verbose`
 
-### `dev_inspect` - File Analysis
+### `dev_patterns` - File Analysis
 Inspect specific files, compare implementations, validate patterns.
 
 ```
@@ -65,42 +65,6 @@ Compare src/auth/middleware.ts with similar implementations
 - `threshold`: Similarity threshold (0-1, default: 0.7)
 - `limit`: Number of results (default: 10, for compare action)
 - `format`: Output format (`compact` or `verbose`)
-
-### `dev_plan` - Generate Implementation Plans
-Create actionable implementation plans from GitHub issues.
-
-```
-Generate a plan for GitHub issue #42
-```
-
-**Parameters:**
-- `issue` (required): GitHub issue number
-- `detailLevel`: `simple` (4-8 tasks) or `detailed` (10-15 tasks, default)
-- `useExplorer`: Use semantic search for relevant code (default: true)
-- `format`: `compact` (default) or `verbose`
-
-### `dev_gh` - GitHub Issue/PR Search
-Search GitHub issues and pull requests with semantic understanding.
-
-```
-Find issues related to authentication bugs
-```
-
-**Actions:**
-- `search`: Semantic search across issues/PRs
-- `context`: Get full context for an issue/PR
-- `related`: Find related issues/PRs
-
-**Parameters:**
-- `action` (required): Search action
-- `query`: Search query (for `search` action)
-- `number`: Issue/PR number (for `context`/`related` actions)
-- `type`: Filter by `issue` or `pull_request`
-- `state`: Filter by `open`, `closed`, or `merged`
-- `labels`: Filter by labels (e.g., `["bug", "enhancement"]`)
-- `limit`: Number of results (default: 10)
-
-**Note:** Automatically reloads when you run `dev github index` to update GitHub data.
 
 ### `dev_health` - Server Health Check
 Check the health of dev-agent MCP server and its components.
@@ -139,17 +103,17 @@ Claude Code uses different config locations than Claude Desktop:
 
 ## GitHub Integration
 
-To enable GitHub issue/PR search:
+GitHub issues and PRs are indexed automatically when you run `dev index`. To enable GitHub search, make sure the `gh` CLI is installed and authenticated:
 
 ```bash
-# Index GitHub issues and PRs
+gh auth status
+# If not logged in:
+gh auth login
+
+# Then index (includes GitHub data by default)
 cd /path/to/your/repository
-dev github index
-
-# The dev_gh tool will automatically pick up new data
+dev index
 ```
-
-**Auto-Reload:** The MCP server detects changes to the GitHub index and reloads automatically - no restart needed!
 
 ## Manual Configuration (Advanced)
 
@@ -236,15 +200,14 @@ dev index
 
 ### GitHub Tools Not Working
 
-**Cause:** GitHub data not indexed.
+**Cause:** GitHub data not indexed, or `gh` CLI not authenticated.
 
 **Solution:**
 ```bash
+gh auth status
 cd /path/to/your/repository
-dev github index
+dev index
 ```
-
-The `dev_gh` tool will automatically reload the new data.
 
 ### Zombie Processes
 
@@ -282,7 +245,7 @@ Check server health with verbose details
 
 **Common Issues:**
 - **Vector storage warning:** Run `dev index`
-- **GitHub index stale (>24h):** Run `dev github index`
+- **GitHub index stale (>24h):** Run `dev index`
 - **Repository not accessible:** Check paths and permissions
 
 ## Production Features
@@ -341,7 +304,6 @@ npm update -g dev-agent
 # Rebuild indexes (recommended)
 cd /path/to/your/repository
 dev index
-dev github index
 
 # Restart Claude Code
 ```
@@ -351,7 +313,7 @@ No need to reinstall MCP integration - it automatically uses the latest version.
 ## Performance Tips
 
 1. **Index Incrementally:** Run `dev index` after major changes
-2. **GitHub Index:** Update periodically with `dev github index`
+2. **GitHub Index:** Re-run `dev index` to refresh GitHub data
 3. **Health Checks:** Use `dev_health` to monitor component status
 4. **Verbose Only When Needed:** Keep `LOG_LEVEL: info` for production
 

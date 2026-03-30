@@ -65,9 +65,7 @@ Control which MCP tools are enabled:
 | Adapter | Default | Tool | Description |
 |---------|---------|------|-------------|
 | `search` | enabled | `dev_search` | Semantic code search |
-| `github` | enabled | `dev_gh` | GitHub issues/PRs search |
-| `plan` | enabled | `dev_plan` | Context assembly for issues |
-| `inspect` | enabled | `dev_inspect` | File analysis |
+| `inspect` | enabled | `dev_patterns` | File analysis |
 | `status` | disabled | `dev_status` | Repository status |
 | `refs` | enabled | `dev_refs` | Relationship queries |
 | `map` | enabled | `dev_map` | Codebase overview |
@@ -147,7 +145,7 @@ Dev-agent stores index data in `~/.dev-agent/indexes/`:
 ~/.dev-agent/
 └── indexes/
     └── {hash}/           # Per-repository storage
-        ├── vectors.lance  # Vector embeddings
+        ├── vectors/       # Vector embeddings
         ├── metadata.json  # Repository metadata
         ├── indexer-state.json
         └── github-state.json
@@ -211,16 +209,16 @@ dev mcp uninstall
 
 ## Embedding Model
 
-Dev-agent uses `Xenova/all-MiniLM-L6-v2` for embeddings:
+Dev-agent uses `BAAI/bge-small-en-v1.5` for embeddings via Antfly Termite (ONNX):
 
 | Property | Value |
 |----------|-------|
-| Model | all-MiniLM-L6-v2 |
+| Model | BAAI/bge-small-en-v1.5 |
 | Dimensions | 384 |
-| Provider | @xenova/transformers |
+| Provider | Antfly Termite (ONNX) |
 | Location | Local (no API calls) |
 
-The model is downloaded on first run (~23MB) and cached locally.
+The model is downloaded on first run and cached locally.
 
 ## Advanced: Custom Exclude Patterns
 

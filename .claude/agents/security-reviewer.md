@@ -41,7 +41,7 @@ This agent **NEVER modifies code**. It reports issues for the developer to fix.
 ### Data Exposure
 - [ ] Vector storage doesn't leak sensitive file contents in error messages
 - [ ] GitHub integration doesn't expose private repo data unintentionally
-- [ ] Embedding model doesn't send data externally (local-only with @xenova/transformers)
+- [ ] Embedding model doesn't send data externally (local-only with Antfly/Termite ONNX)
 
 ## Output Format
 

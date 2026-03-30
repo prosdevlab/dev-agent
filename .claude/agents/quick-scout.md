@@ -35,13 +35,11 @@ Do NOT guess at architectural reasoning or make recommendations.
 packages/
   core/src/
     scanner/          # ts-morph (TS/JS) and tree-sitter (Go) analysis
-    vector/           # LanceDB vector storage + embeddings
-    services/         # Coordinator, search, GitHub, health, metrics
+    vector/           # Antfly vector storage + embeddings
+    services/         # Coordinator, search, health
     events/           # Event bus system
     indexer/          # Repository indexing orchestration
     map/              # Codebase structure mapping
-    git/              # Git history indexing
-    metrics/          # Metrics store
     observability/    # Logger integration
 
   cli/src/
@@ -50,7 +48,7 @@ packages/
 
   mcp-server/src/
     server/           # MCP server setup
-    adapters/         # Tool adapters (search, refs, map, history, etc.)
+    adapters/         # Tool adapters (search, refs, map, inspect, status, health)
     formatters/       # Compact and verbose output formatters
     utils/            # Logger
 
