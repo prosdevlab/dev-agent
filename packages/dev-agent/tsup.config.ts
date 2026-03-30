@@ -9,12 +9,6 @@ const version = packageJson.version;
 // - Native modules (have platform-specific binaries)
 // - Large libraries with their own loading mechanisms
 const external = [
-  // Native modules with platform-specific binaries
-  '@lancedb/lancedb',
-
-  // Large ML library - has its own model loading mechanism
-  '@xenova/transformers',
-
   // These have native bindings or complex loading
   'ts-morph',
   'typescript',

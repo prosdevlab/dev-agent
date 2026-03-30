@@ -6,6 +6,38 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// Mock VectorStorage to avoid needing antfly server
+vi.mock('@prosdevlab/dev-agent-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@prosdevlab/dev-agent-core')>();
+  return {
+    ...actual,
+    VectorStorage: class MockVectorStorage {
+      async initialize() {}
+      async addDocuments() {}
+      async search() {
+        return [];
+      }
+      async searchByDocumentId() {
+        return [];
+      }
+      async getAll() {
+        return [];
+      }
+      async getDocument() {
+        return null;
+      }
+      async deleteDocuments() {}
+      async clear() {}
+      async getStats() {
+        return { totalDocuments: 0, storageSize: 0, dimension: 384, modelName: 'mock' };
+      }
+      async optimize() {}
+      async close() {}
+    },
+  };
+});
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubAgentConfig } from '../../github/agent';
 import { GitHubAgent } from '../../github/agent';

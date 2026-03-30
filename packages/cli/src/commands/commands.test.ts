@@ -2,6 +2,38 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Command } from 'commander';
+
+// Mock VectorStorage to avoid needing antfly server
+vi.mock('../../../core/src/vector/index', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    VectorStorage: class MockVectorStorage {
+      async initialize() {}
+      async addDocuments() {}
+      async search() {
+        return [];
+      }
+      async searchByDocumentId() {
+        return [];
+      }
+      async getAll() {
+        return [];
+      }
+      async getDocument() {
+        return null;
+      }
+      async deleteDocuments() {}
+      async clear() {}
+      async getStats() {
+        return { totalDocuments: 0, storageSize: 0, dimension: 384, modelName: 'mock' };
+      }
+      async optimize() {}
+      async close() {}
+    },
+  };
+});
+
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanCommand } from './clean';
 import { indexCommand } from './index';

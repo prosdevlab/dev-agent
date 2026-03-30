@@ -2,7 +2,11 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+// Use mock VectorStorage (no antfly server needed)
+vi.mock('../../vector/index');
+
 import { RepositoryIndexer } from '../index';
 
 /**

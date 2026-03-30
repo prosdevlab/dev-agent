@@ -43,17 +43,15 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@lancedb/lancedb": "^0.22.3",
-    "@xenova/transformers": "^2.17.2",
     "better-sqlite3": "^12.5.0",
     "ts-morph": "^27.0.2",
     "web-tree-sitter": "^0.25.10"
   },
   "devDependencies": {
-    "tree-sitter-wasms": "^0.1.13",
     "@prosdevlab/dev-agent-cli": "workspace:*",
     "@prosdevlab/dev-agent-mcp": "workspace:*",
     "@types/node": "^22.0.0",
+    "tree-sitter-wasms": "^0.1.13",
     "tsup": "^8.3.0"
   },
   "engines": {
