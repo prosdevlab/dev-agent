@@ -1,132 +1,108 @@
 /**
- * Vector storage and embedding system
+ * Vector storage system
+ *
+ * Backed by Antfly — handles embedding generation, vector storage,
+ * and hybrid search (BM25 + vector + RRF) internally.
  */
 
-export * from './embedder';
-export * from './store';
-export * from './types';
+export * from './antfly-store.js';
+export * from './types.js';
 
-import * as fs from 'node:fs/promises';
-import { TransformersEmbedder } from './embedder';
-import { LanceDBVectorStore } from './store';
+import { type AntflyStoreConfig, AntflyVectorStore } from './antfly-store.js';
 import type {
   EmbeddingDocument,
   SearchOptions,
   SearchResult,
   VectorStats,
   VectorStorageConfig,
-} from './types';
+} from './types.js';
 
 /**
- * Convenience class that combines embedder and vector store
- * Provides a simple API for storing and searching documents
+ * Derives an antfly table name from a storePath.
+ *
+ * storePath examples:
+ *   ~/.dev-agent/indexes/my-project/vectors       → dev-agent-my-project-code
+ *   ~/.dev-agent/indexes/my-project/vectors-git    → dev-agent-my-project-git
+ *   ~/.dev-agent/indexes/my-project/vectors-github → dev-agent-my-project-github
+ */
+function deriveTableName(storePath: string): string {
+  const parts = storePath.replace(/\/$/, '').split('/');
+  const last = parts.at(-1) ?? 'code';
+  const projectDir = parts.at(-2) ?? 'default';
+
+  // Sanitize for antfly table names (alphanumeric + hyphens)
+  const project = projectDir.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
+
+  if (last === 'vectors') return `dev-agent-${project}-code`;
+  if (last === 'vectors-git') return `dev-agent-${project}-git`;
+  if (last === 'vectors-github') return `dev-agent-${project}-github`;
+  return `dev-agent-${project}-${last.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+}
+
+/**
+ * High-level vector storage API.
+ *
+ * Wraps AntflyVectorStore and preserves the same public interface that
+ * all consumers (indexers, services, CLI, MCP) depend on.
+ *
+ * With Antfly, there is no separate embedding step — documents are
+ * embedded automatically on insert and queries use hybrid search.
  */
 export class VectorStorage {
-  private readonly embedder: TransformersEmbedder;
-  private readonly store: LanceDBVectorStore;
+  private readonly store: AntflyVectorStore;
   private initialized = false;
 
   constructor(config: VectorStorageConfig) {
-    const { storePath, embeddingModel = 'Xenova/all-MiniLM-L6-v2', dimension = 384 } = config;
+    const antflyConfig: AntflyStoreConfig = {
+      table: deriveTableName(config.storePath),
+      model: config.embeddingModel,
+    };
 
-    this.embedder = new TransformersEmbedder(embeddingModel, dimension);
-    this.store = new LanceDBVectorStore(storePath, dimension);
+    this.store = new AntflyVectorStore(antflyConfig);
   }
 
   /**
-   * Initialize both embedder and store
-   * @param options Optional initialization options
-   * @param options.skipEmbedder Skip embedder initialization (useful for read-only operations)
+   * Initialize the storage.
+   *
+   * The skipEmbedder option is accepted for backward compatibility but
+   * has no effect — Antfly handles embeddings internally.
    */
-  async initialize(options?: { skipEmbedder?: boolean }): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    const { skipEmbedder = false } = options || {};
-
-    if (skipEmbedder) {
-      // Only initialize store, skip embedder (much faster for read-only operations)
-      await this.store.initialize();
-    } else {
-      // Initialize both embedder and store
-      await Promise.all([this.embedder.initialize(), this.store.initialize()]);
-    }
-
+  async initialize(_options?: { skipEmbedder?: boolean }): Promise<void> {
+    if (this.initialized) return;
+    await this.store.initialize();
     this.initialized = true;
   }
 
   /**
-   * Ensure embedder is initialized (lazy initialization for search operations)
-   */
-  private async ensureEmbedder(): Promise<void> {
-    if (!this.embedder) {
-      throw new Error('Embedder not available');
-    }
-    // Initialize embedder if not already done
-    await this.embedder.initialize();
-  }
-
-  /**
-   * Add documents to the store (automatically generates embeddings)
+   * Add documents (Antfly generates embeddings automatically via Termite)
    */
   async addDocuments(documents: EmbeddingDocument[]): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
-    if (documents.length === 0) {
-      return;
-    }
-
-    // Generate embeddings
-    const texts = documents.map((doc) => doc.text);
-    const embeddings = await this.embedder.embedBatch(texts);
-
-    // Store documents with embeddings
-    await this.store.add(documents, embeddings);
+    this.assertReady();
+    if (documents.length === 0) return;
+    await this.store.add(documents);
   }
 
   /**
-   * Search for similar documents using natural language query
+   * Search using hybrid search (BM25 + vector + RRF)
    */
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
-    // Ensure embedder is initialized (lazy load if needed)
-    await this.ensureEmbedder();
-
-    // Generate query embedding
-    const queryEmbedding = await this.embedder.embed(query);
-
-    // Search vector store
-    return this.store.search(queryEmbedding, options);
+    this.assertReady();
+    return this.store.searchText(query, options);
   }
 
   /**
-   * Find similar documents to a given document by ID
-   * More efficient than search() as it reuses the document's existing embedding
+   * Find documents similar to a given document by ID
    */
   async searchByDocumentId(documentId: string, options?: SearchOptions): Promise<SearchResult[]> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     return this.store.searchByDocumentId(documentId, options);
   }
 
   /**
-   * Get all documents without semantic search (fast scan)
-   * Use this when you need all documents and don't need relevance ranking
-   * This is 10-20x faster than search() as it skips embedding generation
+   * Get all documents without semantic search (full scan)
    */
   async getAll(options?: { limit?: number }): Promise<SearchResult[]> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     return this.store.getAll(options);
   }
 
@@ -134,10 +110,7 @@ export class VectorStorage {
    * Get a document by ID
    */
   async getDocument(id: string): Promise<EmbeddingDocument | null> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     return this.store.get(id);
   }
 
@@ -145,22 +118,15 @@ export class VectorStorage {
    * Delete documents by ID
    */
   async deleteDocuments(ids: string[]): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     await this.store.delete(ids);
   }
 
   /**
-   * Clear all documents from the store (destructive operation)
-   * Used for force re-indexing
+   * Clear all documents (destructive — used for force re-indexing)
    */
   async clear(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     await this.store.clear();
   }
 
@@ -168,40 +134,24 @@ export class VectorStorage {
    * Get statistics about the vector store
    */
   async getStats(): Promise<VectorStats> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
+    const modelInfo = this.store.getModelInfo();
     const totalDocuments = await this.store.count();
-
-    // Get storage size
-    let storageSize = 0;
-    try {
-      const storePath = this.store.path;
-      const stats = await fs.stat(storePath);
-      storageSize = stats.size;
-    } catch {
-      // Directory might not exist yet
-      storageSize = 0;
-    }
+    const storageSize = await this.store.getStorageSize();
 
     return {
       totalDocuments,
       storageSize,
-      dimension: this.embedder.dimension,
-      modelName: this.embedder.modelName,
+      dimension: modelInfo.dimension,
+      modelName: modelInfo.modelName,
     };
   }
 
   /**
-   * Optimize the vector store (compact fragments, update indices)
-   * Call this after bulk indexing operations for better performance
+   * Optimize the store (no-op for Antfly — manages compaction internally)
    */
   async optimize(): Promise<void> {
-    if (!this.initialized) {
-      throw new Error('VectorStorage not initialized. Call initialize() first.');
-    }
-
+    this.assertReady();
     await this.store.optimize();
   }
 
@@ -211,5 +161,11 @@ export class VectorStorage {
   async close(): Promise<void> {
     await this.store.close();
     this.initialized = false;
+  }
+
+  private assertReady(): void {
+    if (!this.initialized) {
+      throw new Error('VectorStorage not initialized. Call initialize() first.');
+    }
   }
 }
