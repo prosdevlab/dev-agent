@@ -1,6 +1,6 @@
 # Phase 2: Rethink Indexing & Search Flow
 
-**Status:** Spike complete, Plan A confirmed
+**Status:** In progress (Parts 2.2–2.7 merged, 2.8 E2E tests remaining)
 
 ## Context
 
