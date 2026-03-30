@@ -2,32 +2,60 @@
  * Tests for StatusAdapter
  */
 
-import type { StatsService } from '@prosdevlab/dev-agent-core';
+import * as fs from 'node:fs';
+import type { VectorStorage } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { StatusArgsSchema } from '../../schemas/index.js';
 import { StatusAdapter } from '../built-in/status-adapter';
 import type { AdapterContext, ToolExecutionContext } from '../types';
 
-// Mock StatsService
-const createMockStatsService = () => {
+// Mock fs.promises.stat and fs.promises.access
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
   return {
-    getStats: vi.fn(),
-    isIndexed: vi.fn(),
-  } as unknown as StatsService;
+    ...actual,
+    promises: {
+      ...actual.promises,
+      stat: vi.fn(),
+      access: vi.fn(),
+    },
+    constants: actual.constants,
+  };
+});
+
+const createMockVectorStorage = (overrides?: Partial<VectorStorage>) => {
+  return {
+    getStats: vi.fn().mockResolvedValue({
+      totalDocuments: 42,
+      storageSize: 1024 * 1024 * 5, // 5 MB
+      dimension: 384,
+      modelName: 'BAAI/bge-small-en-v1.5',
+    }),
+    initialize: vi.fn(),
+    close: vi.fn(),
+    addDocuments: vi.fn(),
+    search: vi.fn(),
+    deleteDocuments: vi.fn(),
+    optimize: vi.fn(),
+    ...overrides,
+  } as unknown as VectorStorage;
 };
 
 describe('StatusAdapter', () => {
   let adapter: StatusAdapter;
-  let mockStatsService: StatsService;
+  let mockVectorStorage: VectorStorage;
   let mockContext: AdapterContext;
   let mockExecutionContext: ToolExecutionContext;
 
   beforeEach(() => {
-    mockStatsService = createMockStatsService();
+    vi.clearAllMocks();
+
+    mockVectorStorage = createMockVectorStorage();
 
     adapter = new StatusAdapter({
-      statsService: mockStatsService,
+      vectorStorage: mockVectorStorage,
       repositoryPath: '/test/repo',
-      vectorStorePath: '/test/.dev-agent/vectors.lance',
+      watcherSnapshotPath: '/test/.dev-agent/watcher-snapshot',
       defaultSection: 'summary',
     });
 
@@ -50,18 +78,11 @@ describe('StatusAdapter', () => {
       },
     };
 
-    // Setup default mock responses
-    vi.mocked(mockStatsService.getStats).mockResolvedValue({
-      filesScanned: 2341,
-      documentsExtracted: 1234,
-      documentsIndexed: 1234,
-      vectorsStored: 1234,
-      duration: 18300,
-      errors: [],
-      startTime: new Date('2025-11-24T08:00:00Z'),
-      endTime: new Date('2025-11-24T08:00:18Z'),
-      repositoryPath: '/test/repo',
-    });
+    // Default: repository accessible, snapshot exists
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+    vi.mocked(fs.promises.stat).mockResolvedValue({
+      mtime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+    } as fs.Stats);
   });
 
   describe('metadata', () => {
@@ -93,12 +114,12 @@ describe('StatusAdapter', () => {
       expect(definition.inputSchema.properties).toHaveProperty('format');
     });
 
-    it('should have correct section enum values', () => {
+    it('should have correct section enum values without github', () => {
       const definition = adapter.getToolDefinition();
       const sectionProperty = definition.inputSchema.properties?.section;
 
       expect(sectionProperty).toBeDefined();
-      expect(sectionProperty?.enum).toEqual(['summary', 'repo', 'indexes', 'github', 'health']);
+      expect(sectionProperty?.enum).toEqual(['summary', 'repo', 'indexes', 'health']);
     });
 
     it('should have correct format enum values', () => {
@@ -133,116 +154,146 @@ describe('StatusAdapter', () => {
     });
 
     describe('summary section', () => {
-      it('should return compact summary by default', async () => {
+      it('should show document count in summary', async () => {
         const result = await adapter.execute({}, mockExecutionContext);
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Dev-Agent Status');
-        expect(result.data).toContain('Repository:');
-        expect(result.data).toContain('2341 files indexed');
+        expect(result.data).toContain('42');
       });
 
-      it('should return verbose summary when requested', async () => {
-        const result = await adapter.execute(
-          { section: 'summary', format: 'verbose' },
-          mockExecutionContext
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('Detailed');
-        expect(result.data).toContain('Repository');
-        expect(result.data).toContain('Vector Indexes');
-        expect(result.data).toContain('Health Checks');
-      });
-
-      it('should handle repository not indexed', async () => {
-        vi.mocked(mockStatsService.getStats).mockResolvedValue(null);
+      it('should show Not indexed when zero docs', async () => {
+        vi.mocked(mockVectorStorage.getStats).mockResolvedValue({
+          totalDocuments: 0,
+          storageSize: 0,
+          dimension: 384,
+          modelName: 'BAAI/bge-small-en-v1.5',
+        });
 
         const result = await adapter.execute({}, mockExecutionContext);
 
         expect(result.success).toBe(true);
-        expect(result.data).toContain('not indexed');
+        expect(result.data).toContain('Not indexed');
+      });
+
+      it('should show auto-index active when snapshot exists', async () => {
+        const result = await adapter.execute({}, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('Auto-index:** Active');
+        expect(result.data).toContain('Last Updated:');
+      });
+
+      it('should show auto-index not active when no snapshot', async () => {
+        vi.mocked(fs.promises.stat).mockRejectedValue(new Error('ENOENT'));
+
+        const result = await adapter.execute({}, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('Not active');
+        expect(result.data).toContain('dev index .');
       });
     });
 
     describe('repo section', () => {
-      it('should return repository status in compact format', async () => {
+      it('should show repository details', async () => {
         const result = await adapter.execute({ section: 'repo' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Repository Index');
-        expect(result.data).toContain('2341');
-        expect(result.data).toContain('1234');
-      });
-
-      it('should return repository status in verbose format', async () => {
-        const result = await adapter.execute(
-          { section: 'repo', format: 'verbose' },
-          mockExecutionContext
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('Documents Indexed:');
-        expect(result.data).toContain('Vectors Stored:');
+        expect(result.data).toContain('42');
+        expect(result.data).toContain('Antfly');
       });
 
       it('should handle repository not indexed', async () => {
-        vi.mocked(mockStatsService.getStats).mockResolvedValue(null);
+        vi.mocked(mockVectorStorage.getStats).mockResolvedValue({
+          totalDocuments: 0,
+          storageSize: 0,
+          dimension: 384,
+          modelName: 'BAAI/bge-small-en-v1.5',
+        });
 
         const result = await adapter.execute({ section: 'repo' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Not indexed');
-        expect(result.data).toContain('dev index');
+        expect(result.data).toContain('dev index .');
       });
     });
 
     describe('indexes section', () => {
-      it('should return indexes status in compact format', async () => {
-        await adapter.initialize(mockContext);
+      it('should show Antfly not LanceDB', async () => {
+        const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('Antfly');
+        expect(result.data).not.toContain('LanceDB');
+      });
+
+      it('should show document count and model info', async () => {
+        const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('42');
+        expect(result.data).toContain('BAAI/bge-small-en-v1.5');
+        expect(result.data).toContain('384-dim');
+      });
+
+      it('should show watcher snapshot age', async () => {
+        const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('Last Snapshot');
+        expect(result.data).toContain('Auto-index:** Active');
+      });
+
+      it('should show run dev index when no snapshot', async () => {
+        vi.mocked(fs.promises.stat).mockRejectedValue(new Error('ENOENT'));
 
         const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
-        expect(result.data).toContain('Vector Indexes');
-        expect(result.data).toContain('Code Index');
-        expect(result.data).toContain('1234 embeddings');
+        expect(result.data).toContain('Not found');
+        expect(result.data).toContain('dev index .');
       });
 
-      it('should return indexes status in verbose format', async () => {
-        await adapter.initialize(mockContext);
+      it('should show not indexed when zero docs', async () => {
+        vi.mocked(mockVectorStorage.getStats).mockResolvedValue({
+          totalDocuments: 0,
+          storageSize: 0,
+          dimension: 384,
+          modelName: 'BAAI/bge-small-en-v1.5',
+        });
 
-        const result = await adapter.execute(
-          { section: 'indexes', format: 'verbose' },
-          mockExecutionContext
-        );
-
-        expect(result.success).toBe(true);
-        expect(result.data).toContain('Code Index');
-        expect(result.data).toContain('Documents:');
-      });
-    });
-
-    describe('github section', () => {
-      it('should return GitHub status message', async () => {
-        await adapter.initialize(mockContext);
-
-        const result = await adapter.execute({ section: 'github' }, mockExecutionContext);
+        const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
-        expect(result.data).toContain('GitHub Integration');
+        expect(result.data).toContain('Not indexed');
       });
     });
 
     describe('health section', () => {
-      it('should return health status in compact format', async () => {
+      it('should show Antfly health check when ok', async () => {
         const result = await adapter.execute({ section: 'health' }, mockExecutionContext);
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Health Checks');
+        expect(result.data).toContain('Antfly');
+        expect(result.data).toContain('Connected and responding');
       });
 
-      it('should return health status in verbose format', async () => {
+      it('should show Antfly error when getStats fails', async () => {
+        vi.mocked(mockVectorStorage.getStats).mockRejectedValue(new Error('Connection refused'));
+
+        const result = await adapter.execute({ section: 'health' }, mockExecutionContext);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toContain('Antfly');
+        expect(result.data).toContain('Not reachable');
+        expect(result.data).toContain('dev setup');
+      });
+
+      it('should show verbose details when requested', async () => {
         const result = await adapter.execute(
           { section: 'health', format: 'verbose' },
           mockExecutionContext
@@ -250,13 +301,32 @@ describe('StatusAdapter', () => {
 
         expect(result.success).toBe(true);
         expect(result.data).toContain('Health Checks');
-        expect(result.data.length).toBeGreaterThan(100);
+        expect(result.data.length).toBeGreaterThan(50);
+      });
+
+      it('should not contain GitHub CLI check', async () => {
+        const result = await adapter.execute({ section: 'health' }, mockExecutionContext);
+
+        expect(result.data).not.toContain('GitHub CLI');
+      });
+    });
+
+    describe('github section removed', () => {
+      it('should reject github as section via schema', () => {
+        const parsed = StatusArgsSchema.safeParse({ section: 'github' });
+        expect(parsed.success).toBe(false);
+      });
+
+      it('should reject github section via adapter validation', async () => {
+        const result = await adapter.execute({ section: 'github' }, mockExecutionContext);
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('INVALID_PARAMS');
       });
     });
 
     describe('error handling', () => {
       it('should handle errors during status generation', async () => {
-        vi.mocked(mockStatsService.getStats).mockRejectedValue(new Error('Database error'));
+        vi.mocked(mockVectorStorage.getStats).mockRejectedValue(new Error('Database error'));
 
         const result = await adapter.execute({ section: 'summary' }, mockExecutionContext);
 
@@ -266,7 +336,7 @@ describe('StatusAdapter', () => {
       });
 
       it('should log errors', async () => {
-        vi.mocked(mockStatsService.getStats).mockRejectedValue(new Error('Test error'));
+        vi.mocked(mockVectorStorage.getStats).mockRejectedValue(new Error('Test error'));
 
         await adapter.execute({ section: 'summary' }, mockExecutionContext);
 
@@ -325,39 +395,6 @@ describe('StatusAdapter', () => {
     it('should use defaults when no args provided', () => {
       const estimate = adapter.estimateTokens({});
       expect(estimate).toBe(200); // Default is summary + compact
-    });
-  });
-
-  describe('time formatting', () => {
-    it('should format recent times correctly', async () => {
-      const now = new Date();
-      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-
-      vi.mocked(mockStatsService.getStats).mockResolvedValue({
-        filesScanned: 100,
-        documentsExtracted: 50,
-        documentsIndexed: 50,
-        vectorsStored: 50,
-        duration: 1000,
-        errors: [],
-        startTime: twoHoursAgo,
-        endTime: twoHoursAgo,
-        repositoryPath: '/test/repo',
-      });
-
-      const result = await adapter.execute({ section: 'summary' }, mockExecutionContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toContain('ago');
-    });
-  });
-
-  describe('storage size formatting', () => {
-    it('should format bytes correctly', async () => {
-      const result = await adapter.execute({ section: 'indexes' }, mockExecutionContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toMatch(/\d+(\.\d+)?\s*(B|KB|MB|GB)/);
     });
   });
 });

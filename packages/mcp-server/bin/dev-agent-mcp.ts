@@ -10,7 +10,6 @@ import {
   getStoragePath,
   RepositoryIndexer,
   SearchService,
-  StatsService,
   saveMetadata,
 } from '@prosdevlab/dev-agent-core';
 import {
@@ -169,7 +168,6 @@ async function main() {
 
     // Create services
     const searchService = new SearchService({ repositoryPath });
-    const statsService = new StatsService({ repositoryPath });
 
     // Create and register adapters
     const searchAdapter = new SearchAdapter({
@@ -180,9 +178,9 @@ async function main() {
     });
 
     const statusAdapter = new StatusAdapter({
-      statsService,
+      vectorStorage: indexer.getVectorStorage(),
       repositoryPath,
-      vectorStorePath: filePaths.vectors,
+      watcherSnapshotPath: filePaths.watcherSnapshot,
       defaultSection: 'summary',
     });
 

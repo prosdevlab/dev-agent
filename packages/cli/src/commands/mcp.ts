@@ -11,7 +11,6 @@ import {
   getStoragePath,
   RepositoryIndexer,
   SearchService,
-  StatsService,
 } from '@prosdevlab/dev-agent-core';
 import {
   HealthAdapter,
@@ -71,7 +70,7 @@ Available Tools (6):
         try {
           // Check if repository is indexed
           const storagePath = await getStoragePath(repositoryPath);
-          const { vectors } = getStorageFilePaths(storagePath);
+          const { vectors, watcherSnapshot } = getStorageFilePaths(storagePath);
 
           const vectorsExist = await fs
             .access(vectors)
@@ -99,7 +98,6 @@ Available Tools (6):
 
           // Create services
           const searchService = new SearchService({ repositoryPath });
-          const statsService = new StatsService({ repositoryPath });
 
           // Create all adapters
           const searchAdapter = new SearchAdapter({
@@ -109,9 +107,9 @@ Available Tools (6):
           });
 
           const statusAdapter = new StatusAdapter({
-            statsService,
+            vectorStorage: indexer.getVectorStorage(),
             repositoryPath,
-            vectorStorePath: vectors,
+            watcherSnapshotPath: watcherSnapshot,
             defaultSection: 'summary',
           });
 

@@ -34,4 +34,3 @@ export {
   type SearchServiceConfig,
   type SimilarityOptions,
 } from './search-service.js';
-export { StatsService, type StatsServiceConfig } from './stats-service.js';
