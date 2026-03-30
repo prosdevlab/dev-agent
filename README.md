@@ -52,16 +52,16 @@ We benchmarked dev-agent against baseline Claude Code across 5 task types:
 # Install globally
 npm install -g dev-agent
 
-# Index your repository (initial indexing can take 5-10 minutes for large codebases)
+# One-time setup (starts search backend via Docker or native)
+dev setup
+
+# Index your repository
 cd /path/to/your/repo
 dev index .
 
 # Install MCP integration
 dev mcp install --cursor  # For Cursor IDE
 dev mcp install           # For Claude Code
-
-# Keep index up to date (fast incremental updates)
-dev update
 
 # That's it! AI tools now have access to dev-agent capabilities.
 ```
@@ -213,14 +213,17 @@ Check MCP server and component health.
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22 LTS or higher
-- [pnpm](https://pnpm.io/) v8.15.4 or higher
+- [Docker Desktop](https://docker.com/get-started) (recommended) or [Antfly](https://antfly.io) native binary
 - [GitHub CLI](https://cli.github.com/) (for GitHub features)
 
 ### Global Install (Recommended)
 
 ```bash
 npm install -g dev-agent
+dev setup    # One-time: starts search backend (Docker or native)
 ```
+
+`dev setup` handles everything — pulls the Docker image, starts the server, and verifies the connection. If Docker isn't available, it falls back to the native Antfly binary and offers to install it.
 
 ### From Source
 
@@ -363,11 +366,10 @@ dev-agent/
 - **TypeScript** (strict mode)
 - **ts-morph** / TypeScript Compiler API (TypeScript/JS analysis)
 - **tree-sitter** WASM (Go analysis, extensible to Python/Rust)
-- **LanceDB** (embedded vector storage)
-- **@xenova/transformers** (local embeddings)
+- **[Antfly](https://antfly.io)** (hybrid search: BM25 + vector + RRF, local embeddings via Termite)
 - **MCP** (Model Context Protocol)
 - **Turborepo** (monorepo builds)
-- **Vitest** (1500+ tests)
+- **Vitest** (1900+ tests)
 
 ## Development
 

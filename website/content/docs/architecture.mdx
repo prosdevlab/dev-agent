@@ -37,7 +37,7 @@ dev-agent is built as a TypeScript monorepo with specialized packages for differ
 │         │                 │                 │                       │
 │  ┌──────▼─────────────────▼─────────────────▼───────────────────┐   │
 │  │                    Vector Storage                             │   │
-│  │                      (LanceDB)                                │   │
+│  │                (Antfly — hybrid search)                       │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -52,8 +52,8 @@ The foundation layer providing:
   - TypeScript/JavaScript via ts-morph
   - Go via tree-sitter WASM
   - Markdown via remark
-- **Indexer** — Converts code components to vector embeddings
-- **Vector Storage** — LanceDB for fast similarity search
+- **Indexer** — Sends code components to Antfly for embedding and storage
+- **Vector Storage** — Antfly for hybrid search (BM25 + vector + RRF)
 - **GitHub Integration** — Fetches and indexes issues/PRs via GitHub CLI
 
 ### @prosdevlab/dev-agent-cli
@@ -110,9 +110,8 @@ Centralized logging:
 | Build | Turborepo | Monorepo orchestration |
 | Testing | Vitest | 1500+ tests |
 | Linting | Biome | Fast linting/formatting |
-| Vector DB | LanceDB | Embedded vector storage |
-| Embeddings | @xenova/transformers | Local ML inference |
-| Model | all-MiniLM-L6-v2 | Sentence embeddings |
+| Search | [Antfly](https://antfly.io) | Hybrid search (BM25 + vector + RRF) |
+| Embeddings | Termite (via Antfly) | Local ONNX inference (bge-small-en-v1.5) |
 | Protocol | MCP | AI tool integration |
 | TS/JS Parser | ts-morph | TypeScript Compiler API |
 | Go Parser | tree-sitter WASM | Fast, portable parsing |
@@ -126,14 +125,10 @@ Source Code
     │
     ▼
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Glob    │ ──▶ │  Parse   │ ──▶ │ Extract  │ ──▶ │  Embed   │
-│  Files   │     │   AST    │     │Components│     │ Vectors  │
+│  Glob    │ ──▶ │  Parse   │ ──▶ │ Extract  │ ──▶ │  Store   │
+│  Files   │     │   AST    │     │Components│     │ (Antfly) │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘
-                                                        │
-                                                        ▼
-                                                  ┌──────────┐
-                                                  │ LanceDB  │
-                                                  └──────────┘
+                                          Antfly auto-embeds via Termite
 ```
 
 ### Query Flow
@@ -143,32 +138,24 @@ User Query: "Where is auth handled?"
     │
     ▼
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Embed   │ ──▶ │  Vector  │ ──▶ │  Rank    │ ──▶ │  Format  │
-│  Query   │     │  Search  │     │ Results  │     │  Output  │
+│  Hybrid  │ ──▶ │BM25+Vec  │ ──▶ │  RRF     │ ──▶ │  Format  │
+│  Query   │     │  Search  │     │  Fusion  │     │  Output  │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘
 ```
 
 ## Storage
 
-All data is stored locally in `~/.dev-agent/`:
+Data is stored locally by Antfly (default `~/.antfly/`) and dev-agent config in `~/.dev-agent/`.
 
-```
-~/.dev-agent/
-├── indexes/
-│   └── <repo-hash>/
-│       ├── code.lance/        # Code vector index
-│       └── metadata.json      # Index metadata
-├── github/
-│   └── <repo-hash>/
-│       ├── issues.lance/      # Issues vector index
-│       └── prs.lance/         # PRs vector index
-└── config.json                # Global config (optional)
-```
+Antfly manages its own storage, indexes, and embeddings. dev-agent creates three tables:
+- `dev-agent-{project}-code` — code components
+- `dev-agent-{project}-git` — git commit history
+- `dev-agent-{project}-github` — GitHub issues/PRs
 
 ## Security
 
 - **100% Local** — No data sent to external services
 - **No Cloud** — All processing happens on your machine
-- **Embeddings** — Generated locally via @xenova/transformers
+- **Embeddings** — Generated locally via Antfly's Termite engine (ONNX)
 - **GitHub Data** — Fetched via authenticated GitHub CLI
 
