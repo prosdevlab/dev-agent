@@ -60,17 +60,13 @@ when my AI tool calls `dev_search`,
 the exact function should be the top result (BM25 keyword match),
 so that exact lookups are instant and precise.
 
-**US-10: Search git history**
-As a developer asking "when did we add rate limiting?",
-when my AI tool calls `dev_history`,
-I should get relevant commits with context,
-so that the AI understands the evolution of the code.
+**~~US-10: Search git history~~ (DEPRECATED)**
+Git history is better served by `git log`, `git blame`, and AI tools running git
+commands directly. Removed in Phase 2.
 
-**US-11: Search GitHub issues**
-As a developer asking "what bugs are open about search?",
-when my AI tool calls `dev_gh`,
-I should get matching issues/PRs,
-so that the AI can reference project context.
+**~~US-11: Search GitHub issues~~ (DEPRECATED)**
+GitHub issues/PRs are better served by GitHub's own MCP server and the `gh` CLI.
+Removed in Phase 2.
 
 ## Lifecycle
 

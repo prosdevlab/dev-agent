@@ -113,9 +113,20 @@ Problems:
 
 - **Scanner pipeline** — ts-morph, tree-sitter, remark (proven, well-tested)
 - **Document preparation** — `prepareDocumentsForEmbedding()` (pure transform)
-- **Git indexing** — as a separate command (`dev git index`)
-- **GitHub indexing** — as a separate command (`dev github index`)
 - **MCP adapter layer** — unchanged, consumes search results
+
+### What we deprecate
+
+- **Git history indexing** (`dev_history`, `dev git index`) — `git log`, `git blame`,
+  and AI tools can run git commands directly. Semantic commit search is a nice-to-have
+  but not worth the indexing cost.
+- **GitHub indexing** (`dev_gh`, `dev github index`) — GitHub's own MCP server handles
+  issues, PRs, and repo context natively. `gh` CLI is excellent. No reason to maintain
+  a separate index of the same data.
+- **`dev_plan`** context assembly — was valuable when it bundled issue + code + commits.
+  With git/github dropped, this becomes just a code search wrapper. Can revisit if needed.
+
+This reduces from 3 Antfly tables to 1 (code only), and removes 2 indexing phases.
 
 ## Decisions
 
@@ -124,7 +135,7 @@ Problems:
 | Use `@parcel/watcher` | Native, `getEventsSince()` survives restarts, VS Code uses it | chokidar (no historical queries), watchman (requires daemon) |
 | Use Antfly Linear Merge | Server-side content hashing eliminates state file entirely | Keep state file + manual upsert (more code, same result) |
 | Watch from MCP server process | MCP server is the long-running process; watcher lives there | Separate daemon (more complexity), CLI-only (no auto-update) |
-| Decouple git/github from `dev index .` | Different update patterns, different data sources | Keep bundled (slower `dev index .`, coupled concerns) |
+| Drop git/github indexing entirely | GitHub has its own MCP server; `gh` and `git` CLIs are excellent; AI tools call them directly. Not everyone uses GitHub — teams use Linear, Jira, Notion, Shortcut. By not coupling to GH, we stay tool-agnostic. Focus on code search — our unique value. | Keep as optional plugins (future, if demand) |
 | Debounce file changes (500ms) | Avoid re-indexing mid-save; batch rapid changes | Per-file immediate (too many API calls), longer debounce (stale data) |
 | Drop indexer-state.json | Antfly + watcher replace all its functions | Keep for backward compat (dead code) |
 
@@ -132,14 +143,14 @@ Problems:
 
 | Part | Description | User stories | Risk |
 |------|-------------|-------------|------|
-| 2.1 | Replace batch insert with Antfly Linear Merge | US-3, US-5, US-6 | Low |
-| 2.2 | Add `@parcel/watcher` to MCP server | US-4, US-12 | Medium |
-| 2.3 | Debounce + incremental re-index on file change | US-4 | Medium |
-| 2.4 | `getEventsSince` on MCP server startup | US-5, US-12 | Low |
-| 2.5 | Decouple git/github from `dev index .` | US-10, US-11 | Low |
-| 2.6 | Drop indexer-state.json, simplify RepositoryIndexer | US-3, US-6 | Medium |
+| 2.1 | Spike: verify Antfly Linear Merge API + `@parcel/watcher` | — | Low |
+| 2.2 | Replace batch insert with Antfly Linear Merge | US-3, US-5, US-6 | Low |
+| 2.3 | Simplify RepositoryIndexer, drop state file | US-3, US-6 | Medium |
+| 2.4 | Add `@parcel/watcher` + debounced auto-index to MCP server | US-4, US-12 | Medium |
+| 2.5 | `getEventsSince` on MCP server startup | US-5, US-12 | Low |
+| 2.6 | Deprecate git/github indexing, remove adapters | US-12 | Low |
 | 2.7 | `dev status` rework — Antfly table stats + watcher status | US-13 | Low |
-| 2.8 | E2E tests: index real repo, search, verify results | US-3, US-8, US-9 | Low |
+| 2.8 | E2E tests: index this repo, search, verify results | US-3, US-8, US-9 | Low |
 
 ## Risk register
 
@@ -159,10 +170,10 @@ Problems:
 - [ ] `dev_search "validateUser"` returns exact match (BM25)
 - [ ] `dev_search "authentication middleware"` returns semantic matches (vector)
 - [ ] `dev index . --force` clears and rebuilds
-- [ ] `dev git index` works independently
-- [ ] `dev github index` works independently
 - [ ] `dev status` shows fresh Antfly stats + watcher status
 - [ ] No `indexer-state.json` written or read
+- [ ] Git/GitHub adapters removed (dev_history, dev_gh, dev_plan)
+- [ ] MCP tools reduced from 9 to 6 (search, refs, map, inspect, status, health)
 - [ ] Works on this repo (dev-agent) end-to-end
 
 ## Dependencies
