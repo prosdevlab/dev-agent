@@ -1,6 +1,38 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// Mock VectorStorage to avoid needing antfly server
+vi.mock('../../../../core/src/vector/index', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    VectorStorage: class MockVectorStorage {
+      async initialize() {}
+      async addDocuments() {}
+      async search() {
+        return [];
+      }
+      async searchByDocumentId() {
+        return [];
+      }
+      async getAll() {
+        return [];
+      }
+      async getDocument() {
+        return null;
+      }
+      async deleteDocuments() {}
+      async clear() {}
+      async getStats() {
+        return { totalDocuments: 0, storageSize: 0, dimension: 384, modelName: 'mock' };
+      }
+      async optimize() {}
+      async close() {}
+    },
+  };
+});
+
 import { RepositoryIndexer } from '@prosdevlab/dev-agent-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContextManagerImpl } from '../../coordinator/context-manager';
@@ -632,8 +664,8 @@ describe('ExplorerAgent', () => {
     });
 
     it('should handle errors during pattern search', async () => {
-      // Close the indexer to cause an error
-      await indexer.close();
+      // Force search to throw by mocking the indexer's search method
+      vi.spyOn(indexer, 'search').mockRejectedValueOnce(new Error('Store not initialized'));
 
       // Mock the logger to suppress expected error output
       const errorSpy = vi.spyOn(context.logger, 'error').mockImplementation(() => {});

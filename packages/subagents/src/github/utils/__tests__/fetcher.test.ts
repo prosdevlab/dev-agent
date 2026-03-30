@@ -63,7 +63,7 @@ describe('GitHub Fetcher - Configuration', () => {
     });
 
     it('should return repository in owner/repo format', () => {
-      vi.mocked(execSync).mockReturnValueOnce('lytics/dev-agent\n' as any);
+      vi.mocked(execSync).mockReturnValueOnce('prosdevlab/dev-agent\n' as any);
 
       const repo = getCurrentRepository();
       expect(repo).toBe('prosdevlab/dev-agent');
