@@ -114,19 +114,16 @@ See `.claude/da-plans/README.md` for status and format details.
 
 ---
 
-## MCP tools (9 adapters)
+## MCP tools (6 adapters)
 
 | Tool | Purpose |
 |------|---------|
 | `dev_search` | Hybrid code search — BM25 + vector + RRF (use FIRST for conceptual queries) |
 | `dev_refs` | Find callers/callees of functions |
 | `dev_map` | Codebase structure with change frequency |
-| `dev_history` | Semantic search over git commits |
-| `dev_plan` | Assemble context for GitHub issues |
 | `dev_inspect` | File pattern analysis (similar code, error handling, types) |
-| `dev_gh` | Search GitHub issues/PRs semantically |
-| `dev_status` | Repository indexing status |
-| `dev_health` | Server health checks |
+| `dev_status` | Repository indexing status + Antfly stats + watcher status |
+| `dev_health` | Server health checks (Antfly connectivity) |
 
 ---
 
