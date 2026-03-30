@@ -1,11 +1,11 @@
 /**
  * Status Adapter
  * Provides repository status, indexing statistics, and health checks
+ * Queries Antfly directly for vector stats and reports watcher snapshot age.
  */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
-import type { StatsService } from '@prosdevlab/dev-agent-core';
+import type { VectorStorage } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText } from '../../formatters/utils';
 import { StatusArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';
@@ -15,16 +15,16 @@ import { validateArgs } from '../validation.js';
 /**
  * Status section types
  */
-export type StatusSection = 'summary' | 'repo' | 'indexes' | 'github' | 'health';
+export type StatusSection = 'summary' | 'repo' | 'indexes' | 'health';
 
 /**
  * Status adapter configuration
  */
 export interface StatusAdapterConfig {
   /**
-   * Stats service for repository statistics
+   * Vector storage for direct Antfly access
    */
-  statsService: StatsService;
+  vectorStorage: VectorStorage;
 
   /**
    * Repository path
@@ -32,9 +32,9 @@ export interface StatusAdapterConfig {
   repositoryPath: string;
 
   /**
-   * Vector storage path
+   * Path to the watcher snapshot file (for reporting snapshot age)
    */
-  vectorStorePath: string;
+  watcherSnapshotPath: string;
 
   /**
    * Default section to display
@@ -54,15 +54,16 @@ export class StatusAdapter extends ToolAdapter {
     author: 'Dev-Agent Team',
   };
 
-  private statsService: StatsService;
+  private vectorStorage: VectorStorage;
   private repositoryPath: string;
-  private vectorStorePath: string;
+  private watcherSnapshotPath: string;
   private defaultSection: StatusSection;
+
   constructor(config: StatusAdapterConfig) {
     super();
-    this.statsService = config.statsService;
+    this.vectorStorage = config.vectorStorage;
     this.repositoryPath = config.repositoryPath;
-    this.vectorStorePath = config.vectorStorePath;
+    this.watcherSnapshotPath = config.watcherSnapshotPath;
     this.defaultSection = config.defaultSection ?? 'summary';
   }
 
@@ -82,9 +83,9 @@ export class StatusAdapter extends ToolAdapter {
         properties: {
           section: {
             type: 'string',
-            enum: ['summary', 'repo', 'indexes', 'github', 'health'],
+            enum: ['summary', 'repo', 'indexes', 'health'],
             description:
-              'Which section to display: "summary" (overview), "repo" (repository details), "indexes" (vector storage), "github" (GitHub integration), "health" (system checks)',
+              'Which section to display: "summary" (overview), "repo" (repository details), "indexes" (vector storage), "health" (system checks)',
             default: this.defaultSection,
           },
           format: {
@@ -160,8 +161,6 @@ export class StatusAdapter extends ToolAdapter {
         return this.generateRepoStatus(format);
       case 'indexes':
         return this.generateIndexesStatus(format);
-      case 'github':
-        return this.generateGitHubStatus(format);
       case 'health':
         return this.generateHealthStatus(format);
       default:
@@ -172,94 +171,29 @@ export class StatusAdapter extends ToolAdapter {
   /**
    * Generate summary (overview of all sections)
    */
-  private async generateSummary(format: string): Promise<string> {
-    const repoStats = await this.statsService.getStats();
+  private async generateSummary(_format: string): Promise<string> {
+    const stats = await this.vectorStorage.getStats();
+    const snapshotAge = await this.getSnapshotAge();
 
-    if (format === 'verbose') {
-      return this.generateVerboseSummary(repoStats);
-    }
-
-    // Compact summary
     const lines: string[] = ['## Dev-Agent Status', ''];
-
-    // Repository
-    if (repoStats) {
-      const timeAgo = this.formatTimeAgo(repoStats.startTime);
-      lines.push(
-        `**Repository:** ${this.repositoryPath} (${repoStats.filesScanned} files indexed)`
-      );
-      lines.push(`**Last Scan:** ${timeAgo}`);
-    } else {
-      lines.push(`**Repository:** ${this.repositoryPath} (not indexed)`);
-    }
-
-    lines.push('');
-
-    // Indexes
-    if (repoStats) {
-      lines.push(`**Indexes:** ✅ Code (${repoStats.documentsExtracted} components)`);
-    }
-
-    lines.push('');
-
-    // Storage
-    if (repoStats) {
-      const storageSize = await this.getStorageSize();
-      lines.push(`**Storage:** ${this.formatBytes(storageSize)} (LanceDB)`);
-    }
-
-    lines.push('');
-
-    // Health
-    const health = await this.checkHealth();
-    const healthIcon = health.every((check) => check.status === 'ok') ? '✅' : '⚠️';
+    lines.push(`**Repository:** ${this.repositoryPath}`);
     lines.push(
-      `**Health:** ${healthIcon} ${health.filter((c) => c.status === 'ok').length}/${health.length} checks passed`
+      `**Documents:** ${stats.totalDocuments > 0 ? stats.totalDocuments.toLocaleString() : 'Not indexed'}`
     );
 
-    return lines.join('\n');
-  }
-
-  /**
-   * Generate verbose summary with all details
-   */
-  private generateVerboseSummary(
-    repoStats: Awaited<ReturnType<typeof this.statsService.getStats>>
-  ): string {
-    const lines: string[] = ['## Dev-Agent Status (Detailed)', ''];
-
-    // Repository
-    lines.push('### Repository');
-    lines.push(`- **Path:** ${this.repositoryPath}`);
-    if (repoStats) {
-      lines.push(`- **Files Indexed:** ${repoStats.filesScanned}`);
-      lines.push(`- **Components:** ${repoStats.documentsExtracted}`);
-      const startTimeISO =
-        typeof repoStats.startTime === 'string'
-          ? repoStats.startTime
-          : repoStats.startTime.toISOString();
-      lines.push(`- **Last Scan:** ${startTimeISO} (${this.formatTimeAgo(repoStats.startTime)})`);
+    if (snapshotAge) {
+      lines.push(`**Last Updated:** ${this.formatTimeAgo(snapshotAge)}`);
+      lines.push('**Auto-index:** Active');
     } else {
-      lines.push('- **Status:** Not indexed');
+      lines.push('**Auto-index:** Not active — run `dev index .`');
     }
     lines.push('');
 
-    // Indexes
-    lines.push('### Vector Indexes');
-    if (repoStats) {
-      lines.push(`- **Code Index:** ${repoStats.vectorsStored} vectors`);
-    } else {
-      lines.push('- **Code Index:** Not initialized');
-    }
-    lines.push('');
-
-    // Health
-    lines.push('### Health Checks');
-    const checks = this.checkHealthSync();
-    for (const check of checks) {
-      const icon = check.status === 'ok' ? '✅' : check.status === 'warning' ? '⚠️' : '❌';
-      lines.push(`${icon} **${check.name}:** ${check.message}`);
-    }
+    const health = await this.checkHealth();
+    const healthIcon = health.every((c) => c.status === 'ok') ? 'OK' : 'WARNING';
+    lines.push(
+      `**Health:** ${healthIcon} (${health.filter((c) => c.status === 'ok').length}/${health.length} checks passed)`
+    );
 
     return lines.join('\n');
   }
@@ -267,41 +201,23 @@ export class StatusAdapter extends ToolAdapter {
   /**
    * Generate repository status
    */
-  private async generateRepoStatus(format: string): Promise<string> {
-    const stats = await this.statsService.getStats();
+  private async generateRepoStatus(_format: string): Promise<string> {
+    const stats = await this.vectorStorage.getStats();
 
     const lines: string[] = ['## Repository Index', ''];
 
-    if (!stats) {
+    if (stats.totalDocuments === 0) {
       lines.push('**Status:** Not indexed');
       lines.push('');
-      lines.push('Run `dev index` to index your repository');
+      lines.push('Run `dev index .` to index your repository');
       return lines.join('\n');
     }
 
     lines.push(`**Path:** ${this.repositoryPath}`);
-    lines.push(`**Indexed Files:** ${stats.filesScanned}`);
-    lines.push(`**Components:** ${stats.documentsExtracted}`);
-
-    if (format === 'verbose') {
-      lines.push(`**Documents Indexed:** ${stats.documentsIndexed}`);
-      lines.push(`**Vectors Stored:** ${stats.vectorsStored}`);
-    }
-
-    const startTimeISO =
-      typeof stats.startTime === 'string' ? stats.startTime : stats.startTime.toISOString();
-    lines.push(`**Last Scan:** ${startTimeISO} (${this.formatTimeAgo(stats.startTime)})`);
-
-    if (format === 'verbose' && stats.errors.length > 0) {
-      lines.push('');
-      lines.push('**Errors:**');
-      for (const error of stats.errors.slice(0, 5)) {
-        lines.push(`- ${error.message}`);
-      }
-      if (stats.errors.length > 5) {
-        lines.push(`- ... and ${stats.errors.length - 5} more`);
-      }
-    }
+    lines.push(`**Documents:** ${stats.totalDocuments.toLocaleString()}`);
+    lines.push(`**Storage:** Antfly`);
+    lines.push(`**Model:** ${stats.modelName} (${stats.dimension}-dim)`);
+    lines.push(`**Size:** ${this.formatBytes(stats.storageSize)}`);
 
     return lines.join('\n');
   }
@@ -309,38 +225,31 @@ export class StatusAdapter extends ToolAdapter {
   /**
    * Generate indexes status
    */
-  private async generateIndexesStatus(format: string): Promise<string> {
-    const repoStats = await this.statsService.getStats();
-    const storageSize = await this.getStorageSize();
+  private async generateIndexesStatus(_format: string): Promise<string> {
+    const stats = await this.vectorStorage.getStats();
+    const snapshotAge = await this.getSnapshotAge();
 
-    const lines: string[] = ['## Vector Indexes', ''];
-
-    // Code Index
+    const lines: string[] = ['## Vector Index', ''];
     lines.push('### Code Index');
-    if (repoStats) {
-      lines.push(`- **Storage:** LanceDB (${this.vectorStorePath})`);
-      lines.push(`- **Vectors:** ${repoStats.vectorsStored} embeddings`);
-      if (format === 'verbose') {
-        lines.push(`- **Documents:** ${repoStats.documentsIndexed}`);
-        lines.push(`- **Model:** all-MiniLM-L6-v2 (384-dim)`);
-      }
-      lines.push(`- **Size:** ${this.formatBytes(storageSize)}`);
-      lines.push(`- **Last Updated:** ${this.formatTimeAgo(repoStats.startTime)}`);
+    if (stats.totalDocuments > 0) {
+      lines.push('- **Storage:** Antfly');
+      lines.push(`- **Documents:** ${stats.totalDocuments.toLocaleString()}`);
+      lines.push(`- **Model:** ${stats.modelName} (${stats.dimension}-dim)`);
+      lines.push(`- **Size:** ${this.formatBytes(stats.storageSize)}`);
     } else {
-      lines.push('- **Status:** Not initialized');
+      lines.push('- **Status:** Not indexed');
+      lines.push('- Run `dev index .` to index your repository');
     }
 
-    return lines.join('\n');
-  }
-
-  /**
-   * Generate GitHub status
-   */
-  private async generateGitHubStatus(_format: string): Promise<string> {
-    const lines: string[] = ['## GitHub Integration', ''];
-    lines.push("**Status:** Use GitHub's own MCP server for GitHub integration.");
     lines.push('');
-    lines.push("GitHub indexing was removed in favor of GitHub's native MCP server.");
+    lines.push('### Watcher');
+    if (snapshotAge !== null) {
+      lines.push(`- **Last Snapshot:** ${this.formatTimeAgo(snapshotAge)}`);
+      lines.push('- **Auto-index:** Active (file watcher running)');
+    } else {
+      lines.push('- **Snapshot:** Not found — run `dev index .` to create');
+    }
+
     return lines.join('\n');
   }
 
@@ -361,6 +270,18 @@ export class StatusAdapter extends ToolAdapter {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Get the mtime of the watcher snapshot file, or null if it doesn't exist.
+   */
+  private async getSnapshotAge(): Promise<Date | null> {
+    try {
+      const stat = await fs.promises.stat(this.watcherSnapshotPath);
+      return stat.mtime;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -393,128 +314,24 @@ export class StatusAdapter extends ToolAdapter {
       });
     }
 
-    // Vector storage
-    const stats = await this.statsService.getStats();
-    if (stats) {
-      checks.push({
-        name: 'Vector Storage',
-        status: 'ok',
-        message: 'LanceDB operational',
-        details: `${stats.vectorsStored} vectors stored`,
-      });
-    } else {
-      checks.push({
-        name: 'Vector Storage',
-        status: 'warning',
-        message: 'Not initialized',
-        details: 'Run "dev index" to initialize',
-      });
-    }
-
-    // GitHub CLI
+    // Antfly connectivity
     try {
-      const { execSync } = await import('node:child_process');
-      execSync('gh --version', { stdio: 'ignore' });
+      const stats = await this.vectorStorage.getStats();
       checks.push({
-        name: 'GitHub CLI',
+        name: 'Antfly',
         status: 'ok',
-        message: 'Installed and operational',
+        message: 'Connected and responding',
+        details: `${stats.totalDocuments} documents indexed`,
       });
     } catch {
       checks.push({
-        name: 'GitHub CLI',
-        status: 'warning',
-        message: 'Not available',
-        details: 'Install gh CLI for GitHub integration',
-      });
-    }
-
-    // Disk space
-    try {
-      const storageSize = await this.getStorageSize();
-      const storageMB = storageSize / (1024 * 1024);
-      if (storageMB > 100) {
-        checks.push({
-          name: 'Storage Size',
-          status: 'warning',
-          message: `Large storage (${this.formatBytes(storageSize)})`,
-          details: 'Consider cleaning old indexes',
-        });
-      } else {
-        checks.push({
-          name: 'Storage Size',
-          status: 'ok',
-          message: this.formatBytes(storageSize),
-        });
-      }
-    } catch {
-      checks.push({
-        name: 'Storage Size',
-        status: 'warning',
-        message: 'Cannot determine size',
+        name: 'Antfly',
+        status: 'error',
+        message: 'Not reachable — run `dev setup`',
       });
     }
 
     return checks;
-  }
-
-  /**
-   * Synchronous health checks (for verbose summary)
-   */
-  private checkHealthSync(): Array<{
-    name: string;
-    status: 'ok' | 'warning' | 'error';
-    message: string;
-  }> {
-    const checks: Array<{ name: string; status: 'ok' | 'warning' | 'error'; message: string }> = [];
-
-    // Repository access
-    try {
-      fs.accessSync(this.repositoryPath, fs.constants.R_OK);
-      checks.push({ name: 'Repository', status: 'ok', message: 'Accessible' });
-    } catch {
-      checks.push({ name: 'Repository', status: 'error', message: 'Not accessible' });
-    }
-
-    // Vector storage (check if directory exists)
-    try {
-      const vectorDir = path.dirname(this.vectorStorePath);
-      fs.accessSync(vectorDir, fs.constants.R_OK);
-      checks.push({ name: 'Vector Storage', status: 'ok', message: 'Available' });
-    } catch {
-      checks.push({ name: 'Vector Storage', status: 'warning', message: 'Not initialized' });
-    }
-
-    return checks;
-  }
-
-  /**
-   * Get total storage size for vector indexes
-   */
-  private async getStorageSize(): Promise<number> {
-    try {
-      const getDirectorySize = async (dirPath: string): Promise<number> => {
-        try {
-          const stats = await fs.promises.stat(dirPath);
-          if (!stats.isDirectory()) {
-            return stats.size;
-          }
-
-          const files = await fs.promises.readdir(dirPath);
-          const sizes = await Promise.all(
-            files.map((file) => getDirectorySize(path.join(dirPath, file)))
-          );
-          return sizes.reduce((acc, size) => acc + size, 0);
-        } catch {
-          return 0;
-        }
-      };
-
-      const vectorDir = path.dirname(this.vectorStorePath);
-      return await getDirectorySize(vectorDir);
-    } catch {
-      return 0;
-    }
   }
 
   /**

@@ -196,7 +196,7 @@ describe('StatusArgsSchema', () => {
   });
 
   it('should validate all section values', () => {
-    const sections = ['summary', 'repo', 'indexes', 'github', 'health'];
+    const sections = ['summary', 'repo', 'indexes', 'health'];
     for (const section of sections) {
       const result = StatusArgsSchema.safeParse({ section });
       expect(result.success).toBe(true);

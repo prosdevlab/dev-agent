@@ -92,7 +92,7 @@ export type MapArgs = z.infer<typeof MapArgsSchema>;
 export const StatusArgsSchema = z
   .object({
     format: FormatSchema.default('compact'),
-    section: z.enum(['summary', 'repo', 'indexes', 'github', 'health']).default('summary'),
+    section: z.enum(['summary', 'repo', 'indexes', 'health']).default('summary'),
   })
   .strict();
 
