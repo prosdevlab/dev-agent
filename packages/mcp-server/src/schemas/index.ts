@@ -39,20 +39,6 @@ export const InspectArgsSchema = z
 
 export type InspectArgs = z.infer<typeof InspectArgsSchema>;
 
-// Legacy: Keep ExploreArgsSchema for backward compatibility (deprecated)
-export const ExploreArgsSchema = z
-  .object({
-    action: z.enum(['pattern', 'similar', 'relationships']),
-    query: z.string().min(1, 'Query must be a non-empty string'),
-    limit: z.number().int().min(1).max(100).default(10),
-    threshold: z.number().min(0).max(1).default(0.7),
-    fileTypes: z.array(z.string()).optional(),
-    format: FormatSchema.default('compact'),
-  })
-  .strict();
-
-export type ExploreArgs = z.infer<typeof ExploreArgsSchema>;
-
 // ============================================================================
 // Search Adapter
 // ============================================================================
@@ -98,79 +84,6 @@ export const MapArgsSchema = z
   .strict();
 
 export type MapArgs = z.infer<typeof MapArgsSchema>;
-
-// ============================================================================
-// History Adapter
-// ============================================================================
-
-export const HistoryArgsSchema = z
-  .object({
-    query: z.string().min(1).optional(),
-    file: z.string().optional(),
-    author: z.string().optional(),
-    since: z.string().optional(), // ISO date or relative like "2 weeks ago"
-    limit: z.number().int().min(1).max(50).default(10),
-    tokenBudget: z.number().int().min(100).max(10000).default(2000),
-  })
-  .refine((data) => data.query || data.file, {
-    message: 'Either query or file must be provided',
-  })
-  .strict();
-
-export type HistoryArgs = z.infer<typeof HistoryArgsSchema>;
-
-// ============================================================================
-// Plan Adapter
-// ============================================================================
-
-export const PlanArgsSchema = z
-  .object({
-    issue: z.number().int().positive({ message: 'Issue number must be a positive integer' }),
-    includeCode: z.boolean().default(true),
-    includeGitHistory: z.boolean().default(true),
-    includePatterns: z.boolean().default(true),
-    tokenBudget: z.number().int().min(1000).max(10000).default(4000),
-    format: FormatSchema.default('compact'),
-  })
-  .strict();
-
-export type PlanArgs = z.infer<typeof PlanArgsSchema>;
-
-// ============================================================================
-// GitHub Adapter
-// ============================================================================
-
-export const GitHubArgsSchema = z
-  .object({
-    action: z.enum(['search', 'context', 'related']),
-    query: z.string().min(1).optional(),
-    number: z.number().int().positive().optional(),
-    type: z.enum(['issue', 'pull_request']).optional(),
-    state: z.enum(['open', 'closed', 'merged']).optional(),
-    author: z.string().optional(),
-    labels: z.array(z.string()).optional(),
-    limit: z.number().int().min(1).max(50).default(10),
-    format: FormatSchema.default('compact'),
-  })
-  .refine(
-    (data) => {
-      // search requires query
-      if (data.action === 'search' && !data.query) {
-        return false;
-      }
-      // context/related require number
-      if ((data.action === 'context' || data.action === 'related') && !data.number) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: 'Invalid combination: search requires "query", context/related require "number"',
-    }
-  )
-  .strict();
-
-export type GitHubArgs = z.infer<typeof GitHubArgsSchema>;
 
 // ============================================================================
 // Status Adapter
@@ -225,19 +138,6 @@ export const SearchOutputSchema = z.object({
 export type SearchOutput = z.infer<typeof SearchOutputSchema>;
 
 /**
- * GitHub output schema
- */
-export const GitHubOutputSchema = z.object({
-  action: z.string(),
-  format: z.string(),
-  content: z.string(),
-  resultsTotal: z.number().optional(),
-  resultsReturned: z.number().optional(),
-});
-
-export type GitHubOutput = z.infer<typeof GitHubOutputSchema>;
-
-/**
  * Health check result schema
  */
 export const HealthCheckResultSchema = z.object({
@@ -273,39 +173,6 @@ export const MapOutputSchema = z.object({
 });
 
 export type MapOutput = z.infer<typeof MapOutputSchema>;
-
-/**
- * Plan output schema
- */
-export const PlanOutputSchema = z.object({
-  issue: z.number(),
-  format: z.string(),
-  content: z.string(),
-  context: z.any().optional(), // Complex nested structure, can refine later
-});
-
-export type PlanOutput = z.infer<typeof PlanOutputSchema>;
-
-/**
- * History commit summary schema
- */
-export const HistoryCommitSummarySchema = z.object({
-  hash: z.string(),
-  subject: z.string(),
-  author: z.string(),
-  date: z.string(),
-  filesChanged: z.number(),
-});
-
-export const HistoryOutputSchema = z.object({
-  searchType: z.enum(['semantic', 'file']),
-  query: z.string().optional(),
-  file: z.string().optional(),
-  commits: z.array(HistoryCommitSummarySchema),
-  content: z.string(),
-});
-
-export type HistoryOutput = z.infer<typeof HistoryOutputSchema>;
 
 /**
  * Refs result schema (some fields may be undefined in practice)
@@ -345,15 +212,3 @@ export const InspectOutputSchema = z.object({
 });
 
 export type InspectOutput = z.infer<typeof InspectOutputSchema>;
-
-/**
- * Explore output schema (legacy, deprecated)
- */
-export const ExploreOutputSchema = z.object({
-  action: z.string(),
-  query: z.string(),
-  format: z.string(),
-  content: z.string(),
-});
-
-export type ExploreOutput = z.infer<typeof ExploreOutputSchema>;

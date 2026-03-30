@@ -7,34 +7,28 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  ExploreArgsSchema,
-  GitHubArgsSchema,
   HealthArgsSchema,
-  HistoryArgsSchema,
+  InspectArgsSchema,
   MapArgsSchema,
-  PlanArgsSchema,
   RefsArgsSchema,
   SearchArgsSchema,
   StatusArgsSchema,
 } from '../index';
 
-describe('ExploreArgsSchema', () => {
+describe('InspectArgsSchema', () => {
   it('should validate valid input', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'pattern',
-      query: 'authentication',
+    const result = InspectArgsSchema.safeParse({
+      query: 'src/auth/token.ts',
     });
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.action).toBe('pattern');
       expect(result.data.limit).toBe(10); // default
     }
   });
 
   it('should apply defaults', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'similar',
+    const result = InspectArgsSchema.safeParse({
       query: 'test',
     });
 
@@ -48,21 +42,8 @@ describe('ExploreArgsSchema', () => {
     }
   });
 
-  it('should reject invalid action', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'invalid',
-      query: 'test',
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].path).toEqual(['action']);
-    }
-  });
-
   it('should reject empty query', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'pattern',
+    const result = InspectArgsSchema.safeParse({
       query: '',
     });
 
@@ -70,8 +51,7 @@ describe('ExploreArgsSchema', () => {
   });
 
   it('should reject out-of-range limit', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'pattern',
+    const result = InspectArgsSchema.safeParse({
       query: 'test',
       limit: 200,
     });
@@ -80,8 +60,7 @@ describe('ExploreArgsSchema', () => {
   });
 
   it('should reject out-of-range threshold', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'pattern',
+    const result = InspectArgsSchema.safeParse({
       query: 'test',
       threshold: 1.5,
     });
@@ -90,8 +69,7 @@ describe('ExploreArgsSchema', () => {
   });
 
   it('should reject unknown properties', () => {
-    const result = ExploreArgsSchema.safeParse({
-      action: 'pattern',
+    const result = InspectArgsSchema.safeParse({
       query: 'test',
       unknownProp: 'value',
     });
@@ -201,140 +179,6 @@ describe('MapArgsSchema', () => {
 
     const tooHighResult = MapArgsSchema.safeParse({ depth: 10 });
     expect(tooHighResult.success).toBe(false);
-  });
-});
-
-describe('HistoryArgsSchema', () => {
-  it('should validate with query', () => {
-    const result = HistoryArgsSchema.safeParse({
-      query: 'authentication refactor',
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should validate with file', () => {
-    const result = HistoryArgsSchema.safeParse({
-      file: 'src/auth/token.ts',
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject when neither query nor file provided', () => {
-    const result = HistoryArgsSchema.safeParse({
-      author: 'john@example.com',
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toContain('query or file');
-    }
-  });
-
-  it('should accept both query and file', () => {
-    const result = HistoryArgsSchema.safeParse({
-      query: 'bug fix',
-      file: 'src/index.ts',
-    });
-
-    expect(result.success).toBe(true);
-  });
-});
-
-describe('PlanArgsSchema', () => {
-  it('should validate valid input', () => {
-    const result = PlanArgsSchema.safeParse({
-      issue: 42,
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toMatchObject({
-        includeCode: true,
-        includeGitHistory: true,
-        includePatterns: true,
-        tokenBudget: 4000,
-        format: 'compact',
-      });
-    }
-  });
-
-  it('should reject non-positive issue numbers', () => {
-    const zeroResult = PlanArgsSchema.safeParse({ issue: 0 });
-    expect(zeroResult.success).toBe(false);
-
-    const negativeResult = PlanArgsSchema.safeParse({ issue: -1 });
-    expect(negativeResult.success).toBe(false);
-  });
-
-  it('should reject non-integer issue numbers', () => {
-    const result = PlanArgsSchema.safeParse({ issue: 42.5 });
-    expect(result.success).toBe(false);
-  });
-});
-
-describe('GitHubArgsSchema', () => {
-  it('should validate search action with query', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'search',
-      query: 'authentication bug',
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject search action without query', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'search',
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toContain('query');
-    }
-  });
-
-  it('should validate context action with number', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'context',
-      number: 42,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject context action without number', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'context',
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toContain('number');
-    }
-  });
-
-  it('should validate related action with number', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'related',
-      number: 42,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should validate optional filters', () => {
-    const result = GitHubArgsSchema.safeParse({
-      action: 'search',
-      query: 'bug',
-      type: 'issue',
-      state: 'open',
-      author: 'username',
-      labels: ['bug', 'urgent'],
-    });
-
-    expect(result.success).toBe(true);
   });
 });
 

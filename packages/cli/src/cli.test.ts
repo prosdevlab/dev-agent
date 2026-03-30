@@ -4,7 +4,6 @@ import { indexCommand } from './commands/index';
 import { initCommand } from './commands/init';
 import { searchCommand } from './commands/search';
 import { statsCommand } from './commands/stats';
-import { updateCommand } from './commands/update';
 
 describe('CLI Structure', () => {
   it('should have init command', () => {
@@ -20,11 +19,6 @@ describe('CLI Structure', () => {
   it('should have search command', () => {
     expect(searchCommand.name()).toBe('search');
     expect(searchCommand.description()).toContain('Search');
-  });
-
-  it('should have update command', () => {
-    expect(updateCommand.name()).toBe('update');
-    expect(updateCommand.description()).toContain('Update');
   });
 
   it('should have stats command', () => {

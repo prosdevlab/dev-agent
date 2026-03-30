@@ -5,27 +5,18 @@
  */
 
 import {
-  CoordinatorService,
   ensureStorageDirectory,
-  GitHubService,
-  GitIndexer,
   getStorageFilePaths,
   getStoragePath,
-  LocalGitExtractor,
   RepositoryIndexer,
   SearchService,
   StatsService,
   saveMetadata,
-  VectorStorage,
 } from '@prosdevlab/dev-agent-core';
-import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import {
-  GitHubAdapter,
   HealthAdapter,
-  HistoryAdapter,
   InspectAdapter,
   MapAdapter,
-  PlanAdapter,
   RefsAdapter,
   SearchAdapter,
   StatusAdapter,
@@ -112,8 +103,6 @@ async function main() {
     const filePaths = getStorageFilePaths(storagePath);
 
     // Initialize repository indexer with centralized storage
-    // TODO: Make this truly lazy (only initialize on first tool call)
-    // For now, initialize eagerly but use centralized storage
     const indexer = new RepositoryIndexer({
       repositoryPath,
       vectorStorePath: filePaths.vectors,
@@ -124,25 +113,8 @@ async function main() {
     // Update metadata
     await saveMetadata(storagePath, repositoryPath);
 
-    // Create and configure the subagent coordinator using CoordinatorService
-    const coordinatorService = new CoordinatorService({
-      repositoryPath,
-      maxConcurrentTasks: 5,
-      defaultMessageTimeout: 30000,
-      logLevel,
-    });
-    // Type assertion: CoordinatorService returns a minimal interface, but it's
-    // structurally compatible with the full SubagentCoordinator type
-    const coordinator = (await coordinatorService.createCoordinator(
-      indexer
-    )) as SubagentCoordinator;
-
     // Create services
     const searchService = new SearchService({ repositoryPath });
-    const githubService = new GitHubService({ repositoryPath }, async (config) => {
-      const { GitHubIndexer } = await import('@prosdevlab/dev-agent-subagents');
-      return new GitHubIndexer(config);
-    });
     const statsService = new StatsService({ repositoryPath });
 
     // Create and register adapters
@@ -157,28 +129,7 @@ async function main() {
       statsService,
       repositoryPath,
       vectorStorePath: filePaths.vectors,
-      githubService,
       defaultSection: 'summary',
-    });
-
-    // Create git extractor and indexer (needed by plan and history adapters)
-    const gitExtractor = new LocalGitExtractor(repositoryPath);
-    const gitVectorStorage = new VectorStorage({
-      storePath: `${filePaths.vectors}-git`,
-    });
-    await gitVectorStorage.initialize();
-
-    const gitIndexer = new GitIndexer({
-      extractor: gitExtractor,
-      vectorStorage: gitVectorStorage,
-    });
-
-    const planAdapter = new PlanAdapter({
-      repositoryIndexer: indexer,
-      gitIndexer,
-      repositoryPath,
-      defaultFormat: 'compact',
-      timeout: 60000, // 60 seconds
     });
 
     const inspectAdapter = new InspectAdapter({
@@ -189,17 +140,9 @@ async function main() {
       defaultFormat: 'compact',
     });
 
-    const githubAdapter = new GitHubAdapter({
-      githubService,
-      repositoryPath,
-      defaultLimit: 10,
-      defaultFormat: 'compact',
-    });
-
     const healthAdapter = new HealthAdapter({
       repositoryPath,
       vectorStorePath: filePaths.vectors,
-      githubStatePath: filePaths.githubState,
     });
 
     const refsAdapter = new RefsAdapter({
@@ -214,14 +157,7 @@ async function main() {
       defaultTokenBudget: 2000,
     });
 
-    const historyAdapter = new HistoryAdapter({
-      gitIndexer,
-      gitExtractor,
-      defaultLimit: 10,
-      defaultTokenBudget: 2000,
-    });
-
-    // Create MCP server with coordinator
+    // Create MCP server with 6 adapters
     const server = new MCPServer({
       serverInfo: {
         name: 'dev-agent',
@@ -235,24 +171,17 @@ async function main() {
       adapters: [
         searchAdapter,
         statusAdapter,
-        planAdapter,
         inspectAdapter,
-        githubAdapter,
         healthAdapter,
         refsAdapter,
         mapAdapter,
-        historyAdapter,
       ],
-      coordinator,
     });
 
     // Handle graceful shutdown
     const shutdown = async () => {
       await server.stop();
       await indexer.close();
-      await gitVectorStorage.close();
-      // Close GitHub service
-      await githubService.shutdown();
       process.exit(0);
     };
 

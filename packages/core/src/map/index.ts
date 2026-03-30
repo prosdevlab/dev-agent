@@ -5,10 +5,10 @@
 
 import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
-import type { LocalGitExtractor } from '../git/extractor';
 import type { RepositoryIndexer } from '../indexer';
 import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
+import type { LocalGitExtractor } from './git-extractor';
 import type {
   ChangeFrequency,
   CodebaseMap,
@@ -18,6 +18,8 @@ import type {
   MapOptions,
 } from './types';
 
+export { GitExtractor, LocalGitExtractor } from './git-extractor';
+export * from './git-types';
 export * from './types';
 
 /** Default options for map generation */

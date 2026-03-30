@@ -40,12 +40,12 @@ export function handleValidationError(error: z.ZodError): ToolResult {
  *
  * @example
  * ```typescript
- * const validation = validateArgs(ExploreArgsSchema, args);
+ * const validation = validateArgs(InspectArgsSchema, args);
  * if (!validation.success) {
  *   return validation.error;
  * }
  * // validation.data is now fully typed!
- * const { action, query } = validation.data;
+ * const { query, limit } = validation.data;
  * ```
  */
 export function validateArgs<T extends z.ZodType>(

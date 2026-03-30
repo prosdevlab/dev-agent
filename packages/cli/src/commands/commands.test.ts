@@ -113,9 +113,7 @@ describe('CLI Commands', () => {
   describe('index command', () => {
     it('should have correct command name and description', () => {
       expect(indexCommand.name()).toBe('index');
-      expect(indexCommand.description()).toBe(
-        'Index a repository (code, git history, GitHub issues/PRs)'
-      );
+      expect(indexCommand.description()).toBe('Index a repository (code)');
     });
 
     it('should display indexing summary without storage size', async () => {
@@ -150,8 +148,8 @@ export class Calculator {
       const program = new Command();
       program.addCommand(indexCommand);
 
-      // Run index command (skip git and github for faster test)
-      await program.parseAsync(['node', 'cli', 'index', indexDir, '--no-git', '--no-github']);
+      // Run index command
+      await program.parseAsync(['node', 'cli', 'index', indexDir]);
 
       exitSpy.mockRestore();
       console.log = originalConsoleLog;

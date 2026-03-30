@@ -5,7 +5,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { GitHubService, StatsService } from '@prosdevlab/dev-agent-core';
+import type { StatsService } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText } from '../../formatters/utils';
 import { StatusArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';
@@ -37,11 +37,6 @@ export interface StatusAdapterConfig {
   vectorStorePath: string;
 
   /**
-   * Optional GitHub service for GitHub integration status
-   */
-  githubService?: GitHubService;
-
-  /**
    * Default section to display
    */
   defaultSection?: StatusSection;
@@ -63,16 +58,11 @@ export class StatusAdapter extends ToolAdapter {
   private repositoryPath: string;
   private vectorStorePath: string;
   private defaultSection: StatusSection;
-  private githubService?: GitHubService;
-  private githubStatePath?: string; // Track state file path for reload
-  private lastStateFileModTime?: number; // Track state file modification time for auto-reload
-
   constructor(config: StatusAdapterConfig) {
     super();
     this.statsService = config.statsService;
     this.repositoryPath = config.repositoryPath;
     this.vectorStorePath = config.vectorStorePath;
-    this.githubService = config.githubService;
     this.defaultSection = config.defaultSection ?? 'summary';
   }
 
@@ -80,66 +70,7 @@ export class StatusAdapter extends ToolAdapter {
     context.logger.info('StatusAdapter initialized', {
       repositoryPath: this.repositoryPath,
       defaultSection: this.defaultSection,
-      hasGitHubService: !!this.githubService,
     });
-
-    // Track GitHub state file for reload detection
-    if (this.githubService) {
-      this.githubStatePath = path.join(this.repositoryPath, '.dev-agent/github-state.json');
-      try {
-        // Track initial modification time for change detection
-        const stats = await fs.promises.stat(this.githubStatePath);
-        this.lastStateFileModTime = stats.mtimeMs;
-      } catch {
-        // State file doesn't exist yet, will be created on first GitHub index
-      }
-    }
-  }
-
-  /**
-   * Check if GitHub state file has been modified since last load
-   * Returns true if file was modified and indexer needs reload
-   */
-  private async hasGitHubStateChanged(): Promise<boolean> {
-    if (!this.githubStatePath || !this.lastStateFileModTime) {
-      return false;
-    }
-
-    try {
-      const stats = await fs.promises.stat(this.githubStatePath);
-      const currentModTime = stats.mtimeMs;
-      return currentModTime > this.lastStateFileModTime;
-    } catch {
-      // File doesn't exist or can't be accessed
-      return false;
-    }
-  }
-
-  /**
-   * Update tracking of GitHub state file modification time
-   * Note: GitHubService handles its own data freshness, this is just for tracking
-   */
-  private async updateGitHubStateTracking(): Promise<void> {
-    if (!this.githubStatePath) {
-      return;
-    }
-
-    try {
-      const stats = await fs.promises.stat(this.githubStatePath);
-      this.lastStateFileModTime = stats.mtimeMs;
-    } catch {
-      // State file may not exist yet
-    }
-  }
-
-  /**
-   * Ensure GitHub state tracking is up-to-date
-   * GitHubService handles data freshness internally
-   */
-  private async ensureGitHubIndexerUpToDate(): Promise<void> {
-    if (this.githubService && (await this.hasGitHubStateChanged())) {
-      await this.updateGitHubStateTracking();
-    }
   }
 
   getToolDefinition(): ToolDefinition {
@@ -243,10 +174,9 @@ export class StatusAdapter extends ToolAdapter {
    */
   private async generateSummary(format: string): Promise<string> {
     const repoStats = await this.statsService.getStats();
-    const githubStats = (await this.githubService?.getStats()) ?? null;
 
     if (format === 'verbose') {
-      return this.generateVerboseSummary(repoStats, githubStats);
+      return this.generateVerboseSummary(repoStats);
     }
 
     // Compact summary
@@ -267,11 +197,7 @@ export class StatusAdapter extends ToolAdapter {
 
     // Indexes
     if (repoStats) {
-      const codeIcon = '✅';
-      const githubIcon = githubStats ? '✅' : '⚠️';
-      lines.push(
-        `**Indexes:** ${codeIcon} Code (${repoStats.documentsExtracted} components) | ${githubIcon} GitHub ${githubStats ? `(${githubStats.totalDocuments} items)` : '(not indexed)'}`
-      );
+      lines.push(`**Indexes:** ✅ Code (${repoStats.documentsExtracted} components)`);
     }
 
     lines.push('');
@@ -298,8 +224,7 @@ export class StatusAdapter extends ToolAdapter {
    * Generate verbose summary with all details
    */
   private generateVerboseSummary(
-    repoStats: Awaited<ReturnType<typeof this.statsService.getStats>>,
-    githubStats: Awaited<ReturnType<NonNullable<typeof this.githubService>['getStats']>> | null
+    repoStats: Awaited<ReturnType<typeof this.statsService.getStats>>
   ): string {
     const lines: string[] = ['## Dev-Agent Status (Detailed)', ''];
 
@@ -325,13 +250,6 @@ export class StatusAdapter extends ToolAdapter {
       lines.push(`- **Code Index:** ${repoStats.vectorsStored} vectors`);
     } else {
       lines.push('- **Code Index:** Not initialized');
-    }
-    if (githubStats) {
-      lines.push(`- **GitHub Index:** ${githubStats.totalDocuments} documents`);
-      lines.push(`  - Issues: ${githubStats.byType.issue || 0}`);
-      lines.push(`  - Pull Requests: ${githubStats.byType.pull_request || 0}`);
-    } else {
-      lines.push('- **GitHub Index:** Not indexed');
     }
     lines.push('');
 
@@ -393,7 +311,6 @@ export class StatusAdapter extends ToolAdapter {
    */
   private async generateIndexesStatus(format: string): Promise<string> {
     const repoStats = await this.statsService.getStats();
-    const githubStats = (await this.githubService?.getStats()) ?? null;
     const storageSize = await this.getStorageSize();
 
     const lines: string[] = ['## Vector Indexes', ''];
@@ -413,81 +330,17 @@ export class StatusAdapter extends ToolAdapter {
       lines.push('- **Status:** Not initialized');
     }
 
-    lines.push('');
-
-    // GitHub Index
-    lines.push('### GitHub Index');
-    if (githubStats) {
-      lines.push(`- **Storage:** LanceDB (${this.vectorStorePath}-github)`);
-      lines.push(`- **Documents:** ${githubStats.totalDocuments}`);
-      if (format === 'verbose') {
-        lines.push(`- **By Type:**`);
-        lines.push(`  - Issues: ${githubStats.byType.issue || 0}`);
-        lines.push(`  - Pull Requests: ${githubStats.byType.pull_request || 0}`);
-        lines.push(`- **By State:**`);
-        lines.push(`  - Open: ${githubStats.byState.open || 0}`);
-        lines.push(`  - Closed: ${githubStats.byState.closed || 0}`);
-        if (githubStats.byState.merged) {
-          lines.push(`  - Merged: ${githubStats.byState.merged}`);
-        }
-      }
-      lines.push(
-        `- **Last Sync:** ${githubStats.lastIndexed} (${this.formatTimeAgo(new Date(githubStats.lastIndexed))})`
-      );
-    } else {
-      lines.push('- **Status:** Not indexed');
-      lines.push('- Run `dev gh index` to sync GitHub data');
-    }
-
     return lines.join('\n');
   }
 
   /**
    * Generate GitHub status
    */
-  private async generateGitHubStatus(format: string): Promise<string> {
-    // Check for index updates and reload if needed
-    await this.ensureGitHubIndexerUpToDate();
-
-    const stats = (await this.githubService?.getStats()) ?? null;
-
+  private async generateGitHubStatus(_format: string): Promise<string> {
     const lines: string[] = ['## GitHub Integration', ''];
-
-    if (!stats) {
-      lines.push('**Status:** Not indexed');
-      lines.push('');
-      lines.push('Run `dev gh index` to sync GitHub data');
-      return lines.join('\n');
-    }
-
-    lines.push(`**Repository:** ${stats.repository}`);
-    lines.push(`**Total Documents:** ${stats.totalDocuments}`);
+    lines.push("**Status:** Use GitHub's own MCP server for GitHub integration.");
     lines.push('');
-
-    lines.push('**By Type:**');
-    lines.push(`- Issues: ${stats.byType.issue || 0}`);
-    lines.push(`- Pull Requests: ${stats.byType.pull_request || 0}`);
-    lines.push('');
-
-    lines.push('**By State:**');
-    lines.push(`- Open: ${stats.byState.open || 0}`);
-    lines.push(`- Closed: ${stats.byState.closed || 0}`);
-    if (stats.byState.merged) {
-      lines.push(`- Merged: ${stats.byState.merged}`);
-    }
-    lines.push('');
-
-    lines.push(
-      `**Last Sync:** ${stats.lastIndexed} (${this.formatTimeAgo(new Date(stats.lastIndexed))})`
-    );
-
-    if (format === 'verbose') {
-      lines.push('');
-      lines.push('**Configuration:**');
-      lines.push('- Auto-reload: Enabled (on file change)');
-      lines.push('- Authentication: GitHub CLI (gh)');
-    }
-
+    lines.push("GitHub indexing was removed in favor of GitHub's native MCP server.");
     return lines.join('\n');
   }
 

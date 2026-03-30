@@ -7,31 +7,21 @@ import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {
-  CoordinatorService,
-  type GitHubIndexerFactory,
-  GitHubService,
-  GitIndexer,
   getStorageFilePaths,
   getStoragePath,
-  LocalGitExtractor,
   RepositoryIndexer,
   SearchService,
   StatsService,
-  VectorStorage,
 } from '@prosdevlab/dev-agent-core';
 import {
-  ExploreAdapter,
-  GitHubAdapter,
   HealthAdapter,
-  HistoryAdapter,
+  InspectAdapter,
   MapAdapter,
   MCPServer,
-  PlanAdapter,
   RefsAdapter,
   SearchAdapter,
   StatusAdapter,
 } from '@prosdevlab/dev-agent-mcp';
-import type { SubagentCoordinator } from '@prosdevlab/dev-agent-subagents';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
@@ -60,9 +50,9 @@ Setup:
   2. Install MCP integration: dev mcp install --cursor
   3. Restart Cursor to activate
 
-Available Tools (9):
-  dev_search, dev_status, dev_plan, dev_inspect, dev_gh,
-  dev_health, dev_refs, dev_map, dev_history
+Available Tools (6):
+  dev_search, dev_status, dev_inspect,
+  dev_health, dev_refs, dev_map
 `
   )
   .addCommand(
@@ -107,20 +97,9 @@ Available Tools (9):
 
           await indexer.initialize();
 
-          // Create and configure the subagent coordinator using CoordinatorService
-          const coordinatorService = new CoordinatorService({
-            repositoryPath,
-            maxConcurrentTasks: 5,
-            defaultMessageTimeout: 30000,
-            logLevel: logLevel as 'debug' | 'info' | 'warn' | 'error',
-          });
-          // Type assertion: CoordinatorService returns a minimal interface
-          const coordinator = (await coordinatorService.createCoordinator(
-            indexer
-          )) as SubagentCoordinator;
-
           // Create services
           const searchService = new SearchService({ repositoryPath });
+          const statsService = new StatsService({ repositoryPath });
 
           // Create all adapters
           const searchAdapter = new SearchAdapter({
@@ -129,24 +108,14 @@ Available Tools (9):
             defaultLimit: 10,
           });
 
-          const statsService = new StatsService({ repositoryPath });
-          const createGitHubIndexer: GitHubIndexerFactory = async (config) => {
-            const { GitHubIndexer } = await import('@prosdevlab/dev-agent-subagents');
-            // biome-ignore lint/suspicious/noExplicitAny: Dynamic import requires type coercion
-            return new GitHubIndexer(config) as any;
-          };
-
-          const githubService = new GitHubService({ repositoryPath }, createGitHubIndexer);
-
           const statusAdapter = new StatusAdapter({
             statsService,
-            githubService,
             repositoryPath,
             vectorStorePath: vectors,
             defaultSection: 'summary',
           });
 
-          const exploreAdapter = new ExploreAdapter({
+          const inspectAdapter = new InspectAdapter({
             repositoryPath,
             searchService,
             defaultLimit: 10,
@@ -154,17 +123,9 @@ Available Tools (9):
             defaultFormat: 'compact',
           });
 
-          const githubAdapter = new GitHubAdapter({
-            repositoryPath,
-            githubService,
-            defaultLimit: 10,
-            defaultFormat: 'compact',
-          });
-
           const healthAdapter = new HealthAdapter({
             repositoryPath,
             vectorStorePath: vectors,
-            githubStatePath: getStorageFilePaths(storagePath).githubState,
           });
 
           const refsAdapter = new RefsAdapter({
@@ -179,35 +140,7 @@ Available Tools (9):
             defaultTokenBudget: 2000,
           });
 
-          // Create git extractor and indexer (needed by plan and history adapters)
-          const gitExtractor = new LocalGitExtractor(repositoryPath);
-          const gitVectorStorage = new VectorStorage({
-            storePath: `${vectors}-git`,
-          });
-          await gitVectorStorage.initialize();
-
-          const gitIndexer = new GitIndexer({
-            extractor: gitExtractor,
-            vectorStorage: gitVectorStorage,
-          });
-
-          const historyAdapter = new HistoryAdapter({
-            gitIndexer,
-            gitExtractor,
-            defaultLimit: 10,
-            defaultTokenBudget: 2000,
-          });
-
-          // Update plan adapter to include git indexer
-          const planAdapterWithGit = new PlanAdapter({
-            repositoryIndexer: indexer,
-            gitIndexer,
-            repositoryPath,
-            defaultFormat: 'compact',
-            timeout: 60000,
-          });
-
-          // Create MCP server with all 9 adapters
+          // Create MCP server with 6 adapters
           const server = new MCPServer({
             serverInfo: {
               name: 'dev-agent',
@@ -221,15 +154,11 @@ Available Tools (9):
             adapters: [
               searchAdapter,
               statusAdapter,
-              planAdapterWithGit,
-              exploreAdapter,
-              githubAdapter,
+              inspectAdapter,
               healthAdapter,
               refsAdapter,
               mapAdapter,
-              historyAdapter,
             ],
-            coordinator,
           });
 
           // Handle graceful shutdown
@@ -237,8 +166,6 @@ Available Tools (9):
             logger.info('Shutting down MCP server...');
             await server.stop();
             await indexer.close();
-            await gitVectorStorage.close();
-            await githubService.shutdown();
             process.exit(0);
           };
 
@@ -250,7 +177,7 @@ Available Tools (9):
 
           logger.info(chalk.green('MCP server started successfully!'));
           logger.info(
-            'Available tools: dev_search, dev_status, dev_plan, dev_inspect, dev_gh, dev_health, dev_refs, dev_map, dev_history'
+            'Available tools: dev_search, dev_status, dev_inspect, dev_health, dev_refs, dev_map'
           );
 
           if (options.transport === 'stdio') {

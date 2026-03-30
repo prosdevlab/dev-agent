@@ -28,13 +28,6 @@ export {
   formatMarkdown,
   formatPretty,
 } from './formatting';
-// GitHub utilities
-export {
-  type FetchIssueOptions,
-  fetchGitHubIssue,
-  isGhInstalled,
-  isGitHubRepo,
-} from './github';
 // Parsing utilities
 export {
   cleanDescription,

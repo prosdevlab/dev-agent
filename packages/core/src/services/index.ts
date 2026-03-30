@@ -6,12 +6,6 @@
  */
 
 export { CoordinatorService, type CoordinatorServiceConfig } from './coordinator-service.js';
-export { GitHistoryService, type GitHistoryServiceConfig } from './git-history-service.js';
-export {
-  type GitHubIndexerFactory,
-  GitHubService,
-  type GitHubServiceConfig,
-} from './github-service.js';
 export {
   type ComponentHealth,
   type HealthCheckResult,

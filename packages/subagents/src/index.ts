@@ -38,12 +38,6 @@ export type {
   SimilarCodeRequest,
   SimilarCodeResult,
 } from './explorer/types';
-export type { GitHubAgentConfig } from './github/agent';
-// GitHub Context Agent
-export { GitHubAgent } from './github/agent';
-export { GitHubIndexer } from './github/indexer';
-export type * from './github/types';
-export * from './github/utils';
 // Logger module
 export { CoordinatorLogger } from './logger';
 // Agent modules
@@ -79,7 +73,6 @@ export {
   extractAcceptanceCriteria,
   extractEstimate,
   extractTechnicalRequirements,
-  fetchGitHubIssue,
   formatContextPackage,
   formatEstimate,
   formatJSON,
@@ -87,8 +80,6 @@ export {
   formatPretty,
   groupTasksByPhase,
   inferPriority,
-  isGhInstalled,
-  isGitHubRepo,
   validateTasks,
 } from './planner/utils';
 export { PrAgent } from './pr';
