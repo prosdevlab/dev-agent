@@ -24,7 +24,7 @@ what changed?" problem without a persistent daemon. Native C++ performance. VS C
 
 **Key pattern:** Content hashing for change detection. All major tools use it.
 
-## Antfly Linear Merge API
+## Antfly Linear Merge API (confirmed in spike)
 
 Antfly has a built-in sync API designed for exactly this use case:
 
@@ -45,8 +45,13 @@ POST /api/v1/tables/{table}/merge
 - With `delete_missing: true`, documents not in the payload are removed
 - Returns: `{ upserted: N, skipped: N, deleted: N }`
 
-**This replaces:** state file, hash tracking, manual upsert logic, delete-then-insert
-for removed files. All handled by Antfly in one API call.
+**This replaces:** state file, hash tracking, manual upsert logic for full-index.
+All handled by Antfly in one API call.
+
+**Spike finding:** Linear Merge does NOT have a `delete_missing` toggle. Deletion
+is range-scoped — absent keys within `[last_merged_id, max_key_in_batch]` are
+auto-deleted. This means incremental updates must use `batchOp` instead.
+See [2.1-spike-findings.md](./2.1-spike-findings.md) for full details.
 
 ## MCP server patterns
 
@@ -64,8 +69,8 @@ MCP spec supports `roots/list_changed` notification for workspace changes.
 |-----------|--------|------|
 | File watching | Reuse | `@parcel/watcher` |
 | Change detection | Reuse | Antfly Linear Merge (server-side content hashing) |
-| State file / hash tracking | **Drop entirely** | Antfly handles dedup + deletion |
+| State file / hash tracking | **Drop entirely** | Antfly Linear Merge handles dedup (full index); batchOp for incremental |
 | Tree-sitter parsing | Already have | `web-tree-sitter` |
 | Embedding | Already have | Antfly Termite |
-| Batch insert | Simplify | Antfly Linear Merge (one call replaces batch loop) |
+| Batch insert | Simplify | Linear Merge for full index; batchOp for incremental |
 | Orchestration glue | Build | Watcher → parser → merge (the only new code) |
