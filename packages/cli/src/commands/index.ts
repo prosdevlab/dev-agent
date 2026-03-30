@@ -12,9 +12,17 @@ import {
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { ensureAntfly, isServerReady } from '../utils/antfly.js';
+import {
+  ensureAntfly,
+  hasModel,
+  hasNativeBinary,
+  isServerReady,
+  pullModel,
+} from '../utils/antfly.js';
 import { getDefaultConfig, loadConfig } from '../utils/config.js';
 import { createIndexLogger } from '../utils/logger.js';
+
+const DEFAULT_MODEL = 'BAAI/bge-small-en-v1.5';
 
 export const indexCommand = new Command('index')
   .description('Index a repository (code)')
@@ -44,6 +52,13 @@ export const indexCommand = new Command('index')
           console.error('');
           process.exit(1);
         }
+      }
+
+      // ── Pre-flight: ensure embedding model is available ──
+      if (hasNativeBinary() && !hasModel(DEFAULT_MODEL)) {
+        console.log(`  Pulling embedding model: ${DEFAULT_MODEL}`);
+        pullModel(DEFAULT_MODEL);
+        spinner.succeed(`Embedding model ready: ${DEFAULT_MODEL}`);
       }
 
       // Load config
@@ -180,11 +195,20 @@ export const indexCommand = new Command('index')
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes('fetch failed') || message.includes('ECONNREFUSED')) {
         console.error('');
-        console.error('  Antfly server crashed. This usually means not enough memory.');
-        console.error('    → Docker Desktop: Settings → Resources → Memory → 8GB+');
-        console.error('    → Podman: podman machine set --memory 8192');
+        console.error('  Antfly server is not reachable.');
         console.error('');
-        console.error('  Then run: dev reset && dev setup');
+        console.error(
+          '  If it crashed during indexing, your data is safe — just re-run `dev index`.'
+        );
+        console.error('  Unchanged documents are skipped automatically.');
+        console.error('');
+        console.error('  To fix:');
+        console.error('    dev setup                      Restart the server');
+        console.error('    dev reset && dev setup         Full reset if needed');
+        console.error('');
+      } else if (message.includes('model not found')) {
+        console.error('');
+        console.error('  Embedding model is missing. Run `dev setup` to install it.');
         console.error('');
       } else {
         console.error(`\n  ${message}\n`);

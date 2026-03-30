@@ -141,10 +141,25 @@ export class AdapterRegistry {
       }
     }
 
-    // Execute tool
+    // Execute tool with auto-retry on Antfly connection errors
     try {
       const startTime = Date.now();
-      const result = await adapter.execute(args, context);
+      let result: ToolResult;
+
+      try {
+        result = await adapter.execute(args, context);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (this.isAntflyError(msg)) {
+          context.logger.warn('Antfly connection lost, attempting recovery...', { toolName });
+          await this.tryRecoverAntfly();
+          // Retry once after recovery
+          result = await adapter.execute(args, context);
+          context.logger.info('Antfly recovered, tool executed successfully', { toolName });
+        } else {
+          throw error;
+        }
+      }
 
       // Ensure duration is tracked (adapters should set this, but fallback here)
       if (result.success && result.metadata && !result.metadata.duration_ms) {
@@ -158,13 +173,19 @@ export class AdapterRegistry {
         error: error instanceof Error ? error.message : String(error),
       });
 
+      const msg = error instanceof Error ? error.message : 'Tool execution failed';
+
       return {
         success: false,
         error: {
           code: String(ErrorCode.ToolExecutionError),
-          message: error instanceof Error ? error.message : 'Tool execution failed',
+          message: this.isAntflyError(msg)
+            ? 'Antfly server is not reachable. Run `dev setup` to restart it.'
+            : msg,
           recoverable: true,
-          suggestion: 'Check the tool arguments and try again',
+          suggestion: this.isAntflyError(msg)
+            ? 'Run `dev setup` to restart the Antfly server'
+            : 'Check the tool arguments and try again',
         },
       };
     }
@@ -243,5 +264,79 @@ export class AdapterRegistry {
    */
   resetAllRateLimits(): void {
     this.rateLimiter?.resetAll();
+  }
+
+  /**
+   * Check if an error is an Antfly connection/model error
+   */
+  private isAntflyError(message: string): boolean {
+    return (
+      message.includes('fetch failed') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('model not found')
+    );
+  }
+
+  /**
+   * Attempt to recover Antfly by restarting it (native first, Docker fallback)
+   */
+  private async tryRecoverAntfly(): Promise<void> {
+    const { execSync, spawn } = await import('node:child_process');
+    const antflyUrl = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
+    const baseUrl = antflyUrl.replace('/api/v1', '');
+
+    const isReady = async () => {
+      try {
+        const resp = await fetch(`${baseUrl}/api/v1/tables`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        return resp.ok;
+      } catch {
+        return false;
+      }
+    };
+
+    // Try native
+    try {
+      execSync('antfly --version', { stdio: 'pipe', timeout: 5000 });
+      const child = spawn(
+        'antfly',
+        [
+          'swarm',
+          '--metadata-api',
+          'http://0.0.0.0:18080',
+          '--store-api',
+          'http://0.0.0.0:18381',
+          '--metadata-raft',
+          'http://0.0.0.0:19017',
+          '--store-raft',
+          'http://0.0.0.0:19021',
+          '--health-port',
+          '14200',
+        ],
+        { detached: true, stdio: 'ignore' }
+      );
+      child.unref();
+
+      const start = Date.now();
+      while (Date.now() - start < 15_000) {
+        if (await isReady()) return;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    } catch {
+      // Try Docker
+      try {
+        execSync('docker start dev-agent-antfly', { stdio: 'pipe' });
+        const start = Date.now();
+        while (Date.now() - start < 15_000) {
+          if (await isReady()) return;
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      } catch {
+        // Neither worked
+      }
+    }
+
+    throw new Error('Failed to recover Antfly server');
   }
 }

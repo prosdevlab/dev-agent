@@ -1,7 +1,7 @@
 /**
  * dev setup — One-time setup for dev-agent's search backend
  *
- * Docker-first, native fallback. Handles installation, model download,
+ * Native-first, Docker fallback. Handles installation, model download,
  * and server startup so users never need to run `antfly` directly.
  */
 
@@ -56,17 +56,63 @@ function printNextSteps(): void {
   console.log();
 }
 
+/**
+ * Ensure embedding model is available, pull if needed.
+ * Stops spinner, shows native progress, then succeeds.
+ */
+function ensureModel(spinner: ReturnType<typeof ora>, model: string): void {
+  if (!hasModel(model)) {
+    console.log(`  Pulling embedding model: ${model}`);
+    pullModel(model);
+    spinner.succeed(`Embedding model ready: ${model}`);
+  } else {
+    spinner.succeed(`Embedding model ready: ${model}`);
+  }
+}
+
+function ensureModelDocker(spinner: ReturnType<typeof ora>, model: string): void {
+  if (!hasModelDocker(model)) {
+    console.log(`  Pulling embedding model: ${model}`);
+    pullModelDocker(model);
+    spinner.succeed(`Embedding model ready: ${model}`);
+  } else {
+    spinner.succeed(`Embedding model ready: ${model}`);
+  }
+}
+
 export const setupCommand = new Command('setup')
   .description('One-time setup: install search backend and embedding model')
   .option('--model <name>', 'Termite embedding model', DEFAULT_MODEL)
+  .option('--docker', 'Use Docker instead of native binary', false)
   .action(async (options) => {
     const model = options.model as string;
+    const useDocker = options.docker as boolean;
     const spinner = ora();
 
     try {
-      // ── Step 1: Check runtime ──
-      if (hasDocker()) {
-        // Warn if Docker has less than 4GB allocated
+      // ── Check if already running ──
+      if (await isServerReady()) {
+        spinner.succeed('Antfly already running');
+
+        // Ensure model — detect if running via Docker or native
+        if (hasNativeBinary() && !useDocker) {
+          ensureModel(spinner, model);
+        } else if (hasDocker()) {
+          ensureModelDocker(spinner, model);
+        }
+
+        console.log('\n  Setup complete!');
+        printNextSteps();
+        return;
+      }
+
+      // ── Docker (explicit flag) ──
+      if (useDocker) {
+        if (!hasDocker()) {
+          spinner.fail('Docker is not available. Install Docker or run without --docker.');
+          process.exit(1);
+        }
+
         const dockerMem = getDockerMemoryBytes();
         if (dockerMem && dockerMem < 4 * 1024 * 1024 * 1024) {
           const memGB = (dockerMem / (1024 * 1024 * 1024)).toFixed(1);
@@ -75,25 +121,6 @@ export const setupCommand = new Command('setup')
           );
         }
 
-        // Check if server is already running
-        if (await isServerReady()) {
-          spinner.succeed('Antfly already running');
-
-          // Ensure model is available even if server was already up
-          if (!hasModelDocker(model)) {
-            console.log(`  Pulling embedding model: ${model}`);
-            pullModelDocker(model);
-            spinner.succeed(`Embedding model ready: ${model}`);
-          } else {
-            spinner.succeed(`Embedding model ready: ${model}`);
-          }
-
-          console.log('\n  Setup complete!');
-          printNextSteps();
-          return;
-        }
-
-        // Pull image and start
         spinner.start('Pulling Antfly image...');
         try {
           await dockerPull(getDockerImage());
@@ -106,40 +133,19 @@ export const setupCommand = new Command('setup')
         await ensureAntfly({ quiet: true });
         spinner.succeed(`Antfly running on ${getAntflyUrl()}`);
 
-        // Pull embedding model inside container
-        if (!hasModelDocker(model)) {
-          console.log(`  Pulling embedding model: ${model}`);
-          pullModelDocker(model);
-          spinner.succeed(`Embedding model ready: ${model}`);
-        } else {
-          spinner.succeed(`Embedding model ready: ${model}`);
-        }
+        ensureModelDocker(spinner, model);
       } else if (hasNativeBinary()) {
-        // ── Native fallback ──
+        // ── Native (default) ──
         const version = getNativeVersion();
+        spinner.succeed(`Antfly ${version} found`);
 
-        // Check if server is already running
-        if (await isServerReady()) {
-          spinner.succeed(`Antfly ${version} already running`);
-          console.log("\n  Nothing to do — you're all set!");
-          printNextSteps();
-          return;
-        }
-
-        // Pull embedding model (Docker image bundles models, native needs manual pull)
-        if (!hasModel(model)) {
-          spinner.start(`Pulling embedding model: ${model}...`);
-          pullModel(model);
-          spinner.succeed(`Embedding model ready: ${model}`);
-        } else {
-          spinner.succeed(`Embedding model ready: ${model}`);
-        }
+        ensureModel(spinner, model);
 
         spinner.start('Starting Antfly server...');
         await ensureAntfly({ quiet: true });
         spinner.succeed(`Antfly running on ${getAntflyUrl()}`);
       } else {
-        // ── Nothing installed ──
+        // ── Nothing installed — offer to install ──
         const platform = process.platform;
         const installCmd =
           platform === 'darwin'
@@ -155,20 +161,14 @@ export const setupCommand = new Command('setup')
           execSync(installCmd, { stdio: 'inherit' });
           spinner.succeed('Antfly installed');
 
-          // Pull model and start
-          if (!hasModel(model)) {
-            spinner.start(`Pulling embedding model: ${model}...`);
-            pullModel(model);
-            spinner.succeed(`Embedding model ready: ${model}`);
-          }
+          ensureModel(spinner, model);
 
           spinner.start('Starting Antfly server...');
           await ensureAntfly({ quiet: true });
           spinner.succeed(`Antfly running on ${getAntflyUrl()}`);
         } else {
-          console.log('\nInstall manually, then run `dev setup` again:');
-          console.log(`  Docker:  https://docker.com/get-started`);
-          console.log(`  Native:  ${installCmd}\n`);
+          console.log(`\nInstall manually, then run \`dev setup\` again:`);
+          console.log(`  ${installCmd}\n`);
           return;
         }
       }

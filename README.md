@@ -52,8 +52,9 @@ We benchmarked dev-agent against baseline Claude Code across 5 task types:
 # Install globally
 npm install -g dev-agent
 
-# One-time setup (starts search backend via Docker or native)
-dev setup
+# One-time setup (starts Antfly search backend)
+dev setup                 # Native (default)
+dev setup --docker        # Or use Docker
 
 # Index your repository
 cd /path/to/your/repo
@@ -213,17 +214,17 @@ Check MCP server and component health.
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22 LTS or higher
-- [Docker Desktop](https://docker.com/get-started) with **8GB+ memory** (Settings → Resources → Memory) or [Antfly](https://antfly.io) native binary
+- [Antfly](https://antfly.io) — search backend (`brew install --cask antflydb/antfly/antfly`)
 - [GitHub CLI](https://cli.github.com/) (for GitHub features)
 
 ### Global Install (Recommended)
 
 ```bash
 npm install -g dev-agent
-dev setup    # One-time: starts search backend (Docker or native)
+dev setup    # One-time: starts Antfly search backend
 ```
 
-`dev setup` handles everything — pulls the Docker image, starts the server, and verifies the connection. If Docker isn't available, it falls back to the native Antfly binary and offers to install it.
+`dev setup` handles everything — installs Antfly if needed, pulls the embedding model, and starts the server. Use `dev setup --docker` if you prefer Docker.
 
 ### From Source
 

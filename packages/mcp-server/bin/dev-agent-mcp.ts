@@ -143,10 +143,91 @@ async function startupCatchup(
   await watcher.writeSnapshot(repositoryPath, snapshotPath);
 }
 
+/**
+ * Check if Antfly server is reachable.
+ */
+async function isAntflyReady(): Promise<boolean> {
+  const url = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
+  const baseUrl = url.replace('/api/v1', '');
+  try {
+    const resp = await fetch(`${baseUrl}/api/v1/tables`, { signal: AbortSignal.timeout(3000) });
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Try to start Antfly if not running (native first, then Docker).
+ */
+async function tryStartAntfly(): Promise<void> {
+  const { execSync, spawn } = await import('node:child_process');
+
+  // Try native
+  try {
+    execSync('antfly --version', { stdio: 'pipe', timeout: 5000 });
+    const child = spawn(
+      'antfly',
+      [
+        'swarm',
+        '--metadata-api',
+        'http://0.0.0.0:18080',
+        '--store-api',
+        'http://0.0.0.0:18381',
+        '--metadata-raft',
+        'http://0.0.0.0:19017',
+        '--store-raft',
+        'http://0.0.0.0:19021',
+        '--health-port',
+        '14200',
+      ],
+      { detached: true, stdio: 'ignore' }
+    );
+    child.unref();
+    console.error('[MCP] Starting Antfly server (native)...');
+
+    // Wait for ready
+    const start = Date.now();
+    while (Date.now() - start < 30_000) {
+      if (await isAntflyReady()) return;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error('Antfly did not start in 30s');
+  } catch {
+    // Try Docker
+    try {
+      execSync('docker info', { stdio: 'pipe', timeout: 5000 });
+      try {
+        execSync('docker start dev-agent-antfly', { stdio: 'pipe' });
+      } catch {
+        execSync(
+          'docker run -d --name dev-agent-antfly -p 18080:8080 -m 8g --platform linux/amd64 ghcr.io/antflydb/antfly:latest swarm',
+          { stdio: 'pipe' }
+        );
+      }
+      console.error('[MCP] Starting Antfly server (Docker)...');
+
+      const start = Date.now();
+      while (Date.now() - start < 30_000) {
+        if (await isAntflyReady()) return;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      throw new Error('Antfly did not start in 30s');
+    } catch {
+      // Neither available — will fail at indexer.initialize()
+    }
+  }
+}
+
 async function main() {
   let watcherHandle: FileWatcherHandle | undefined;
 
   try {
+    // Ensure Antfly is running before initializing
+    if (!(await isAntflyReady())) {
+      await tryStartAntfly();
+    }
+
     // Get centralized storage paths
     const storagePath = await getStoragePath(repositoryPath);
     await ensureStorageDirectory(storagePath);
