@@ -5,137 +5,168 @@
 ## Context
 
 Phase 1 replaced the storage layer (LanceDB → Antfly) but kept the old indexing
-flow intact. That flow was designed around LanceDB constraints: local file storage,
-manual embedding pipeline, batch sizing tuned for ONNX model memory, state files
-for incremental updates.
+flow intact. That flow was overengineered for its original constraints: local file
+storage, manual embedding pipeline, state files tracking file hashes and document IDs.
 
-With Antfly as the backend, many of these constraints no longer exist. Rather than
-patching the old flow, we should redesign it around what Antfly enables and what
-developers actually need.
+Research (see [research.md](./research.md)) found two production-grade tools that
+eliminate most of our custom plumbing:
 
-See [user-stories.md](./user-stories.md) for the full set of user stories driving
-this redesign.
+1. **`@parcel/watcher`** — native file watcher with `getEventsSince()` that tracks
+   changes even when our process isn't running (used by VS Code)
+2. **Antfly Linear Merge** — server-side content hashing, dedup, and deletion in
+   one API call. Replaces our state file, hash tracking, and upsert logic.
 
-## Current flow (what exists)
+See [user-stories.md](./user-stories.md) for the 16 user stories driving this redesign.
+
+## Current flow (what we're replacing)
 
 ```
-dev setup              → start Antfly (one-time)
-dev index .            → scan all files → batch insert into Antfly → save state file
-  ├─ Phase 1: Scan     → ts-morph/tree-sitter/remark → Document[]
-  ├─ Phase 2: Store     → batch HTTP inserts (32 docs × CONCURRENCY parallel)
-  ├─ Phase 3: Git       → extract commits → separate table
-  ├─ Phase 4: GitHub    → fetch issues/PRs via gh CLI → separate table
-  └─ Save state         → indexer-state.json (file hashes for incremental)
-dev search "query"     → hybrid search via Antfly
+dev index .
+  ├─ Scan ALL files (glob + parse)
+  ├─ Prepare EmbeddingDocument[] from scan results
+  ├─ Batch insert (32 docs × CONCURRENCY parallel HTTP calls)
+  ├─ Track state: file hashes, document IDs, timestamps → indexer-state.json
+  ├─ Git: extract commits → separate table
+  ├─ GitHub: fetch issues/PRs → separate table
+  └─ Emit events, close
+
+Problems:
+  - Manual trigger required (US-4: changes should be automatic)
+  - State file tracks what Antfly already knows (redundant)
+  - Batch size 32 when Antfly handles 500 (15x too many HTTP calls)
+  - No way to know what changed while MCP server was off
+  - Git/GitHub coupled to code indexing
 ```
-
-### Problems with current flow
-
-1. **Manual trigger required** — developer must remember to run `dev index .` after
-   code changes. AI tools get stale context. (violates US-4)
-
-2. **State file complexity** — tracks file hashes, document IDs per file, timestamps.
-   But Antfly does upsert natively — inserting an existing key overwrites. Do we need
-   the state file at all?
-
-3. **Embedding delay invisible** — Antfly embeds asynchronously (~2s). `dev index .`
-   completes before embeddings are ready. Immediate search may return nothing. (violates US-3)
-
-4. **Three separate VectorStorage instances** — created because LanceDB needed separate
-   directories. With Antfly, these are just three tables. But the code creates three
-   separate VectorStorage objects with separate connections.
-
-5. **Batch sizing is wrong** — indexer uses batch=32 (tuned for ONNX). Antfly can handle
-   500 per request. We're making 15x more HTTP calls than needed.
-
-6. **Git and GitHub coupled to index command** — `dev index .` does code + git + GitHub
-   in one big command. These are different data sources with different update patterns.
 
 ## Proposed flow
 
-### The big idea: file watcher + on-demand indexing
+### Architecture
 
 ```
-dev setup              → start Antfly + start file watcher (background)
-                         watcher detects file changes → re-indexes changed files automatically
-
-dev index .            → full scan (first time or explicit refresh)
-dev index . --force    → clear + full scan
-
-# These become separate, optional commands:
-dev git index          → index git history (already exists)
-dev github index       → index GitHub issues/PRs (already exists)
+┌─────────────────────────────────────────────────────────────┐
+│                    MCP Server (always running)               │
+│                                                              │
+│  ┌──────────────┐     ┌──────────────┐     ┌─────────────┐  │
+│  │  @parcel/     │────▶│   Scanner    │────▶│   Antfly    │  │
+│  │  watcher      │     │  (ts-morph,  │     │   Linear    │  │
+│  │              │     │  tree-sitter) │     │   Merge     │  │
+│  │ getEventsSince│     └──────────────┘     └─────────────┘  │
+│  └──────────────┘                                            │
+│         │                                                    │
+│         │ on file change                                     │
+│         ▼                                                    │
+│  ┌──────────────┐                                            │
+│  │  Debounce    │  (batch changes, wait 500ms of quiet)     │
+│  │  + Filter    │  (ignore node_modules, dist, .git)        │
+│  └──────────────┘                                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**US-4 solved:** The file watcher keeps the index fresh without manual intervention.
-Developer saves a file, the watcher re-indexes it within seconds.
+### The flow
 
-### Alternative: no watcher, just fast incremental
-
-If a file watcher is too complex for Phase 2, the simpler approach:
-
+**First time (`dev index .`):**
 ```
-dev index .            → fast incremental (only changed files, <5s for small changes)
-                         runs automatically on MCP server startup
-                         runs automatically before search if stale (>5 min since last update)
+1. Scan all files → parse → extract code components
+2. Antfly Linear Merge: send all documents
+   → Antfly hashes content, stores new docs, skips unchanged
+   → Returns: { upserted: 2525, skipped: 0, deleted: 0 }
+3. Save watcher snapshot (for getEventsSince on restart)
+4. Start watching for changes
 ```
 
-### Simplifications enabled by Antfly
+**Ongoing (automatic, no user command):**
+```
+1. @parcel/watcher fires: files A, B, C changed
+2. Debounce (wait 500ms of quiet)
+3. Parse only changed files → extract components
+4. Antfly Linear Merge: send only changed documents
+   → Returns: { upserted: 3, skipped: 0, deleted: 1 }
+5. MCP tools immediately have fresh data
+```
 
-| Old complexity | New simplification |
-|---------------|-------------------|
-| State file (file hashes, doc IDs) | Antfly upsert by key — just re-insert, it overwrites |
-| Three VectorStorage instances | One AntflyClient, three table names |
-| Batch size 32 + CONCURRENCY | Single batch size 500, let Antfly handle parallelism |
-| Manual embedding step | Antfly auto-embeds on insert |
-| Wait for embedding completion | BM25 search works immediately; vector search ready in ~2s |
+**MCP server restart:**
+```
+1. @parcel/watcher.getEventsSince(lastSnapshot)
+   → "files X, Y, Z changed while you were off"
+2. Parse only those files → extract → merge
+3. Resume watching
+```
 
-### State file: keep or drop?
+**Force re-index (`dev index . --force`):**
+```
+1. Antfly: drop tables, recreate
+2. Full scan + merge (same as first time)
+```
 
-**Keep a minimal version.** We still need to know:
-- Which files have been indexed (to detect deleted files → remove from Antfly)
-- Last index timestamp (to detect staleness)
+### What we drop
 
-**Drop:**
-- File hashes (just re-insert everything that changed based on mtime)
-- Document IDs per file (Antfly handles dedup by key)
-- Embedding metadata (Antfly owns this)
+| Old complexity | Replaced by |
+|---------------|-------------|
+| `indexer-state.json` (file hashes, doc IDs) | `@parcel/watcher` snapshots + Antfly Linear Merge |
+| Manual `dev index .` after every change | Automatic via file watcher |
+| Batch size 32 + CONCURRENCY parallelism | Single Linear Merge call per change batch |
+| Three separate VectorStorage instances | One AntflyClient, three table names |
+| `TransformersEmbedder` pipeline | Antfly auto-embeds via Termite |
+| Hash comparison in RepositoryIndexer | Antfly server-side content hashing |
+
+### What we keep
+
+- **Scanner pipeline** — ts-morph, tree-sitter, remark (proven, well-tested)
+- **Document preparation** — `prepareDocumentsForEmbedding()` (pure transform)
+- **Git indexing** — as a separate command (`dev git index`)
+- **GitHub indexing** — as a separate command (`dev github index`)
+- **MCP adapter layer** — unchanged, consumes search results
+
+## Decisions
+
+| Decision | Rationale | Alternatives |
+|----------|-----------|-------------|
+| Use `@parcel/watcher` | Native, `getEventsSince()` survives restarts, VS Code uses it | chokidar (no historical queries), watchman (requires daemon) |
+| Use Antfly Linear Merge | Server-side content hashing eliminates state file entirely | Keep state file + manual upsert (more code, same result) |
+| Watch from MCP server process | MCP server is the long-running process; watcher lives there | Separate daemon (more complexity), CLI-only (no auto-update) |
+| Decouple git/github from `dev index .` | Different update patterns, different data sources | Keep bundled (slower `dev index .`, coupled concerns) |
+| Debounce file changes (500ms) | Avoid re-indexing mid-save; batch rapid changes | Per-file immediate (too many API calls), longer debounce (stale data) |
+| Drop indexer-state.json | Antfly + watcher replace all its functions | Keep for backward compat (dead code) |
 
 ## Parts
 
-| Part | Description | User stories |
-|------|-------------|-------------|
-| 2.1 | Simplify indexer: drop state complexity, use Antfly upsert | US-3, US-5 |
-| 2.2 | Increase batch size, single AntflyClient | US-6 |
-| 2.3 | Wait for embedding completion (or BM25 fallback) | US-3 |
-| 2.4 | Decouple git/github from `dev index .` | US-10, US-11 |
-| 2.5 | Auto-index on MCP server startup | US-4, US-12 |
-| 2.6 | File watcher for continuous indexing (stretch) | US-4 |
-| 2.7 | `dev status` rework — show Antfly table stats | US-13 |
+| Part | Description | User stories | Risk |
+|------|-------------|-------------|------|
+| 2.1 | Replace batch insert with Antfly Linear Merge | US-3, US-5, US-6 | Low |
+| 2.2 | Add `@parcel/watcher` to MCP server | US-4, US-12 | Medium |
+| 2.3 | Debounce + incremental re-index on file change | US-4 | Medium |
+| 2.4 | `getEventsSince` on MCP server startup | US-5, US-12 | Low |
+| 2.5 | Decouple git/github from `dev index .` | US-10, US-11 | Low |
+| 2.6 | Drop indexer-state.json, simplify RepositoryIndexer | US-3, US-6 | Medium |
+| 2.7 | `dev status` rework — Antfly table stats + watcher status | US-13 | Low |
+| 2.8 | E2E tests: index real repo, search, verify results | US-3, US-8, US-9 | Low |
 
-## Decisions to make
+## Risk register
 
-1. **File watcher or fast incremental?** Watcher is better UX but more complexity.
-   Fast incremental (<5s) on MCP startup might be enough.
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| `@parcel/watcher` native addon install issues | Medium | Medium | Fall back to chokidar; or bundle prebuilt binaries |
+| Antfly Linear Merge API doesn't exist yet in SDK | Medium | High | Verify in spike; use raw REST if SDK missing |
+| File watcher misses changes (edge cases) | Low | Medium | `dev index .` always available as manual fallback |
+| Large repos overwhelm watcher (10k+ files) | Low | Medium | Filter aggressively (ignore node_modules, dist, etc.) |
+| Debounce window too long/short | Low | Low | Make configurable; 500ms default is standard |
 
-2. **State file: minimal or none?** We need *something* to detect deleted files.
-   Could query Antfly for existing keys and diff, but that's O(n) on every run.
+## Verification checklist
 
-3. **Git/GitHub: part of `dev index .` or separate?** Currently bundled.
-   Separating them makes `dev index .` faster and each concern independent.
-
-4. **Embedding completion: wait or don't?** Antfly's BM25 index is immediate.
-   Vector search has ~2s delay. Should we wait, or document the tradeoff?
-
-## Open questions
-
-- What does the MCP server startup look like? Does it auto-index?
-- How does Cursor's workspace detection interact with auto-indexing?
-- Should `dev index .` be a command users run, or should it be invisible?
-- What's the right granularity for file watching? (per-file? per-save? debounced?)
+- [ ] `dev index .` works end-to-end with Linear Merge
+- [ ] File watcher detects changes and auto-re-indexes
+- [ ] MCP server restart catches up via `getEventsSince`
+- [ ] `dev_search "validateUser"` returns exact match (BM25)
+- [ ] `dev_search "authentication middleware"` returns semantic matches (vector)
+- [ ] `dev index . --force` clears and rebuilds
+- [ ] `dev git index` works independently
+- [ ] `dev github index` works independently
+- [ ] `dev status` shows fresh Antfly stats + watcher status
+- [ ] No `indexer-state.json` written or read
+- [ ] Works on this repo (dev-agent) end-to-end
 
 ## Dependencies
 
 - Phase 1 (Antfly migration) — merged
-- Antfly server running
-- Understanding of MCP server lifecycle (how/when it starts)
+- Antfly Linear Merge API — verify in spike (Part 2.1)
+- `@parcel/watcher` — npm install
