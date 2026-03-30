@@ -126,14 +126,51 @@ gh auth login
 dev github index  # Re-index
 ```
 
+## Antfly Issues
+
+### Antfly server not running
+
+If you see `Failed to initialize Antfly store` or `fetch failed`:
+
+```bash
+# Run setup (starts the server via Docker or native)
+dev setup
+
+# Or start manually
+antfly swarm
+```
+
+### Port conflict on startup
+
+Antfly uses port 18080 (Docker) or 8080 (native). If another service is using that port:
+
+```bash
+# Check what's using the port
+lsof -i :18080
+
+# Use a custom port via environment variable
+ANTFLY_URL=http://localhost:19090/api/v1 dev index .
+```
+
+### Old LanceDB data
+
+If you're upgrading from a previous version that used LanceDB:
+
+```bash
+# Old indexes are not compatible — re-index with Antfly
+dev index . --force
+
+# Optionally clean up old LanceDB data
+rm -rf ~/.dev-agent/indexes/*/vectors*
+```
+
 ## Quick Fixes
 
 ### Clear everything and start fresh
 
 ```bash
-rm -rf ~/.dev-agent/indexes/*
-dev index .
-dev github index
+dev setup              # Ensure Antfly is running
+dev index . --force    # Re-index from scratch
 dev mcp install --cursor
 ```
 

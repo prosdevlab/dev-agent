@@ -9,6 +9,64 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.9.0 — Antfly Hybrid Search
+
+*March 29, 2026*
+
+**Replaced LanceDB + @xenova/transformers with [Antfly](https://antfly.io) — a major upgrade to search quality and architecture.**
+
+### What's Changed
+
+**🔍 Hybrid Search (BM25 + Vector + RRF)**
+
+`dev_search` now combines keyword matching and semantic understanding in every query. Searching for "validateUser" finds the exact function (BM25) AND semantically related authentication code (vector), fused into one ranked result set via Reciprocal Rank Fusion.
+
+**⚡ New: `dev setup` Command**
+
+One command handles the entire search backend:
+
+```bash
+dev setup
+```
+
+- Docker-first: pulls the Antfly image, starts a container
+- Native fallback: detects or installs the Antfly binary, pulls the embedding model
+- Auto-start: all commands (`dev index`, `dev mcp start`) auto-start Antfly if needed
+
+**🧠 Auto-Embedding via Termite**
+
+No more managing an embedding pipeline. Antfly generates embeddings locally via Termite (ONNX-optimized models). Insert documents, search immediately — Antfly handles the rest.
+
+**🔑 Direct Key Lookup**
+
+Document retrieval by ID is now instant via `tables.lookup()`, replacing the previous O(n) zero-vector scan workaround.
+
+### Architecture
+
+```
+Before: Scanner → @xenova/transformers (embed) → LanceDB (store) → vector search
+After:  Scanner → Antfly (embed + store + hybrid search)
+```
+
+- Removed ~1,400 lines of vector plumbing code
+- `@lancedb/lancedb` and `@xenova/transformers` fully removed
+- `@antfly/sdk` added as the sole search dependency
+- VectorStorage facade preserved — all consumers unchanged
+
+### Breaking Changes
+
+- **Requires Antfly server.** Run `dev setup` (one-time) to install and start.
+- **Existing LanceDB indexes are not migrated.** Run `dev index . --force` to rebuild with Antfly.
+- **Default port changed to 18080** to avoid conflicts with common dev servers on 8080.
+
+### Testing
+
+- 1,935 tests passing, 0 failures
+- 20 new AntflyVectorStore integration tests (insert, upsert, hybrid search, delete, count, model mismatch detection)
+- VectorStorage mock for tests that don't need a live server
+
+---
+
 ## v0.8.5 — Enhanced Pattern Analysis & Performance
 
 *December 14, 2025*
