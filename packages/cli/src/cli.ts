@@ -14,6 +14,7 @@ import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
 import { planCommand } from './commands/plan.js';
 import { searchCommand } from './commands/search.js';
+import { setupCommand } from './commands/setup.js';
 import { statsCommand } from './commands/stats.js';
 import { storageCommand } from './commands/storage.js';
 import { updateCommand } from './commands/update.js';
@@ -45,6 +46,7 @@ program.addCommand(compactCommand);
 program.addCommand(cleanCommand);
 program.addCommand(storageCommand);
 program.addCommand(mcpCommand);
+program.addCommand(setupCommand);
 
 // Show help if no command provided
 if (process.argv.length === 2) {
