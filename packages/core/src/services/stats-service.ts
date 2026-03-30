@@ -21,7 +21,6 @@ export interface StatsServiceConfig {
 export type IndexerFactory = (config: {
   repositoryPath: string;
   vectorStorePath: string;
-  statePath: string;
   logger?: Logger;
 }) => Promise<RepositoryIndexer>;
 
@@ -59,7 +58,6 @@ export class StatsService {
     return new Indexer({
       repositoryPath: config.repositoryPath,
       vectorStorePath: filePaths.vectors,
-      statePath: filePaths.indexerState,
       logger: config.logger,
     });
   }
@@ -77,7 +75,6 @@ export class StatsService {
     const indexer = await this.createIndexer({
       repositoryPath: this.repositoryPath,
       vectorStorePath: '', // Filled by factory
-      statePath: '', // Filled by factory
       logger: this.logger,
     });
 

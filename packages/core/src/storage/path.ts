@@ -103,16 +103,21 @@ export async function ensureStorageDirectory(storagePath: string): Promise<void>
  */
 export function getStorageFilePaths(storagePath: string): {
   vectors: string;
-  githubState: string;
   metadata: string;
-  indexerState: string;
   metrics: string;
+  watcherSnapshot: string;
+  /** @deprecated Removed in Phase 2 — only used for migration cleanup */
+  indexerState: string;
+  /** @deprecated Removed in Phase 2 — only used for migration cleanup */
+  githubState: string;
 } {
   return {
     vectors: path.join(storagePath, 'vectors.lance'),
-    githubState: path.join(storagePath, 'github-state.json'),
     metadata: path.join(storagePath, 'metadata.json'),
-    indexerState: path.join(storagePath, 'indexer-state.json'),
     metrics: path.join(storagePath, 'metrics.db'),
+    watcherSnapshot: path.join(storagePath, 'watcher-snapshot'),
+    // Legacy paths — kept for migration cleanup only
+    indexerState: path.join(storagePath, 'indexer-state.json'),
+    githubState: path.join(storagePath, 'github-state.json'),
   };
 }

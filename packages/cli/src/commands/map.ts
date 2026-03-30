@@ -86,7 +86,6 @@ Use Case:
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        statePath: filePaths.indexerState,
       });
 
       // Skip embedder initialization for read-only map generation (10-20x faster)
@@ -96,9 +95,9 @@ Use Case:
       mapLogger.info({ duration_ms: t2 - t1 }, 'Indexer initialized');
       spinner.text = `Indexer initialized (${t2 - t1}ms). Generating map...`;
 
-      // Check if repository is indexed (use fast basic stats - skips git enrichment)
+      // Check if repository is indexed
       mapLogger.debug('Checking if repository is indexed');
-      const stats = await indexer.getBasicStats();
+      const stats = await indexer.getStats();
       if (!stats || stats.filesScanned === 0) {
         spinner.fail('Repository not indexed');
         await indexer.close();

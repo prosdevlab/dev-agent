@@ -28,14 +28,6 @@ export interface IndexOptions {
 }
 
 /**
- * Options for incremental updates
- */
-export interface UpdateOptions extends IndexOptions {
-  /** Only reindex files modified after this timestamp */
-  since?: Date;
-}
-
-/**
  * Progress information during indexing
  */
 export interface IndexProgress {
@@ -206,91 +198,14 @@ export interface DetailedIndexStats extends IndexStats {
 }
 
 /**
- * Metadata tracked for each indexed file
- */
-export interface FileMetadata {
-  /** File path relative to repository root */
-  path: string;
-
-  /** Content hash (for change detection) */
-  hash: string;
-
-  /** Last modified timestamp */
-  lastModified: Date;
-
-  /** Last indexed timestamp */
-  lastIndexed: Date;
-
-  /** Document IDs extracted from this file */
-  documentIds: string[];
-
-  /** File size in bytes */
-  size: number;
-
-  /** Language detected */
-  language: string;
-}
-
-/**
- * Indexer state persisted to disk
- */
-export interface IndexerState {
-  /** Version of the indexer (for compatibility) */
-  version: string;
-
-  /** Embedding model used */
-  embeddingModel: string;
-
-  /** Embedding dimension */
-  embeddingDimension: number;
-
-  /** Repository path */
-  repositoryPath: string;
-
-  /** Last full index timestamp */
-  lastIndexTime: Date;
-
-  /** Last update timestamp (full or incremental) */
-  lastUpdate?: Date;
-
-  /** Number of incremental updates since last full index */
-  incrementalUpdatesSince?: number;
-
-  /** File metadata map (path -> metadata) */
-  files: Record<string, FileMetadata>;
-
-  /** Total statistics */
-  stats: {
-    totalFiles: number;
-    totalDocuments: number;
-    totalVectors: number;
-    byLanguage?: Partial<Record<SupportedLanguage, LanguageStats>>;
-    byComponentType?: Partial<Record<string, number>>;
-    byPackage?: Record<string, PackageStats>;
-  };
-}
-
-/**
  * Configuration for the Repository Indexer
  */
 export interface IndexerConfig {
   /** Path to the repository to index */
   repositoryPath: string;
 
-  /** Path to store vector data */
+  /** Path to store vector data (used to derive Antfly table name) */
   vectorStorePath: string;
-
-  /** Path to store indexer state (default: .dev-agent/indexer-state.json) */
-  statePath?: string;
-
-  /** Embedding model to use (default: Xenova/all-MiniLM-L6-v2) */
-  embeddingModel?: string;
-
-  /** Embedding dimension (default: 384) */
-  embeddingDimension?: number;
-
-  /** Batch size for embedding generation (default: 32) */
-  batchSize?: number;
 
   /** Glob patterns to exclude */
   excludePatterns?: string[];
@@ -300,4 +215,7 @@ export interface IndexerConfig {
 
   /** Languages to index (default: all supported) */
   languages?: string[];
+
+  /** Legacy state file path for migration cleanup (Phase 1 → Phase 2) */
+  legacyStatePath?: string;
 }

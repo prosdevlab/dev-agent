@@ -25,7 +25,6 @@ export interface SimilarityOptions {
 export interface IndexerFactoryConfig {
   repositoryPath: string;
   vectorStorePath: string;
-  statePath: string;
   logger?: Logger;
   excludePatterns?: string[];
   languages?: string[];
@@ -63,7 +62,6 @@ export class SearchService {
     return new Indexer({
       repositoryPath: config.repositoryPath,
       vectorStorePath: config.vectorStorePath,
-      statePath: config.statePath,
       logger: config.logger,
       excludePatterns: config.excludePatterns,
       languages: config.languages,
@@ -84,7 +82,6 @@ export class SearchService {
     const indexer = await this.createIndexer({
       repositoryPath: this.repositoryPath,
       vectorStorePath: filePaths.vectors,
-      statePath: filePaths.indexerState,
       logger: this.logger,
       excludePatterns: options?.excludePatterns,
       languages: options?.languages,

@@ -40,7 +40,6 @@ export const compactCommand = new Command('compact')
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        statePath: filePaths.indexerState,
         excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
         languages: config.repository?.languages || config.languages,
       });

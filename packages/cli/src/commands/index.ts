@@ -152,11 +152,8 @@ export const indexCommand = new Command('index')
         {
           repositoryPath: resolvedRepoPath,
           vectorStorePath: filePaths.vectors,
-          statePath: filePaths.indexerState,
           excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
           languages: config.repository?.languages || config.languages,
-          embeddingModel: config.embeddingModel,
-          embeddingDimension: config.dimension,
         },
         eventBus
       );

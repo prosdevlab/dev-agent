@@ -8,7 +8,11 @@
 export * from './antfly-store.js';
 export * from './types.js';
 
-import { type AntflyStoreConfig, AntflyVectorStore } from './antfly-store.js';
+import {
+  type AntflyStoreConfig,
+  AntflyVectorStore,
+  type LinearMergeResult,
+} from './antfly-store.js';
 import type {
   EmbeddingDocument,
   SearchOptions,
@@ -120,6 +124,27 @@ export class VectorStorage {
   async deleteDocuments(ids: string[]): Promise<void> {
     this.assertReady();
     await this.store.delete(ids);
+  }
+
+  /**
+   * Linear Merge: full-index dedup via Antfly server-side content hashing.
+   * Use ONLY for full-index. Incremental paths must use batchUpsertAndDelete().
+   */
+  async linearMerge(
+    documents: EmbeddingDocument[],
+    lastMergedId?: string
+  ): Promise<LinearMergeResult> {
+    this.assertReady();
+    return this.store.linearMerge(documents, lastMergedId);
+  }
+
+  /**
+   * Combined upsert + delete for incremental updates (watcher, restart catchup).
+   * Safe for concurrent calls.
+   */
+  async batchUpsertAndDelete(upserts: EmbeddingDocument[], deleteIds: string[]): Promise<void> {
+    this.assertReady();
+    await this.store.batchUpsertAndDelete(upserts, deleteIds);
   }
 
   /**

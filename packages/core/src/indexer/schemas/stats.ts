@@ -145,71 +145,6 @@ export const DetailedIndexStatsSchema = IndexStatsSchema.extend({
   byPackage: z.record(z.string(), PackageStatsSchema).optional(),
 });
 
-/**
- * Metadata tracked for each indexed file
- */
-export const FileMetadataSchema = z.object({
-  /** File path relative to repository root */
-  path: z.string().min(1),
-
-  /** Content hash (for change detection) */
-  hash: z.string().min(1),
-
-  /** Last modified timestamp */
-  lastModified: z.coerce.date(),
-
-  /** Last indexed timestamp */
-  lastIndexed: z.coerce.date(),
-
-  /** Document IDs extracted from this file */
-  documentIds: z.array(z.string()),
-
-  /** File size in bytes */
-  size: z.number().int().nonnegative(),
-
-  /** Language detected */
-  language: z.string().min(1),
-});
-
-/**
- * Indexer state persisted to disk
- */
-export const IndexerStateSchema = z.object({
-  /** Version of the indexer (for compatibility) */
-  version: z.string().min(1),
-
-  /** Embedding model used */
-  embeddingModel: z.string().min(1),
-
-  /** Embedding dimension */
-  embeddingDimension: z.number().int().positive(),
-
-  /** Repository path */
-  repositoryPath: z.string().min(1),
-
-  /** Last full index timestamp */
-  lastIndexTime: z.coerce.date(),
-
-  /** Last update timestamp (full or incremental) */
-  lastUpdate: z.coerce.date().optional(),
-
-  /** Number of incremental updates since last full index */
-  incrementalUpdatesSince: z.number().int().nonnegative().optional(),
-
-  /** File metadata map (path -> metadata) */
-  files: z.record(z.string(), FileMetadataSchema),
-
-  /** Total statistics */
-  stats: z.object({
-    totalFiles: z.number().int().nonnegative(),
-    totalDocuments: z.number().int().nonnegative(),
-    totalVectors: z.number().int().nonnegative(),
-    byLanguage: z.record(z.string(), LanguageStatsSchema).optional(),
-    byComponentType: z.record(z.string(), z.number().int().nonnegative()).optional(),
-    byPackage: z.record(z.string(), PackageStatsSchema).optional(),
-  }),
-});
-
 // Type inference from schemas
 export type LanguageStats = z.infer<typeof LanguageStatsSchema>;
 export type PackageStats = z.infer<typeof PackageStatsSchema>;
@@ -217,6 +152,4 @@ export type StatsMetadata = z.infer<typeof StatsMetadataSchema>;
 export type IndexError = z.infer<typeof IndexErrorSchema>;
 export type IndexStats = z.infer<typeof IndexStatsSchema>;
 export type DetailedIndexStats = z.infer<typeof DetailedIndexStatsSchema>;
-export type FileMetadata = z.infer<typeof FileMetadataSchema>;
-export type IndexerState = z.infer<typeof IndexerStateSchema>;
 export type SupportedLanguage = z.infer<typeof SupportedLanguageSchema>;

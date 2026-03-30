@@ -67,7 +67,6 @@ async function _ensureIndexer(): Promise<RepositoryIndexer> {
     indexer = new RepositoryIndexer({
       repositoryPath,
       vectorStorePath: filePaths.vectors,
-      statePath: filePaths.indexerState,
     });
 
     await indexer.initialize();
@@ -118,7 +117,6 @@ async function main() {
     const indexer = new RepositoryIndexer({
       repositoryPath,
       vectorStorePath: filePaths.vectors,
-      statePath: filePaths.indexerState,
     });
 
     await indexer.initialize();

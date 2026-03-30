@@ -3,13 +3,7 @@
  * Promotes DRY principles and makes tests more readable
  */
 
-import type {
-  DetailedIndexStats,
-  FileMetadata,
-  LanguageStats,
-  StatsMetadata,
-  SupportedLanguage,
-} from '../types';
+import type { DetailedIndexStats, LanguageStats, StatsMetadata, SupportedLanguage } from '../types';
 
 /**
  * Create language stats for testing
@@ -19,22 +13,6 @@ export function createLanguageStats(overrides: Partial<LanguageStats> = {}): Lan
     files: 1,
     components: 5,
     lines: 100,
-    ...overrides,
-  };
-}
-
-/**
- * Create file metadata for testing
- */
-export function createFileMetadata(overrides: Partial<FileMetadata> = {}): FileMetadata {
-  return {
-    path: 'src/test.ts',
-    hash: 'abc123',
-    lastModified: new Date(),
-    lastIndexed: new Date(),
-    documentIds: ['doc1', 'doc2'],
-    size: 1024,
-    language: 'typescript',
     ...overrides,
   };
 }
