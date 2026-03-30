@@ -48,10 +48,28 @@ export async function ensureAntfly(options?: { quiet?: boolean }): Promise<strin
   // 3. Native fallback
   if (hasNativeBinary()) {
     if (!options?.quiet) logger.info('Starting Antfly server...');
-    const child = spawn('antfly', ['swarm'], {
-      detached: true,
-      stdio: 'ignore',
-    });
+    // Use custom ports to avoid 8080 conflicts (Docker, other services).
+    // metadata-api on 18080 (our default), store-api on 18381, raft on 19017/19021.
+    const child = spawn(
+      'antfly',
+      [
+        'swarm',
+        '--metadata-api',
+        'http://0.0.0.0:18080',
+        '--store-api',
+        'http://0.0.0.0:18381',
+        '--metadata-raft',
+        'http://0.0.0.0:19017',
+        '--store-raft',
+        'http://0.0.0.0:19021',
+        '--health-port',
+        '14200',
+      ],
+      {
+        detached: true,
+        stdio: 'ignore',
+      }
+    );
     child.unref();
 
     await waitForServer(url);
