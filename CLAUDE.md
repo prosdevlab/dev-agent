@@ -79,6 +79,9 @@ dev setup                 # One-time: start Antfly search backend
   any CRITICAL or WARNING findings before merging.
 - **Plan before building.** For non-trivial features, write a plan in
   `.claude/da-plans/` and run the `plan-reviewer` agent before implementation.
+- **Changesets target published packages only.** Only `@prosdevlab/dev-agent`
+  and `@prosdevlab/kero` are published to npm. All other packages are private
+  and bundled into dev-agent via tsup. Never add private packages to changesets.
 
 ---
 
