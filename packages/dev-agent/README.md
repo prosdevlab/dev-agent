@@ -10,6 +10,9 @@ Local-first semantic code search, GitHub integration, and development planning f
 # Install globally
 npm install -g @prosdevlab/dev-agent
 
+# One-time setup (starts Antfly search backend)
+dev setup
+
 # Index your repository
 cd /path/to/your/repo
 dev index

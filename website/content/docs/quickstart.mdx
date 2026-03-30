@@ -5,7 +5,7 @@ Get from zero to semantic search in 5 minutes.
 ## Prerequisites
 
 - Node.js 22+ installed
-- Docker Desktop with **8GB+ memory** (Settings → Resources → Memory) or Antfly native binary
+- [Antfly](https://antfly.io) — search backend (`brew install --cask antflydb/antfly/antfly`)
 - Cursor IDE (or Claude Code)
 - A code repository to index
 
@@ -16,7 +16,7 @@ npm install -g @prosdevlab/dev-agent
 dev setup
 ```
 
-`dev setup` starts the search backend (via Docker or native). One-time step.
+`dev setup` installs Antfly, pulls the embedding model, and starts the server. One-time step.
 
 ## Step 2: Index your repository
 

@@ -3,7 +3,7 @@
 ## Requirements
 
 - **Node.js 22+** (LTS recommended)
-- **[Docker Desktop](https://docker.com/get-started)** with **8GB+ memory** (Settings → Resources → Memory) or [Antfly](https://antfly.io) native binary
+- **[Antfly](https://antfly.io)** — search backend (`brew install --cask antflydb/antfly/antfly`)
 - **Cursor** or **Claude Code** (for MCP integration)
 
 ## Install dev-agent
@@ -34,15 +34,14 @@ dev --version
 Run `dev setup` to start the search backend:
 
 ```bash
-dev setup
+dev setup                 # Uses native Antfly (default)
+dev setup --docker        # Or use Docker
 ```
 
 This does three things:
-1. **Checks for Docker** (preferred) or native Antfly binary
-2. **Starts the Antfly server** — handles hybrid search and embeddings locally
-3. **Verifies the connection** — confirms everything is working
-
-If Docker isn't available, `dev setup` falls back to the native binary and offers to install it.
+1. **Installs Antfly** if not found (offers to install via Homebrew)
+2. **Pulls the embedding model** — downloads the ONNX model for local embeddings
+3. **Starts the Antfly server** — handles hybrid search and embeddings locally
 
 > **What is Antfly?** [Antfly](https://antfly.io) is the search engine that powers dev-agent. It runs locally on your machine — your code never leaves. It provides hybrid search (BM25 keyword matching + vector similarity) which is significantly better than pure vector search for code.
 

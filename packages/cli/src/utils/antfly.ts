@@ -27,25 +27,7 @@ export async function ensureAntfly(options?: { quiet?: boolean }): Promise<strin
     return url;
   }
 
-  // 2. Try Docker first
-  if (hasDocker()) {
-    if (isContainerExists()) {
-      if (!options?.quiet) logger.info('Starting Antfly container...');
-      execSync(`docker start ${CONTAINER_NAME}`, { stdio: 'pipe' });
-    } else {
-      if (!options?.quiet) logger.info('Starting Antfly via Docker...');
-      execSync(
-        `docker run -d --name ${CONTAINER_NAME} -p ${DOCKER_PORT}:8080 -m 8g --platform linux/amd64 ${DOCKER_IMAGE} swarm`,
-        { stdio: 'pipe' }
-      );
-    }
-
-    await waitForServer(url);
-    if (!options?.quiet) logger.info(`Antfly running on ${url}`);
-    return url;
-  }
-
-  // 3. Native fallback
+  // 2. Try native first (no VM overhead, better performance)
   if (hasNativeBinary()) {
     if (!options?.quiet) logger.info('Starting Antfly server...');
     // Use custom ports to avoid 8080 conflicts (Docker, other services).
@@ -77,11 +59,28 @@ export async function ensureAntfly(options?: { quiet?: boolean }): Promise<strin
     return url;
   }
 
+  // 3. Docker fallback
+  if (hasDocker()) {
+    if (isContainerExists()) {
+      if (!options?.quiet) logger.info('Starting Antfly container...');
+      execSync(`docker start ${CONTAINER_NAME}`, { stdio: 'pipe' });
+    } else {
+      if (!options?.quiet) logger.info('Starting Antfly via Docker...');
+      execSync(
+        `docker run -d --name ${CONTAINER_NAME} -p ${DOCKER_PORT}:8080 -m 8g --platform linux/amd64 ${DOCKER_IMAGE} swarm`,
+        { stdio: 'pipe' }
+      );
+    }
+
+    await waitForServer(url);
+    if (!options?.quiet) logger.info(`Antfly running on ${url}`);
+    return url;
+  }
+
   // 4. Nothing available
   throw new Error(
-    'Antfly is not installed. Run `dev setup` to install, or:\n' +
-      '  Docker:  docker pull ghcr.io/antflydb/antfly:latest\n' +
-      '  Native:  brew install --cask antflydb/antfly/antfly'
+    'Antfly is not installed. Run `dev setup` to install:\n' +
+      '  brew install --cask antflydb/antfly/antfly'
   );
 }
 
@@ -148,8 +147,27 @@ async function waitForServer(url: string): Promise<void> {
     if (await isServerReady(url)) return;
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
   }
+  // Check if port is in use by another process
+  try {
+    const { execSync: exec } = await import('node:child_process');
+    const lsof = exec(`lsof -i :${DOCKER_PORT} -t`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (lsof) {
+      throw new Error(
+        `Port ${DOCKER_PORT} is already in use (pid: ${lsof}).\n` +
+          `  Check: lsof -i :${DOCKER_PORT}\n` +
+          `  Or set: ANTFLY_URL=http://localhost:<other-port>/api/v1`
+      );
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('Port')) throw e;
+  }
+
   throw new Error(
-    `Antfly server did not start within ${STARTUP_TIMEOUT_MS / 1000}s. Check: docker logs ${CONTAINER_NAME}`
+    `Antfly server did not start within ${STARTUP_TIMEOUT_MS / 1000}s.\n` +
+      `  Try: dev reset && dev setup`
   );
 }
 
