@@ -33,12 +33,7 @@ async function loadCurrentStats(): Promise<{
 }> {
   // Load config
   const config = await loadConfig();
-  if (!config) {
-    throw new Error('No config found. Run "dev init" first to initialize dev-agent');
-  }
-
-  // Resolve repository path
-  const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+  const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
   const resolvedRepoPath = path.resolve(repositoryPath);
 
   // Get centralized storage paths

@@ -9,6 +9,71 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.0 — CLI UX Overhaul & Antfly Resilience
+
+*March 30, 2026*
+
+**Overhauled the CLI experience. 7x faster indexing, native-first Antfly, auto-recovery, cleaner search and map output.**
+
+### What's Changed
+
+**7x Faster Indexing**
+
+Removed `buildCodeMetadata` — a 32-second N+1 git call bottleneck that ran on every index. Indexing a 343-file repo now takes ~3 seconds instead of ~35.
+
+**Native-First Antfly**
+
+`dev setup` now uses the Antfly native binary by default. No Docker required.
+
+```bash
+brew install --cask antflydb/antfly/antfly
+dev setup                 # Native (default)
+dev setup --docker        # Docker if you prefer
+```
+
+**New: `dev reset` Command**
+
+Clean slate — stops Antfly, removes all indexed data, ready for `dev setup` again.
+
+```bash
+dev reset
+```
+
+**Auto-Start & Auto-Recovery**
+
+- `dev index` auto-starts Antfly if not running
+- MCP server auto-starts Antfly on startup (no manual setup after reboot)
+- MCP tools auto-recover if Antfly crashes mid-session — retry with automatic restart
+
+**Better Search**
+
+Search results now show clean rank + name + location. Removed misleading percentage scores — RRF fusion scores aren't similarity percentages. Default threshold lowered to 0 so results always show.
+
+**Better Map**
+
+`dev map` output is now clean CLI output — no markdown headers, no emojis, relative paths in hot paths, proper tree connectors. `--focus` no longer shows redundant parent directory nesting. N+1 git calls in change frequency calculation replaced with a single bulk query.
+
+**Consistent CLI Output**
+
+All commands now use ora spinners with consistent styling. No more mixed logger timestamps and spinner checkmarks. Config is optional — all commands default to the current directory.
+
+### Removed
+
+- `dev init` — no longer needed, all commands default to cwd
+- `dev stats` and `dev dashboard` — metrics collection removed
+- GitHub output functions (dead code from Phase 1)
+
+### Breaking Changes
+
+- `dev index .` is now just `dev index` (path defaults to cwd). The old form still works.
+- Antfly table names changed from `*-vectors-lance` to `*-code`. Run `dev index --force` to rebuild.
+
+### Testing
+
+- 1,625 tests passing, 0 failures
+
+---
+
 ## v0.9.0 — Antfly Hybrid Search
 
 *March 29, 2026*
@@ -17,11 +82,11 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ### What's Changed
 
-**🔍 Hybrid Search (BM25 + Vector + RRF)**
+**Hybrid Search (BM25 + Vector + RRF)**
 
 `dev_search` now combines keyword matching and semantic understanding in every query. Searching for "validateUser" finds the exact function (BM25) AND semantically related authentication code (vector), fused into one ranked result set via Reciprocal Rank Fusion.
 
-**⚡ New: `dev setup` Command**
+**New: `dev setup` Command**
 
 One command handles the entire search backend:
 
@@ -29,15 +94,15 @@ One command handles the entire search backend:
 dev setup
 ```
 
-- Docker-first: pulls the Antfly image, starts a container
-- Native fallback: detects or installs the Antfly binary, pulls the embedding model
+- Native-first: detects or installs the Antfly binary, pulls the embedding model
+- Docker fallback: use `dev setup --docker` if you prefer containers
 - Auto-start: all commands (`dev index`, `dev mcp start`) auto-start Antfly if needed
 
-**🧠 Auto-Embedding via Termite**
+**Auto-Embedding via Termite**
 
 No more managing an embedding pipeline. Antfly generates embeddings locally via Termite (ONNX-optimized models). Insert documents, search immediately — Antfly handles the rest.
 
-**🔑 Direct Key Lookup**
+**Direct Key Lookup**
 
 Document retrieval by ID is now instant via `tables.lookup()`, replacing the previous O(n) zero-vector scan workaround.
 
@@ -56,7 +121,7 @@ After:  Scanner → Antfly (embed + store + hybrid search)
 ### Breaking Changes
 
 - **Requires Antfly server.** Run `dev setup` (one-time) to install and start.
-- **Existing LanceDB indexes are not migrated.** Run `dev index . --force` to rebuild with Antfly.
+- **Existing LanceDB indexes are not migrated.** Run `dev index --force` to rebuild with Antfly.
 - **Default port changed to 18080** to avoid conflicts with common dev servers on 8080.
 
 ### Testing

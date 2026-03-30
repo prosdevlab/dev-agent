@@ -16,24 +16,16 @@ export const searchCommand = new Command('search')
   .description('Search indexed code semantically')
   .argument('<query>', 'Search query')
   .option('-l, --limit <number>', 'Maximum number of results', '10')
-  .option('-t, --threshold <number>', 'Minimum similarity score (0-1)', '0.7')
+  .option('-t, --threshold <number>', 'Minimum similarity score', '0')
   .option('--json', 'Output results as JSON', false)
   .option('-v, --verbose', 'Show detailed results with signatures and docs', false)
   .action(async (query: string, options) => {
     const spinner = ora('Searching...').start();
 
     try {
-      // Load config
+      // Load config (optional — defaults to cwd)
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first to initialize dev-agent');
-        process.exit(1);
-        return; // TypeScript needs this
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage paths
@@ -45,8 +37,8 @@ export const searchCommand = new Command('search')
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
-        languages: config.repository?.languages || config.languages,
+        excludePatterns: config?.repository?.excludePatterns || config?.excludePatterns,
+        languages: config?.repository?.languages || config?.languages,
       });
 
       await indexer.initialize();
@@ -65,9 +57,9 @@ export const searchCommand = new Command('search')
       if (results.length === 0) {
         output.log('');
         output.warn('No results found. Try:');
-        output.log(`  • Lower threshold: ${chalk.cyan('--threshold 0.5')}`);
+        output.log(`  • Lower threshold: ${chalk.cyan('--threshold 0.3')}`);
         output.log(`  • Different keywords`);
-        output.log(`  • Refresh index: ${chalk.cyan('dev update')}`);
+        output.log(`  • Re-index: ${chalk.cyan('dev index --force')}`);
         output.log('');
         return;
       }

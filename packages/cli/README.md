@@ -10,16 +10,6 @@ npm install -g @prosdevlab/dev-agent-cli
 
 ## Usage
 
-### Initialize
-
-Initialize dev-agent in your repository:
-
-```bash
-dev init
-```
-
-This creates a `.dev-agent.json` configuration file.
-
 ### Index Repository
 
 Index your repository for semantic search:
@@ -141,13 +131,12 @@ The `.dev-agent.json` file configures the indexer:
 ### Basic Workflow
 
 ```bash
-# Initialize and index
-dev init
+# Setup and index
+dev setup
 dev index
 
 # View statistics
 dev stats
-# 📊 Files Indexed: 54, Vectors Stored: 566
 ```
 
 ### Semantic Search Examples

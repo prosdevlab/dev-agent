@@ -25,15 +25,7 @@ explore
 
     try {
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first');
-        process.exit(1);
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage paths
@@ -44,8 +36,8 @@ explore
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
-        languages: config.repository?.languages || config.languages,
+        excludePatterns: config?.repository?.excludePatterns || config?.excludePatterns,
+        languages: config?.repository?.languages || config?.languages,
       });
 
       await indexer.initialize();
@@ -99,15 +91,7 @@ explore
 
     try {
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first');
-        process.exit(1);
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage paths
@@ -131,8 +115,8 @@ explore
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
-        languages: config.repository?.languages || config.languages,
+        excludePatterns: config?.repository?.excludePatterns || config?.excludePatterns,
+        languages: config?.repository?.languages || config?.languages,
       });
 
       await indexer.initialize();

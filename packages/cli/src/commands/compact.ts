@@ -20,15 +20,7 @@ export const compactCommand = new Command('compact')
     try {
       // Load config
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first to initialize the repository');
-        process.exit(1);
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage paths
@@ -40,8 +32,8 @@ export const compactCommand = new Command('compact')
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
-        excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
-        languages: config.repository?.languages || config.languages,
+        excludePatterns: config?.repository?.excludePatterns || config?.excludePatterns,
+        languages: config?.repository?.languages || config?.languages,
       });
 
       await indexer.initialize();

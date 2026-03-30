@@ -6,6 +6,7 @@
 import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer';
+import { stripFocusPrefix } from '../indexer/utils/change-frequency.js';
 import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
 import type { LocalGitExtractor } from './git-extractor';
@@ -34,6 +35,7 @@ const DEFAULT_OPTIONS: Required<MapOptions> = {
   smartDepthThreshold: 10,
   tokenBudget: 2000,
   includeChangeFrequency: false,
+  repositoryPath: '',
 };
 
 /** Context for map generation including optional git extractor and logger */
@@ -163,7 +165,8 @@ function buildDirectoryTree(docs: SearchResult[], opts: Required<MapOptions>): M
       continue;
     }
 
-    const dir = path.dirname(filePath);
+    const relativePath = stripFocusPrefix(filePath, opts.focus);
+    const dir = path.dirname(relativePath);
     const existing = byDir.get(dir);
     if (existing) {
       existing.push(doc);
@@ -496,41 +499,30 @@ export function formatCodebaseMap(map: CodebaseMap, options: MapOptions = {}): s
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const lines: string[] = [];
 
-  lines.push('# Codebase Map');
-  lines.push('');
-
   // Format hot paths if present
   if (opts.includeHotPaths && map.hotPaths.length > 0) {
-    lines.push('## Hot Paths (most referenced)');
-    for (let i = 0; i < map.hotPaths.length; i++) {
-      const hp = map.hotPaths[i];
-      const isLast = i === map.hotPaths.length - 1;
-      const prefix = isLast ? '└─' : '├─';
+    // Strip repo root for relative paths
+    const rootPrefix = opts.repositoryPath
+      ? `${opts.repositoryPath}/`
+      : map.root.path
+        ? `${map.root.path}/`
+        : '';
 
-      // Get file extension for icon
-      const ext = hp.file.split('.').pop() || '';
-      const icon = getFileIcon(ext);
-
-      // Extract just the filename for cleaner display
+    lines.push('Hot paths:');
+    for (const hp of map.hotPaths) {
       const fileName = hp.file.split('/').pop() || hp.file;
       const dirPath = hp.file.substring(0, hp.file.lastIndexOf('/'));
-
-      const component = hp.primaryComponent ? ` • ${hp.primaryComponent}` : '';
-      lines.push(`  ${prefix} ${icon} **${fileName}**${component} • ${hp.incomingRefs} refs`);
-      lines.push(`     ${dirPath}`);
+      const relativeDirPath =
+        rootPrefix && dirPath.startsWith(rootPrefix) ? dirPath.slice(rootPrefix.length) : dirPath;
+      const refs = `${hp.incomingRefs} refs`.padStart(8);
+      lines.push(`  ${fileName.padEnd(35)}${refs}   ${relativeDirPath}`);
     }
     lines.push('');
   }
 
   // Format tree
-  lines.push('## Directory Structure');
-  lines.push('');
-  formatNode(map.root, lines, '', true, opts);
-
-  lines.push('');
-  lines.push(
-    `**Total:** ${map.totalComponents} indexed components across ${map.totalDirectories} directories`
-  );
+  lines.push('Structure:');
+  formatNode(map.root, lines, '  ', true, opts, true);
 
   return lines.join('\n');
 }
@@ -543,46 +535,20 @@ function formatNode(
   lines: string[],
   prefix: string,
   isLast: boolean,
-  opts: Required<MapOptions>
+  opts: Required<MapOptions>,
+  isRoot = false
 ): void {
-  const connector = isLast ? '└── ' : '├── ';
-  const countStr = node.componentCount > 0 ? ` (${node.componentCount} components)` : '';
+  const count = node.componentCount > 0 ? node.componentCount.toLocaleString() : '';
 
-  // Add change frequency indicator if available
-  let freqStr = '';
-  if (opts.includeChangeFrequency && node.changeFrequency) {
-    const freq = node.changeFrequency;
-    if (freq.last30Days > 0) {
-      // Hot: 5+ commits in 30 days
-      if (freq.last30Days >= 5) {
-        freqStr = ` 🔥 ${freq.last30Days} commits this month`;
-      } else {
-        freqStr = ` ✏️ ${freq.last30Days} commits this month`;
-      }
-    } else if (freq.last90Days > 0) {
-      freqStr = ` 📝 ${freq.last90Days} commits (90d)`;
-    }
+  if (isRoot) {
+    lines.push(`${prefix}${node.name}/  ${count} components`.trimEnd());
+  } else {
+    const connector = isLast ? '└─ ' : '├─ ';
+    lines.push(`${prefix}${connector}${node.name}/  ${count}`.trimEnd());
   }
 
-  lines.push(`${prefix}${connector}${node.name}/${countStr}${freqStr}`);
-
-  // Add exports if present
-  if (opts.includeExports && node.exports && node.exports.length > 0) {
-    const exportPrefix = prefix + (isLast ? '    ' : '│   ');
-    const exportItems = node.exports.map((e) => {
-      // Use signature if available, otherwise just name
-      if (e.signature) {
-        // Truncate long signatures
-        const sig = e.signature.length > 60 ? `${e.signature.slice(0, 57)}...` : e.signature;
-        return sig;
-      }
-      return e.name;
-    });
-    lines.push(`${exportPrefix}└── exports: ${exportItems.join(', ')}`);
-  }
-
-  // Format children
-  const childPrefix = prefix + (isLast ? '    ' : '│   ');
+  // Format children (skip exports for clean output)
+  const childPrefix = isRoot ? `${prefix}  ` : prefix + (isLast ? '   ' : '│  ');
   for (let i = 0; i < node.children.length; i++) {
     const child = node.children[i];
     const isChildLast = i === node.children.length - 1;

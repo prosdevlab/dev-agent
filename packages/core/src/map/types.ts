@@ -73,6 +73,8 @@ export interface MapOptions {
   tokenBudget?: number;
   /** Include change frequency data (default: false) */
   includeChangeFrequency?: boolean;
+  /** Repository path for stripping absolute paths in output */
+  repositoryPath?: string;
 }
 
 /**

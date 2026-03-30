@@ -19,14 +19,7 @@ export const cleanCommand = new Command('clean')
     try {
       // Load config
       const config = await loadConfig();
-      if (!config) {
-        logger.warn('No config found');
-        logger.log('Nothing to clean.');
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage paths
