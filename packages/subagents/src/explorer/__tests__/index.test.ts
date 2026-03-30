@@ -27,6 +27,10 @@ vi.mock('../../../../core/src/vector/index', async (importOriginal) => {
       async getStats() {
         return { totalDocuments: 0, storageSize: 0, dimension: 384, modelName: 'mock' };
       }
+      async linearMerge() {
+        return { upserted: 0, skipped: 0, deleted: 0 };
+      }
+      async batchUpsertAndDelete() {}
       async optimize() {}
       async close() {}
     },
@@ -76,7 +80,6 @@ describe('ExplorerAgent', () => {
     indexer = new RepositoryIndexer({
       repositoryPath: tempDir,
       vectorStorePath: join(tempDir, '.vectors'),
-      embeddingDimension: 384,
     });
 
     await indexer.initialize();
@@ -567,7 +570,7 @@ describe('ExplorerAgent', () => {
       );
 
       // Reindex
-      await indexer.update();
+      await indexer.index();
 
       const message: Message = {
         id: 'msg-pattern-freq',

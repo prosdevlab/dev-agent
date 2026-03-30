@@ -54,6 +54,14 @@ const MODEL_DIMENSIONS: Record<string, number> = {
   'openai/clip-vit-base-patch32': 512,
 };
 
+/** Result of a Linear Merge operation */
+export interface LinearMergeResult {
+  upserted: number;
+  skipped: number;
+  deleted: number;
+  took?: number; // nanoseconds
+}
+
 const DEFAULT_MODEL = 'BAAI/bge-small-en-v1.5';
 const DEFAULT_BASE_URL = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
 const BATCH_SIZE = 500;
@@ -285,6 +293,101 @@ export class AntflyVectorStore implements VectorStore {
       return info?.storage_status?.disk_usage ?? 0;
     } catch {
       return 0;
+    }
+  }
+
+  /**
+   * Linear Merge: send all documents, Antfly deduplicates via content hash.
+   * Absent keys within the batch's key range are deleted automatically.
+   *
+   * Use ONLY for full-index operations. For incremental updates, use batchUpsertAndDelete().
+   * Records must be sorted lexicographically by key (handled internally).
+   */
+  async linearMerge(documents: EmbeddingDocument[], lastMergedId = ''): Promise<LinearMergeResult> {
+    if (documents.length === 0) {
+      return { upserted: 0, skipped: 0, deleted: 0 };
+    }
+    this.assertReady();
+
+    const sorted = [...documents].sort((a, b) => a.id.localeCompare(b.id));
+    const records: Record<string, unknown> = {};
+    for (const doc of sorted) {
+      records[doc.id] = { text: doc.text, metadata: JSON.stringify(doc.metadata) };
+    }
+
+    const totals: LinearMergeResult = { upserted: 0, skipped: 0, deleted: 0 };
+    let cursor = lastMergedId;
+
+    try {
+      const raw = this.client.getRawClient();
+      do {
+        const result = await raw.POST('/tables/{tableName}/merge', {
+          params: { path: { tableName: this.cfg.table } },
+          body: { records, last_merged_id: cursor },
+        });
+
+        if (result.error) {
+          throw new Error(
+            typeof result.error === 'object' && 'error' in result.error
+              ? String((result.error as Record<string, unknown>).error)
+              : String(result.error)
+          );
+        }
+
+        const data = result.data;
+        if (!data) {
+          throw new Error('Linear Merge returned no data');
+        }
+
+        totals.upserted += data.upserted ?? 0;
+        totals.skipped += data.skipped ?? 0;
+        totals.deleted += data.deleted ?? 0;
+        if (data.took) totals.took = (totals.took ?? 0) + data.took;
+
+        if (data.status === 'partial' && data.next_cursor) {
+          cursor = data.next_cursor;
+        } else {
+          break;
+        }
+        // biome-ignore lint/correctness/noConstantCondition: pagination loop exits via break
+      } while (true);
+
+      return totals;
+    } catch (error) {
+      throw new Error(
+        `Linear Merge failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
+   * Combined upsert + delete in a single batchOp call.
+   * Safe for incremental updates and concurrent calls.
+   */
+  async batchUpsertAndDelete(upserts: EmbeddingDocument[], deleteIds: string[]): Promise<void> {
+    if (upserts.length === 0 && deleteIds.length === 0) return;
+    this.assertReady();
+
+    const body: Record<string, unknown> = {};
+
+    if (upserts.length > 0) {
+      const inserts: Record<string, Record<string, unknown>> = {};
+      for (const doc of upserts) {
+        inserts[doc.id] = { text: doc.text, metadata: JSON.stringify(doc.metadata) };
+      }
+      body.inserts = inserts;
+    }
+
+    if (deleteIds.length > 0) {
+      body.deletes = deleteIds;
+    }
+
+    try {
+      await this.batchOp(body);
+    } catch (error) {
+      throw new Error(
+        `batchUpsertAndDelete failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

@@ -5,10 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertDetailedIndexStats,
-  assertIndexerState,
   validateDetailedIndexStats,
-  validateFileMetadata,
-  validateIndexerState,
   validateIndexStats,
   validateLanguageStats,
   validatePackageStats,
@@ -199,99 +196,6 @@ describe('validateDetailedIndexStats', () => {
   });
 });
 
-describe('validateFileMetadata', () => {
-  it('should return success for valid metadata', () => {
-    const valid = {
-      path: 'src/index.ts',
-      hash: 'abc123',
-      lastModified: new Date(),
-      lastIndexed: new Date(),
-      documentIds: ['doc1'],
-      size: 1024,
-      language: 'typescript',
-    };
-
-    const result = validateFileMetadata(valid);
-    expect(result.success).toBe(true);
-  });
-
-  it('should coerce date strings', () => {
-    const valid = {
-      path: 'src/index.ts',
-      hash: 'abc123',
-      lastModified: '2024-01-01T00:00:00Z',
-      lastIndexed: '2024-01-02T00:00:00Z',
-      documentIds: [],
-      size: 1024,
-      language: 'typescript',
-    };
-
-    const result = validateFileMetadata(valid);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.lastModified).toBeInstanceOf(Date);
-    }
-  });
-
-  it('should return error for negative size', () => {
-    const invalid = {
-      path: 'src/index.ts',
-      hash: 'abc123',
-      lastModified: new Date(),
-      lastIndexed: new Date(),
-      documentIds: [],
-      size: -1,
-      language: 'typescript',
-    };
-
-    const result = validateFileMetadata(invalid);
-    expect(result.success).toBe(false);
-  });
-});
-
-describe('validateIndexerState', () => {
-  it('should return success for valid state', () => {
-    const valid = {
-      version: '1.0.0',
-      embeddingModel: 'all-MiniLM-L6-v2',
-      embeddingDimension: 384,
-      repositoryPath: '/path/to/repo',
-      lastIndexTime: new Date(),
-      files: {},
-      stats: {
-        totalFiles: 0,
-        totalDocuments: 0,
-        totalVectors: 0,
-      },
-    };
-
-    const result = validateIndexerState(valid);
-    expect(result.success).toBe(true);
-  });
-
-  it('should return error for invalid dimension', () => {
-    const invalid = {
-      version: '1.0.0',
-      embeddingModel: 'all-MiniLM-L6-v2',
-      embeddingDimension: 0,
-      repositoryPath: '/path/to/repo',
-      lastIndexTime: new Date(),
-      files: {},
-      stats: {
-        totalFiles: 0,
-        totalDocuments: 0,
-        totalVectors: 0,
-      },
-    };
-
-    const result = validateIndexerState(invalid);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain('Invalid indexer state');
-    }
-  });
-});
-
 describe('assertDetailedIndexStats', () => {
   it('should return data for valid stats', () => {
     const valid = {
@@ -324,44 +228,5 @@ describe('assertDetailedIndexStats', () => {
     };
 
     expect(() => assertDetailedIndexStats(invalid)).toThrow();
-  });
-});
-
-describe('assertIndexerState', () => {
-  it('should return data for valid state', () => {
-    const valid = {
-      version: '1.0.0',
-      embeddingModel: 'all-MiniLM-L6-v2',
-      embeddingDimension: 384,
-      repositoryPath: '/path/to/repo',
-      lastIndexTime: new Date(),
-      files: {},
-      stats: {
-        totalFiles: 0,
-        totalDocuments: 0,
-        totalVectors: 0,
-      },
-    };
-
-    const result = assertIndexerState(valid);
-    expect(result.version).toBe('1.0.0');
-  });
-
-  it('should throw for invalid state', () => {
-    const invalid = {
-      version: '1.0.0',
-      embeddingModel: 'all-MiniLM-L6-v2',
-      embeddingDimension: 0, // Invalid
-      repositoryPath: '/path/to/repo',
-      lastIndexTime: new Date(),
-      files: {},
-      stats: {
-        totalFiles: 0,
-        totalDocuments: 0,
-        totalVectors: 0,
-      },
-    };
-
-    expect(() => assertIndexerState(invalid)).toThrow();
   });
 });

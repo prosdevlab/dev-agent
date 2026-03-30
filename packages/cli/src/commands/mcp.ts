@@ -103,7 +103,6 @@ Available Tools (9):
           const indexer = new RepositoryIndexer({
             repositoryPath,
             vectorStorePath: vectors,
-            statePath: getStorageFilePaths(storagePath).indexerState,
           });
 
           await indexer.initialize();

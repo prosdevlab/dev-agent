@@ -175,11 +175,10 @@ This is a test project.
     expect(stats.byLanguage?.markdown?.files).toBeGreaterThanOrEqual(1);
   });
 
-  it('should handle incremental updates with stats', async () => {
+  it('should collect stats metadata on full index', async () => {
     const srcDir = path.join(testDir, 'src');
     await fs.mkdir(srcDir, { recursive: true });
 
-    // Initial file
     await fs.writeFile(
       path.join(srcDir, 'initial.ts'),
       `
@@ -195,52 +194,12 @@ This is a test project.
     });
 
     await indexer.initialize();
-    const initialStats = (await indexer.index()) as DetailedIndexStats;
+    const stats = (await indexer.index()) as DetailedIndexStats;
 
-    // Verify initial stats metadata
-    expect(initialStats.statsMetadata).toBeDefined();
-    expect(initialStats.statsMetadata?.isIncremental).toBe(false);
-    expect(initialStats.statsMetadata?.incrementalUpdatesSince).toBe(0);
-
-    // Add new file
-    await fs.writeFile(
-      path.join(srcDir, 'added.js'),
-      `
-      function added() {
-        return "added";
-      }
-    `
-    );
-
-    // Wait a bit to ensure timestamp difference
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Update index
-    const updateStats = (await indexer.update({
-      since: new Date(Date.now() - 1000),
-    })) as DetailedIndexStats;
-
-    // Verify incremental update stats show only the new JavaScript file
-    expect(updateStats.statsMetadata).toBeDefined();
-    expect(updateStats.statsMetadata?.isIncremental).toBe(true);
-    expect(updateStats.statsMetadata?.incrementalUpdatesSince).toBe(1);
-    expect(updateStats.statsMetadata?.affectedLanguages).toContain('javascript');
-
-    expect(updateStats.byLanguage).toBeDefined();
-    expect(updateStats.byLanguage?.javascript).toBeDefined();
-    expect(updateStats.byLanguage?.javascript?.files).toBe(1); // Only the new file
-
-    // Verify getStats() returns the full picture (both TypeScript and JavaScript)
-    const fullStats = (await indexer.getStats()) as DetailedIndexStats;
-    expect(fullStats.byLanguage).toBeDefined();
-    expect(fullStats.byLanguage?.typescript).toBeDefined();
-    expect(fullStats.byLanguage?.typescript?.files).toBe(1);
-    expect(fullStats.byLanguage?.javascript).toBeDefined();
-    expect(fullStats.byLanguage?.javascript?.files).toBe(1);
-
-    // Full stats metadata should show it's not incremental
-    expect(fullStats.statsMetadata?.isIncremental).toBe(false);
-    expect(fullStats.statsMetadata?.incrementalUpdatesSince).toBe(1);
+    // Verify stats metadata
+    expect(stats.statsMetadata).toBeDefined();
+    expect(stats.statsMetadata?.isIncremental).toBe(false);
+    expect(stats.statsMetadata?.incrementalUpdatesSince).toBe(0);
 
     await indexer.close();
   });

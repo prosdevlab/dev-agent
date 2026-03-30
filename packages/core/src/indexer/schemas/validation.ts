@@ -6,8 +6,6 @@
 import type { ZodError } from 'zod';
 import type {
   DetailedIndexStats,
-  FileMetadata,
-  IndexerState,
   IndexStats,
   LanguageStats,
   PackageStats,
@@ -15,8 +13,6 @@ import type {
 } from './stats.js';
 import {
   DetailedIndexStatsSchema,
-  FileMetadataSchema,
-  IndexerStateSchema,
   IndexStatsSchema,
   LanguageStatsSchema,
   PackageStatsSchema,
@@ -106,53 +102,11 @@ export function validateDetailedIndexStats(data: unknown): ValidationResult<Deta
 }
 
 /**
- * Validate FileMetadata
- */
-export function validateFileMetadata(data: unknown): ValidationResult<FileMetadata> {
-  const result = FileMetadataSchema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  return {
-    success: false,
-    error: `Invalid file metadata: ${result.error.message}`,
-    details: result.error,
-  };
-}
-
-/**
- * Validate IndexerState
- */
-export function validateIndexerState(data: unknown): ValidationResult<IndexerState> {
-  const result = IndexerStateSchema.safeParse(data);
-  if (result.success) {
-    return { success: true, data: result.data };
-  }
-  return {
-    success: false,
-    error: `Invalid indexer state: ${result.error.message}`,
-    details: result.error,
-  };
-}
-
-/**
  * Validate and coerce unknown data to DetailedIndexStats
  * Throws on validation failure (for use in trusted contexts)
  */
 export function assertDetailedIndexStats(data: unknown): DetailedIndexStats {
   const result = validateDetailedIndexStats(data);
-  if (!result.success) {
-    throw new Error(result.error);
-  }
-  return result.data;
-}
-
-/**
- * Validate and coerce unknown data to IndexerState
- * Throws on validation failure (for use in trusted contexts)
- */
-export function assertIndexerState(data: unknown): IndexerState {
-  const result = validateIndexerState(data);
   if (!result.success) {
     throw new Error(result.error);
   }

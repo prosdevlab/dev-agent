@@ -5,8 +5,7 @@
  * not vector storage behavior. The real antfly tests are in antfly-store.test.ts.
  */
 
-import { vi } from 'vitest';
-
+export type { LinearMergeResult } from '../antfly-store.js';
 export { type AntflyStoreConfig, AntflyVectorStore } from '../antfly-store.js';
 // Re-export real types
 export * from '../types.js';
@@ -15,14 +14,12 @@ export * from '../types.js';
 const docs = new Map<string, { text: string; metadata: Record<string, unknown> }>();
 
 export class VectorStorage {
-  private initialized = false;
-
   constructor(_config: { storePath: string; embeddingModel?: string; dimension?: number }) {
     // No-op — mock doesn't connect to anything
   }
 
   async initialize(_options?: { skipEmbedder?: boolean }): Promise<void> {
-    this.initialized = true;
+    // no-op
   }
 
   async addDocuments(
@@ -33,19 +30,39 @@ export class VectorStorage {
     }
   }
 
+  async linearMerge(
+    documents: Array<{ id: string; text: string; metadata: Record<string, unknown> }>
+  ): Promise<{ upserted: number; skipped: number; deleted: number }> {
+    for (const doc of documents) {
+      docs.set(doc.id, { text: doc.text, metadata: doc.metadata });
+    }
+    return { upserted: documents.length, skipped: 0, deleted: 0 };
+  }
+
+  async batchUpsertAndDelete(
+    upserts: Array<{ id: string; text: string; metadata: Record<string, unknown> }>,
+    deleteIds: string[]
+  ): Promise<void> {
+    for (const doc of upserts) {
+      docs.set(doc.id, { text: doc.text, metadata: doc.metadata });
+    }
+    for (const id of deleteIds) {
+      docs.delete(id);
+    }
+  }
+
   async search(
     _query: string,
     options?: { limit?: number; scoreThreshold?: number }
   ): Promise<Array<{ id: string; score: number; metadata: Record<string, unknown> }>> {
     const limit = options?.limit ?? 10;
-    const results = Array.from(docs.entries())
+    return Array.from(docs.entries())
       .slice(0, limit)
       .map(([id, doc]) => ({
         id,
         score: 0.85,
         metadata: doc.metadata,
       }));
-    return results;
   }
 
   async searchByDocumentId(
@@ -105,6 +122,6 @@ export class VectorStorage {
   }
 
   async close(): Promise<void> {
-    this.initialized = false;
+    // no-op
   }
 }

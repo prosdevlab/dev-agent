@@ -37,7 +37,6 @@ export interface HealthServiceConfig {
 export interface IndexerFactoryConfig {
   repositoryPath: string;
   vectorStorePath: string;
-  statePath: string;
   logger?: Logger;
 }
 
@@ -89,7 +88,6 @@ export class HealthService {
     return new Indexer({
       repositoryPath: config.repositoryPath,
       vectorStorePath: config.vectorStorePath,
-      statePath: config.statePath,
       logger: config.logger,
     });
   }
@@ -155,7 +153,6 @@ export class HealthService {
       const indexer = await this.factories.createIndexer({
         repositoryPath: this.repositoryPath,
         vectorStorePath: filePaths.vectors,
-        statePath: filePaths.indexerState,
         logger: this.logger,
       });
 

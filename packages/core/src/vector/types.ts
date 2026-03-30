@@ -132,8 +132,8 @@ export interface VectorStore {
  * Vector storage configuration
  */
 export interface VectorStorageConfig {
-  storePath: string; // Path to LanceDB storage
-  embeddingModel?: string; // Model name (default: 'Xenova/all-MiniLM-L6-v2')
+  storePath: string; // Path used to derive Antfly table name
+  embeddingModel?: string; // Model name (default: 'BAAI/bge-small-en-v1.5')
   dimension?: number; // Embedding dimension (default: 384)
 }
 
