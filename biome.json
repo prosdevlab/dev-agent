@@ -32,6 +32,16 @@
       "linter": {
         "enabled": false
       }
+    },
+    {
+      "includes": ["**/vector/antfly-store.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noBannedTypes": "off"
+          }
+        }
+      }
     }
   ],
   "formatter": {
