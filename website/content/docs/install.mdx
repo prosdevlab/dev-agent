@@ -3,7 +3,7 @@
 ## Requirements
 
 - **Node.js 22+** (LTS recommended)
-- **[Docker Desktop](https://docker.com/get-started)** (recommended) or [Antfly](https://antfly.io) native binary
+- **[Docker Desktop](https://docker.com/get-started)** with **8GB+ memory** (Settings → Resources → Memory) or [Antfly](https://antfly.io) native binary
 - **Cursor** or **Claude Code** (for MCP integration)
 
 ## Install dev-agent
@@ -54,7 +54,7 @@ Navigate to your project and index it:
 
 ```bash
 cd /path/to/your/project
-dev index .
+dev index
 ```
 
 ### 2. Install MCP integration
@@ -83,7 +83,7 @@ If dev-agent is working, you'll see semantic search results from your codebase.
 
 ```bash
 cd /path/to/your/project
-dev index .
+dev index
 ```
 
 ### 2. Install MCP integration
@@ -144,5 +144,5 @@ If indexing fails, try:
 ```bash
 # Clean and re-index
 dev clean
-dev index .
+dev index
 ```

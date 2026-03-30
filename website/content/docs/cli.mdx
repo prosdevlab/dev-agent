@@ -27,7 +27,7 @@ Index your repository for semantic search. Indexes code, git history, and GitHub
 *Note: Initial indexing can take 5-10 minutes for large codebases (4k+ files).*
 
 ```bash
-dev index .
+dev index
 dev index /path/to/repo
 ```
 
@@ -298,7 +298,7 @@ The `.dev-agent.json` file configures the indexer:
 
 ```bash
 # Index everything (code, git history, GitHub)
-dev index .
+dev index
 
 # Search for code
 dev search "user authentication"
@@ -314,7 +314,7 @@ dev stats
 
 ```bash
 # Index your project
-dev index .
+dev index
 
 # Install MCP server
 dev mcp install --cursor

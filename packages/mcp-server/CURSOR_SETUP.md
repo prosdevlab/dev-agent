@@ -12,7 +12,7 @@ npm install -g dev-agent
 
 # 2. Index your repository
 cd /path/to/your/repository
-dev index .
+dev index
 
 # 3. Install MCP integration for Cursor (one command!)
 dev mcp install --cursor
@@ -196,7 +196,7 @@ You should see semantic search results and repository information.
 1. **Check Repository is Indexed:**
    ```bash
    cd /path/to/your/repository
-   dev index .
+   dev index
    ```
 
 2. **Verify MCP Installation:**
@@ -225,7 +225,7 @@ You should see semantic search results and repository information.
 **Solution:**
 ```bash
 cd /path/to/your/repository
-dev index .
+dev index
 ```
 
 ### GitHub Tools Not Working
@@ -275,7 +275,7 @@ Check server health with verbose details
 ```
 
 **Common Issues:**
-- **Vector storage warning:** Run `dev index .`
+- **Vector storage warning:** Run `dev index`
 - **GitHub index stale (>24h):** Run `dev github index`
 - **Repository not accessible:** Check paths and permissions
 
@@ -319,7 +319,7 @@ npm update -g dev-agent
 
 # Rebuild indexes (recommended)
 cd /path/to/your/repository
-dev index .
+dev index
 dev github index
 
 # Restart Cursor
@@ -329,7 +329,7 @@ No need to reinstall MCP integration - it automatically uses the latest version.
 
 ## Performance Tips
 
-1. **Index Incrementally:** Run `dev index .` after major changes
+1. **Index Incrementally:** Run `dev index` after major changes
 2. **GitHub Index:** Update periodically with `dev github index`
 3. **Health Checks:** Use `dev_health` to monitor component status
 4. **Verbose Only When Needed:** Keep `LOG_LEVEL: info` for production

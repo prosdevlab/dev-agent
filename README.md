@@ -57,7 +57,7 @@ dev setup
 
 # Index your repository
 cd /path/to/your/repo
-dev index .
+dev index
 
 # Install MCP integration
 dev mcp install --cursor  # For Cursor IDE
@@ -213,7 +213,7 @@ Check MCP server and component health.
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22 LTS or higher
-- [Docker Desktop](https://docker.com/get-started) (recommended) or [Antfly](https://antfly.io) native binary
+- [Docker Desktop](https://docker.com/get-started) with **8GB+ memory** (Settings → Resources → Memory) or [Antfly](https://antfly.io) native binary
 - [GitHub CLI](https://cli.github.com/) (for GitHub features)
 
 ### Global Install (Recommended)
@@ -240,8 +240,8 @@ npm link
 
 ```bash
 # Index everything (code, git history, GitHub) - can take 5-10 min for large codebases
-dev index .
-dev index . --no-github               # Skip GitHub indexing
+dev index
+dev index --no-github               # Skip GitHub indexing
 
 # Incremental updates (only changed files) - much faster, typically seconds
 dev update                            # Fast incremental reindexing
@@ -283,7 +283,7 @@ export DEV_AGENT_TYPESCRIPT_CONCURRENCY=20  # TypeScript file processing
 export DEV_AGENT_INDEXER_CONCURRENCY=5      # Vector embedding batches
 
 # Index with custom settings
-dev index .
+dev index
 ```
 
 **Auto-detection:** If no environment variables are set, dev-agent automatically detects optimal concurrency based on your system's CPU and memory.
@@ -312,7 +312,7 @@ To add new languages, see [LANGUAGE_SUPPORT.md](LANGUAGE_SUPPORT.md).
 # Note: Initial indexing can take 5-10 minutes for mature codebases (4k+ files)
 # Try increasing concurrency (if you have enough memory)
 export DEV_AGENT_CONCURRENCY=20
-dev index .
+dev index
 ```
 
 **Out of memory errors:**
@@ -321,7 +321,7 @@ dev index .
 export DEV_AGENT_CONCURRENCY=5
 export DEV_AGENT_TYPESCRIPT_CONCURRENCY=5
 export DEV_AGENT_INDEXER_CONCURRENCY=2
-dev index .
+dev index
 ```
 
 **Search results are outdated:**
@@ -329,7 +329,7 @@ dev index .
 # Update index with recent file changes
 dev update
 # Or do a full reindex if needed
-dev index .
+dev index
 ```
 
 **Go scanner not working:**

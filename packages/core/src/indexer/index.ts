@@ -10,7 +10,6 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import type { EventBus } from '../events/types.js';
-import { buildCodeMetadata } from '../metrics/collector.js';
 import { scanRepository } from '../scanner';
 import type { EmbeddingDocument, LinearMergeResult, SearchOptions, SearchResult } from '../vector';
 import { VectorStorage } from '../vector';
@@ -148,7 +147,20 @@ export class RepositoryIndexer {
 
       let mergeResult: LinearMergeResult;
       try {
-        mergeResult = await this.vectorStorage.linearMerge(embeddingDocuments);
+        mergeResult = await this.vectorStorage.linearMerge(
+          embeddingDocuments,
+          undefined,
+          (processed, total) => {
+            onProgress?.({
+              phase: 'storing',
+              filesProcessed: filesScanned,
+              totalFiles: filesScanned,
+              documentsIndexed: processed,
+              totalDocuments: total,
+              percentComplete: Math.round((processed / total) * 100),
+            });
+          }
+        );
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         errors.push({
@@ -204,13 +216,6 @@ export class RepositoryIndexer {
 
       // Emit index.updated event
       if (this.eventBus) {
-        let codeMetadata: Awaited<ReturnType<typeof buildCodeMetadata>> | undefined;
-        try {
-          codeMetadata = await buildCodeMetadata(this.config.repositoryPath, scanResult.documents);
-        } catch (error) {
-          this.logger?.warn({ error }, 'Failed to collect code metadata for metrics');
-        }
-
         void this.eventBus.emit(
           'index.updated',
           {
@@ -220,7 +225,6 @@ export class RepositoryIndexer {
             path: this.config.repositoryPath,
             stats,
             isIncremental: false,
-            codeMetadata,
           },
           { waitForHandlers: false }
         );

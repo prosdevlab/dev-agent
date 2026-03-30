@@ -5,7 +5,7 @@ Get from zero to semantic search in 5 minutes.
 ## Prerequisites
 
 - Node.js 22+ installed
-- Docker Desktop (recommended) or Antfly native binary
+- Docker Desktop with **8GB+ memory** (Settings → Resources → Memory) or Antfly native binary
 - Cursor IDE (or Claude Code)
 - A code repository to index
 
@@ -22,7 +22,7 @@ dev setup
 
 ```bash
 cd ~/your-project
-dev index .
+dev index
 ```
 
 You'll see output like:
@@ -72,7 +72,7 @@ Try these prompts:
 
 ## What's Happening Under the Hood
 
-When you run `dev index .`:
+When you run `dev index`:
 
 1. **Scanner** parses your code using the TypeScript Compiler API (ts-morph) and tree-sitter (Go)
 2. **Extractor** identifies functions, classes, interfaces, types, arrow functions, hooks, and exported constants
@@ -91,5 +91,5 @@ When AI tools call `dev_search`:
 
 > **Pro tip:** Re-index after major code changes to keep search results accurate:
 > ```bash
-> dev index . --force
+> dev index --force
 > ```

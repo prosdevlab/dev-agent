@@ -154,15 +154,14 @@ export class Calculator {
       exitSpy.mockRestore();
       console.log = originalConsoleLog;
 
-      // Verify summary shows duration (storage size calculated on-demand in `dev stats`)
-      const durationLog = loggedMessages.find((msg) => msg.includes('Duration:'));
-      expect(durationLog).toBeDefined();
+      // Verify summary line shows indexed stats and duration
+      const summaryLog = loggedMessages.find(
+        (msg) => msg.includes('Indexed') && msg.includes('in')
+      );
+      expect(summaryLog).toBeDefined();
       // Verify storage size is NOT shown (deferred to `dev stats`)
       const hasStorageSize = loggedMessages.some((msg) => msg.includes('Storage:'));
       expect(hasStorageSize).toBe(false);
-      // Verify indexed stats are shown
-      const indexedLog = loggedMessages.find((msg) => msg.includes('Indexed:'));
-      expect(indexedLog).toBeDefined();
     }, 30000); // 30s timeout for indexing
   });
 });

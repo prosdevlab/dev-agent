@@ -105,7 +105,7 @@ Use Case:
         console.log('');
         console.log(chalk.yellow('📌 This command requires indexing your repository:'));
         console.log('');
-        console.log(chalk.white('   dev index .'));
+        console.log(chalk.white('   dev index'));
         console.log('');
         console.log(chalk.dim('   This is a one-time operation. Run in your repository root.'));
         console.log('');
