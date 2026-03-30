@@ -13,6 +13,7 @@ const external = [
   'ts-morph',
   'typescript',
   'web-tree-sitter',
+  '@parcel/watcher',
 ];
 
 export default defineConfig([
