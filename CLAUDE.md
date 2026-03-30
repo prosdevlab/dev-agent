@@ -4,7 +4,8 @@
 
 **Local-first repository context for AI tools — no hallucinations.**
 
-Semantic search, code analysis, and GitHub integration through MCP.
+Hybrid search (BM25 + vector), code analysis, and GitHub integration through MCP.
+Powered by [Antfly](https://antfly.io) for search and embeddings.
 Everything runs on your machine. No data leaves.
 
 ---
@@ -20,7 +21,7 @@ Everything runs on your machine. No data leaves.
 
 ```
 packages/
-  core/          # Scanner (ts-morph, tree-sitter), vector storage (LanceDB), services
+  core/          # Scanner (ts-morph, tree-sitter), vector storage (Antfly), services
   cli/           # Commander.js CLI — dev index, dev mcp install, etc.
   mcp-server/    # MCP server with 9 built-in adapters
   subagents/     # Coordinator, explorer, planner, PR agents
@@ -59,6 +60,7 @@ pnpm format               # Biome format
 pnpm dev                  # Watch mode
 pnpm clean                # Clean build outputs
 pnpm changeset            # Document changes for release
+dev setup                 # One-time: start Antfly search backend
 ```
 
 ---
@@ -70,7 +72,7 @@ pnpm changeset            # Document changes for release
 - **Workspace protocol** for internal deps: `"@prosdevlab/dev-agent-core": "workspace:*"`
 - **Tests run from root only:** `pnpm test` — centralized Vitest config.
 - **Logger:** Use `@prosdevlab/kero` — never `console.log` in packages.
-- **Local-first:** No data sent externally. Embeddings via @xenova/transformers.
+- **Local-first:** No data sent externally. Embeddings via Antfly/Termite (local ONNX).
 - **Code review before PR.** Always run the `code-reviewer` agent (which
   launches security-reviewer, logic-reviewer, and quality-reviewer in
   parallel) on the branch diff before creating a pull request. Address
@@ -113,7 +115,7 @@ See `.claude/da-plans/README.md` for status and format details.
 
 | Tool | Purpose |
 |------|---------|
-| `dev_search` | Semantic code search (use FIRST for conceptual queries) |
+| `dev_search` | Hybrid code search — BM25 + vector + RRF (use FIRST for conceptual queries) |
 | `dev_refs` | Find callers/callees of functions |
 | `dev_map` | Codebase structure with change frequency |
 | `dev_history` | Semantic search over git commits |
@@ -142,6 +144,7 @@ See `.claude/da-plans/README.md` for status and format details.
 ```bash
 # Common workflows
 pnpm install && pnpm build && pnpm test  # Full setup
+dev setup                                 # One-time: start Antfly
 dev index .                               # Index repository
 dev mcp install                           # Install for Claude Code
 dev mcp install --cursor                  # Install for Cursor
