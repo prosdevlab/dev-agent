@@ -187,7 +187,7 @@ describe('Storage Path Utilities', () => {
       const storagePath = '/test/storage';
       const paths = getStorageFilePaths(storagePath);
 
-      expect(paths.vectors).toBe(path.join(storagePath, 'vectors.lance'));
+      expect(paths.vectors).toBe(path.join(storagePath, 'vectors'));
       expect(paths.githubState).toBe(path.join(storagePath, 'github-state.json'));
       expect(paths.metadata).toBe(path.join(storagePath, 'metadata.json'));
       expect(paths.indexerState).toBe(path.join(storagePath, 'indexer-state.json'));
@@ -197,7 +197,7 @@ describe('Storage Path Utilities', () => {
       const storagePath = '/test/storage/';
       const paths = getStorageFilePaths(storagePath);
 
-      expect(paths.vectors).toContain('vectors.lance');
+      expect(paths.vectors).toContain('vectors');
       expect(paths.githubState).toContain('github-state.json');
     });
   });

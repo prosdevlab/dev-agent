@@ -38,24 +38,103 @@ export interface ChangeFrequencyOptions {
   maxCommits?: number;
 }
 
+/** Parsed commit entry from git log output */
+export interface ParsedCommitEntry {
+  author: string;
+  date: Date;
+  file: string;
+}
+
 /**
- * Calculate change frequency for all tracked files in a repository
+ * Parse git log output into structured commit entries.
+ * Pure function — no I/O.
+ *
+ * Input format (from `git log --pretty=format:%H %ae %ai --name-only`):
+ *   <hash> <email> <date>
+ *   <file1>
+ *   <file2>
+ *   <empty line>
+ *   <hash> <email> <date>
+ *   ...
+ */
+export function parseGitLogOutput(output: string): ParsedCommitEntry[] {
+  const entries: ParsedCommitEntry[] = [];
+  let currentAuthor = '';
+  let currentDate = new Date();
+
+  for (const line of output.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const commitMatch = trimmed.match(/^[0-9a-f]{40}\s+(\S+)\s+(.+)$/);
+    if (commitMatch) {
+      currentAuthor = commitMatch[1];
+      currentDate = new Date(commitMatch[2]);
+      continue;
+    }
+
+    entries.push({ author: currentAuthor, date: currentDate, file: trimmed });
+  }
+
+  return entries;
+}
+
+/**
+ * Build frequency map from parsed commit entries.
+ * Pure function — no I/O.
+ */
+export function buildFrequencyMap(entries: ParsedCommitEntry[]): Map<string, FileChangeFrequency> {
+  const frequencies = new Map<string, FileChangeFrequency>();
+  const authorSets = new Map<string, Set<string>>();
+
+  for (const entry of entries) {
+    const existing = frequencies.get(entry.file);
+    if (existing) {
+      existing.commitCount++;
+      if (entry.date > existing.lastModified) {
+        existing.lastModified = entry.date;
+      }
+      authorSets.get(entry.file)!.add(entry.author);
+    } else {
+      const authors = new Set<string>();
+      authors.add(entry.author);
+      authorSets.set(entry.file, authors);
+      frequencies.set(entry.file, {
+        filePath: entry.file,
+        commitCount: 1,
+        lastModified: entry.date,
+        authorCount: 1,
+      });
+    }
+  }
+
+  // Finalize author counts
+  for (const [filePath, freq] of frequencies) {
+    const authors = authorSets.get(filePath);
+    if (authors) {
+      freq.authorCount = authors.size;
+    }
+  }
+
+  return frequencies;
+}
+
+/**
+ * Calculate change frequency for all tracked files in a repository.
+ * Uses a single git log call — no per-file queries.
  */
 export async function calculateChangeFrequency(
   options: ChangeFrequencyOptions
 ): Promise<Map<string, FileChangeFrequency>> {
   const { repositoryPath, since, maxCommits = 1000 } = options;
 
-  const frequencies = new Map<string, FileChangeFrequency>();
-
   try {
-    // Build git log command
     const args = [
       'log',
       `--max-count=${maxCommits}`,
-      '--pretty=format:%H',
+      '--pretty=format:%H %ae %ai',
       '--name-only',
-      '--diff-filter=AMCR', // Added, Modified, Copied, Renamed
+      '--diff-filter=AMCR',
     ];
 
     if (since) {
@@ -65,80 +144,25 @@ export async function calculateChangeFrequency(
     const output = execSync(`git ${args.join(' ')}`, {
       cwd: repositoryPath,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'], // Suppress stderr
-    });
-
-    // Parse output to count file occurrences
-    const lines = output.split('\n').filter((line) => line.trim());
-
-    for (const line of lines) {
-      // Skip commit hashes (40 char hex strings)
-      if (/^[0-9a-f]{40}$/.test(line)) {
-        continue;
-      }
-
-      // This is a file path
-      const filePath = line.trim();
-      if (!filePath) continue;
-
-      const existing = frequencies.get(filePath);
-      if (existing) {
-        existing.commitCount++;
-      } else {
-        // Get additional metadata for this file
-        const metadata = await getFileMetadata(repositoryPath, filePath);
-        frequencies.set(filePath, {
-          filePath,
-          commitCount: 1,
-          lastModified: metadata.lastModified,
-          authorCount: metadata.authorCount,
-        });
-      }
-    }
-  } catch (_error) {
-    // Git command failed (repo not initialized, etc.)
-    // Return empty map
-  }
-
-  return frequencies;
-}
-
-/**
- * Get metadata for a specific file
- */
-async function getFileMetadata(
-  repositoryPath: string,
-  filePath: string
-): Promise<{ lastModified: Date; authorCount: number }> {
-  try {
-    // Get last modification time
-    const dateOutput = execSync(`git log -1 --pretty=format:%ai -- "${filePath}"`, {
-      cwd: repositoryPath,
-      encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'ignore'],
     });
 
-    // Get unique authors count
-    const authorsOutput = execSync(
-      `git log --pretty=format:%ae -- "${filePath}" | sort -u | wc -l`,
-      {
-        cwd: repositoryPath,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }
-    );
-
-    return {
-      lastModified: dateOutput ? new Date(dateOutput.trim()) : new Date(),
-      authorCount: Number.parseInt(authorsOutput.trim(), 10) || 1,
-    };
-  } catch (_error) {
-    // If git command fails, return defaults
-    return {
-      lastModified: new Date(),
-      authorCount: 1,
-    };
+    const entries = parseGitLogOutput(output);
+    return buildFrequencyMap(entries);
+  } catch {
+    return new Map();
   }
+}
+
+/**
+ * Strip a focus prefix from a file path.
+ * Pure function — used by map to root the tree at the focused directory.
+ */
+export function stripFocusPrefix(filePath: string, focus: string): string {
+  if (!focus) return filePath;
+  if (filePath.startsWith(`${focus}/`)) return filePath.slice(focus.length + 1);
+  if (filePath.startsWith(focus)) return filePath.slice(focus.length);
+  return filePath;
 }
 
 /**
@@ -157,7 +181,6 @@ export function aggregateChangeFrequency(
   let mostRecent: Date | null = null;
 
   for (const [filePath, frequency] of frequencies) {
-    // Apply filter if specified
     if (filterPath && !filePath.startsWith(filterPath)) {
       continue;
     }

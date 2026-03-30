@@ -121,15 +121,7 @@ storageCommand
     try {
       // Load config
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first to initialize dev-agent');
-        process.exit(1);
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Detect local indexes
@@ -311,15 +303,7 @@ storageCommand
     try {
       // Load config
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first to initialize dev-agent');
-        process.exit(1);
-        return;
-      }
-
-      // Resolve repository path
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       // Get centralized storage path

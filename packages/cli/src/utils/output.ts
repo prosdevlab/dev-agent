@@ -141,211 +141,6 @@ export function formatComponentTypes(byComponentType: Partial<Record<string, num
 /**
  * Format GitHub stats in compact form
  */
-export function formatGitHubSummary(githubStats: {
-  repository: string;
-  totalDocuments: number;
-  byType: { issue?: number; pull_request?: number };
-  byState: { open?: number; closed?: number; merged?: number };
-  issuesByState?: { open: number; closed: number };
-  prsByState?: { open: number; closed: number; merged: number };
-  lastIndexed: string;
-}): string {
-  const issues = githubStats.byType.issue || 0;
-  const prs = githubStats.byType.pull_request || 0;
-
-  // Use per-type state counts if available (new format), fall back to aggregate (old format)
-  const issuesOpen = githubStats.issuesByState?.open ?? 0;
-  const issuesClosed = githubStats.issuesByState?.closed ?? 0;
-  const prsOpen = githubStats.prsByState?.open ?? 0;
-  const prsMerged = githubStats.prsByState?.merged ?? 0;
-
-  const timeSince = getTimeSince(new Date(githubStats.lastIndexed));
-
-  return [
-    `🔗 ${chalk.bold(githubStats.repository)} • ${formatNumber(githubStats.totalDocuments)} documents`,
-    `   Issues: ${chalk.gray(issues.toString())} total (${issuesOpen} open, ${issuesClosed} closed)`,
-    `   Pull Requests: ${chalk.gray(prs.toString())} total (${prsOpen} open, ${prsMerged} merged)`,
-    `   Last synced: ${timeSince}`,
-  ].join('\n');
-}
-
-/**
- * Print GitHub search results in table format
- */
-export function printGitHubSearchResults(
-  results: Array<{
-    document: {
-      type: string;
-      number: number;
-      title: string;
-      state: string;
-      labels: string[];
-      url: string;
-    };
-    score: number;
-  }>,
-  query: string
-): void {
-  if (results.length === 0) {
-    output.log();
-    output.warn('No results found');
-    output.log('Try different keywords or check your filters');
-    output.log();
-    return;
-  }
-
-  output.log();
-  output.log(
-    `🔍 Found ${chalk.yellow(results.length)} issue${results.length === 1 ? '' : 's'}/PR${results.length === 1 ? '' : 's'} for ${chalk.cyan(`"${query}"`)}`
-  );
-  output.log();
-
-  const table = new Table({
-    head: [
-      chalk.cyan('Type'),
-      chalk.cyan('#'),
-      chalk.cyan('Title'),
-      chalk.cyan('State'),
-      chalk.cyan('Score'),
-      chalk.cyan('Labels'),
-    ],
-    style: {
-      head: [],
-      border: ['gray'],
-    },
-    colAligns: ['left', 'right', 'left', 'left', 'right', 'left'],
-    colWidths: [7, 6, 45, 8, 7, 20],
-  });
-
-  for (const result of results) {
-    const doc = result.document;
-    const type = doc.type === 'issue' ? 'Issue' : 'PR';
-    const score = `${(result.score * 100).toFixed(0)}%`;
-
-    // Color-code state
-    let stateFormatted = doc.state;
-    if (doc.state === 'open') {
-      stateFormatted = chalk.green(doc.state);
-    } else if (doc.state === 'merged') {
-      stateFormatted = chalk.magenta(doc.state);
-    } else if (doc.state === 'closed') {
-      stateFormatted = chalk.gray(doc.state);
-    }
-
-    // Truncate title if too long
-    let title = doc.title;
-    if (title.length > 42) {
-      title = `${title.substring(0, 39)}...`;
-    }
-
-    // Format labels
-    const labels = doc.labels.length > 0 ? doc.labels.slice(0, 2).join(', ') : '-';
-
-    table.push([type, doc.number.toString(), title, stateFormatted, score, chalk.gray(labels)]);
-  }
-
-  output.log(table.toString());
-  output.log();
-}
-
-/**
- * Print GitHub issue/PR context (gh-inspired format)
- */
-export function printGitHubContext(doc: {
-  type: string;
-  number: number;
-  title: string;
-  body: string;
-  state: string;
-  author: string;
-  createdAt: string;
-  updatedAt: string;
-  labels: string[];
-  url: string;
-  comments?: number;
-  relatedIssues?: Array<{ number: number; title: string; state: string }>;
-  relatedPRs?: Array<{ number: number; title: string; state: string }>;
-  linkedFiles?: Array<{ path: string; score: number }>;
-}): void {
-  output.log();
-
-  // Title line (bold)
-  output.log(chalk.bold(`${doc.title} #${doc.number}`));
-
-  // Metadata line (state • author • time)
-  const stateColor =
-    doc.state === 'open' ? chalk.green : doc.state === 'merged' ? chalk.magenta : chalk.gray;
-
-  const createdAgo = getTimeSince(new Date(doc.createdAt));
-  const updatedAgo = getTimeSince(new Date(doc.updatedAt));
-
-  const metadata = [
-    stateColor(doc.state.charAt(0).toUpperCase() + doc.state.slice(1)),
-    `${doc.author} opened ${createdAgo}`,
-    `Updated ${updatedAgo}`,
-  ];
-
-  if (doc.comments) {
-    metadata.push(`${doc.comments} comment${doc.comments === 1 ? '' : 's'}`);
-  }
-
-  output.log(chalk.gray(metadata.join(' • ')));
-  output.log();
-
-  // Body (indented)
-  const bodyLines = doc.body.split('\n').slice(0, 15); // First 15 lines
-  for (const line of bodyLines) {
-    output.log(`  ${line}`);
-  }
-  if (doc.body.split('\n').length > 15) {
-    output.log(chalk.gray('  ...'));
-  }
-  output.log();
-
-  // Labels
-  if (doc.labels.length > 0) {
-    output.log(`${chalk.bold('Labels:')} ${doc.labels.map((l) => chalk.cyan(l)).join(', ')}`);
-  }
-
-  // Related issues
-  if (doc.relatedIssues && doc.relatedIssues.length > 0) {
-    output.log();
-    output.log(chalk.bold('Related Issues:'));
-    for (const related of doc.relatedIssues) {
-      const stateIndicator = related.state === 'open' ? chalk.green('●') : chalk.gray('●');
-      output.log(`  ${stateIndicator} #${related.number} ${related.title}`);
-    }
-  }
-
-  // Related PRs
-  if (doc.relatedPRs && doc.relatedPRs.length > 0) {
-    output.log();
-    output.log(chalk.bold('Related PRs:'));
-    for (const related of doc.relatedPRs) {
-      const stateIndicator =
-        related.state === 'merged'
-          ? chalk.magenta('●')
-          : related.state === 'open'
-            ? chalk.green('●')
-            : chalk.gray('●');
-      output.log(`  ${stateIndicator} #${related.number} ${related.title}`);
-    }
-  }
-
-  // Linked code files (dev-agent specific)
-  if (doc.linkedFiles && doc.linkedFiles.length > 0) {
-    output.log();
-    output.log(chalk.bold('Linked Files:'));
-    for (const file of doc.linkedFiles.slice(0, 5)) {
-      const score = (file.score * 100).toFixed(0);
-      output.log(`  ${chalk.blue(file.path)} ${chalk.gray(`(${score}% match)`)}`);
-    }
-  }
-
-  output.log();
-  output.log(chalk.gray(`View on GitHub: ${doc.url}`));
-  output.log();
-}
 
 /**
  * Create a visual progress bar
@@ -916,85 +711,6 @@ export function printGitStats(data: {
 /**
  * Print GitHub indexing statistics (gh CLI inspired)
  */
-export function printGitHubStats(githubStats: {
-  repository: string;
-  totalDocuments: number;
-  byType: { issue?: number; pull_request?: number; discussion?: number };
-  byState: { open?: number; closed?: number; merged?: number };
-  issuesByState?: { open: number; closed: number };
-  prsByState?: { open: number; closed: number; merged: number };
-  lastIndexed: string;
-  indexDuration?: number;
-}): void {
-  const issues = githubStats.byType.issue || 0;
-  const prs = githubStats.byType.pull_request || 0;
-  const discussions = githubStats.byType.discussion || 0;
-
-  // Use per-type state counts if available (new format), fall back to aggregate (old format)
-  const issueOpen = githubStats.issuesByState?.open ?? 0;
-  const issueClosed = githubStats.issuesByState?.closed ?? 0;
-  const prOpen = githubStats.prsByState?.open ?? 0;
-  const prClosed = githubStats.prsByState?.closed ?? 0;
-  const prMerged = githubStats.prsByState?.merged ?? 0;
-
-  const timeSince = getTimeSince(new Date(githubStats.lastIndexed));
-
-  output.log();
-
-  // Repository name and document count (gh style)
-  output.log(chalk.bold(githubStats.repository));
-  output.log(`${formatNumber(githubStats.totalDocuments)} issues and pull requests`);
-  output.log();
-
-  // Issues breakdown
-  if (issues > 0) {
-    const issueStates: string[] = [];
-
-    if (issueOpen > 0) {
-      issueStates.push(`${chalk.green('●')} ${issueOpen} open`);
-    }
-    if (issueClosed > 0) {
-      issueStates.push(`${chalk.gray('●')} ${issueClosed} closed`);
-    }
-
-    output.log(`Issues: ${chalk.bold(issues.toString())} total`);
-    if (issueStates.length > 0) {
-      output.log(`  ${issueStates.join('  ')}`);
-    }
-    output.log();
-  }
-
-  // Pull requests breakdown
-  if (prs > 0) {
-    const prStates: string[] = [];
-
-    if (prOpen > 0) {
-      prStates.push(`${chalk.green('●')} ${prOpen} open`);
-    }
-    if (prClosed > 0) {
-      prStates.push(`${chalk.gray('●')} ${prClosed} closed`);
-    }
-    if (prMerged > 0) {
-      prStates.push(`${chalk.magenta('●')} ${prMerged} merged`);
-    }
-
-    output.log(`Pull Requests: ${chalk.bold(prs.toString())} total`);
-    if (prStates.length > 0) {
-      output.log(`  ${prStates.join('  ')}`);
-    }
-    output.log();
-  }
-
-  // Discussions (if any)
-  if (discussions > 0) {
-    output.log(`Discussions: ${chalk.bold(discussions.toString())} total`);
-    output.log();
-  }
-
-  // Last synced
-  output.log(chalk.gray(`Last synced: ${timeSince}`));
-  output.log();
-}
 
 /**
  * Format detailed stats with tables (for verbose mode)
@@ -1123,8 +839,6 @@ export function formatSearchResults(
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     const metadata = result.metadata;
-    const score = (result.score * 100).toFixed(1);
-
     const name = metadata.name || metadata.type || 'Unknown';
     const filePath = (metadata.path || metadata.file) as string;
     const relativePath = filePath ? filePath.replace(`${repoPath}/`, '') : 'unknown';
@@ -1132,7 +846,7 @@ export function formatSearchResults(
 
     if (options.verbose) {
       // Verbose: Multi-line with details
-      lines.push(chalk.bold(`${i + 1}. ${chalk.cyan(name)} ${chalk.gray(`(${score}% match)`)}`));
+      lines.push(chalk.bold(`${i + 1}. ${chalk.cyan(name)}`));
       lines.push(`   ${chalk.gray('File:')} ${location}`);
 
       if (metadata.signature) {
@@ -1147,10 +861,8 @@ export function formatSearchResults(
       lines.push('');
     } else {
       // Compact: One line per result
-      const scoreColor =
-        result.score > 0.8 ? chalk.green : result.score > 0.6 ? chalk.yellow : chalk.gray;
       lines.push(
-        `${chalk.gray((i + 1).toString().padStart(2))}  ${chalk.cyan(name.padEnd(30).substring(0, 30))}  ${scoreColor(`${score}%`)}  ${chalk.gray(location)}`
+        `${chalk.white((i + 1).toString().padStart(2))}  ${chalk.cyan(name.padEnd(30).substring(0, 30))}  ${chalk.gray(location)}`
       );
     }
   }

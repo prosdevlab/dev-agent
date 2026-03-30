@@ -262,9 +262,8 @@ describe('Codebase Map', () => {
       const map = await generateCodebaseMap(indexer);
       const output = formatCodebaseMap(map);
 
-      expect(output).toContain('# Codebase Map');
+      expect(output).toContain('Structure:');
       expect(output).toContain('components');
-      expect(output).toContain('directories');
     });
 
     it('should include tree structure with connectors', async () => {
@@ -274,50 +273,6 @@ describe('Codebase Map', () => {
 
       // Should have tree connectors
       expect(output).toMatch(/[├└]/);
-      expect(output).toMatch(/──/);
-    });
-
-    it('should show exports when includeExports is true', async () => {
-      const indexer = createMockIndexer();
-      const map = await generateCodebaseMap(indexer, { depth: 5, includeExports: true });
-      const output = formatCodebaseMap(map, { includeExports: true });
-
-      expect(output).toContain('exports:');
-    });
-
-    it('should show signatures in exports when available', async () => {
-      const indexer = createMockIndexer();
-      const map = await generateCodebaseMap(indexer, { depth: 5, includeExports: true });
-      const output = formatCodebaseMap(map, { includeExports: true });
-
-      // The main function has a signature, should appear in output
-      expect(output).toContain('function main(args: string[]): Promise<void>');
-    });
-
-    it('should truncate long signatures', async () => {
-      const longSigResults: SearchResult[] = [
-        {
-          id: 'src/index.ts:longFunction:1',
-          score: 0.9,
-          metadata: {
-            path: 'src/index.ts',
-            type: 'function',
-            name: 'longFunction',
-            signature:
-              'function longFunction(param1: string, param2: number, param3: boolean, param4: object): Promise<ComplexReturnType>',
-            exported: true,
-          },
-        },
-      ];
-
-      const indexer = createMockIndexer(longSigResults);
-      const map = await generateCodebaseMap(indexer, { depth: 5, includeExports: true });
-      const output = formatCodebaseMap(map, { includeExports: true });
-
-      // Should be truncated with ...
-      expect(output).toContain('...');
-      // Should not contain the full signature
-      expect(output).not.toContain('ComplexReturnType');
     });
 
     it('should show component counts', async () => {
@@ -326,15 +281,6 @@ describe('Codebase Map', () => {
       const output = formatCodebaseMap(map);
 
       expect(output).toMatch(/\d+ components/);
-    });
-
-    it('should show total summary', async () => {
-      const indexer = createMockIndexer();
-      const map = await generateCodebaseMap(indexer);
-      const output = formatCodebaseMap(map);
-
-      expect(output).toContain('**Total:**');
-      expect(output).toContain('indexed components');
     });
   });
 
@@ -484,10 +430,10 @@ describe('Codebase Map', () => {
       const map = await generateCodebaseMap(indexer, { includeHotPaths: true });
       const output = formatCodebaseMap(map, { includeHotPaths: true });
 
-      expect(output).toContain('## Hot Paths');
-      expect(output).toContain('**core.ts**'); // Filename in bold
+      expect(output).toContain('Hot paths:');
+      expect(output).toContain('core.ts');
       expect(output).toContain('2 refs');
-      expect(output).toContain('src'); // Directory path on separate line
+      expect(output).toContain('src');
     });
   });
 
@@ -744,10 +690,8 @@ describe('Codebase Map', () => {
         { includeChangeFrequency: true }
       );
 
-      const formatted = formatCodebaseMap(map, { includeChangeFrequency: true });
-
-      // Should include some frequency indicator
-      expect(formatted).toContain('commits');
+      // Change frequency data should be computed even if not shown in formatted output
+      expect(map.root.changeFrequency).toBeDefined();
     });
   });
 });

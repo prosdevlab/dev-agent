@@ -170,7 +170,6 @@ export const indexCommand = new Command('index')
       console.log('  Try it out:');
       console.log('    dev search "authentication"    Semantic code search');
       console.log('    dev map                        Explore codebase structure');
-      console.log('    dev status                     Check index health');
       console.log('    dev --help                     See all commands');
       console.log('');
 

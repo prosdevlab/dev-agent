@@ -57,7 +57,7 @@ Use Case:
 
     // Create logger with debug enabled if --verbose
     const mapLogger = createLogger({
-      level: options.verbose ? 'debug' : 'info',
+      level: options.verbose ? 'debug' : 'warn',
       format: 'pretty',
     });
 
@@ -65,13 +65,7 @@ Use Case:
 
     try {
       const config = await loadConfig();
-      if (!config) {
-        spinner.fail('No config found');
-        logger.error('Run "dev init" first to initialize dev-agent');
-        process.exit(1);
-      }
-
-      const repositoryPath = config.repository?.path || config.repositoryPath || process.cwd();
+      const repositoryPath = config?.repository?.path || config?.repositoryPath || process.cwd();
       const resolvedRepoPath = path.resolve(repositoryPath);
 
       spinner.text = 'Initializing indexer...';
@@ -98,7 +92,7 @@ Use Case:
       // Check if repository is indexed
       mapLogger.debug('Checking if repository is indexed');
       const stats = await indexer.getStats();
-      if (!stats || stats.filesScanned === 0) {
+      if (!stats) {
         spinner.fail('Repository not indexed');
         await indexer.close();
         logger.warn('No indexed data found.');
@@ -194,36 +188,25 @@ Use Case:
         'Map generation complete'
       );
 
-      spinner.succeed(
-        `Map generated in ${t4 - startTime}ms (init: ${t2 - t1}ms, map: ${t4 - t3}ms)`
-      );
+      const duration = ((t4 - startTime) / 1000).toFixed(1);
+      spinner.succeed(`Map generated (${duration}s)`);
 
-      // Format and display
-      mapLogger.debug('Formatting map output');
-      const t5 = Date.now();
       const formatted = formatCodebaseMap(map, {
         includeExports: options.exports,
         includeChangeFrequency: options.changeFrequency,
+        repositoryPath: resolvedRepoPath,
       });
-      const t6 = Date.now();
-      mapLogger.debug({ duration_ms: t6 - t5, outputLength: formatted.length }, 'Map formatted');
 
-      output.log('');
-      output.log(formatted);
-      output.log('');
+      console.log('');
+      console.log(formatted);
+      console.log('');
+      console.log('  Try:');
+      console.log('    dev search "<query>"            Search indexed code');
+      console.log('    dev map --depth 3               Show deeper structure');
+      console.log('    dev map --focus packages/core    Focus on a directory');
+      console.log('');
 
-      // Show summary
-      output.log(
-        `📊 Total: ${map.totalComponents.toLocaleString()} components across ${map.totalDirectories.toLocaleString()} directories`
-      );
-      if (map.hotPaths.length > 0) {
-        output.log(`🔥 ${map.hotPaths.length} hot paths identified`);
-      }
-      output.log('');
-
-      mapLogger.info('Closing indexer');
       await indexer.close();
-      mapLogger.debug('Indexer closed');
     } catch (error) {
       spinner.fail('Failed to generate map');
       logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);

@@ -82,6 +82,9 @@ dev setup                 # One-time: start Antfly search backend
 - **Changesets target published packages only.** Only `@prosdevlab/dev-agent`
   and `@prosdevlab/kero` are published to npm. All other packages are private
   and bundled into dev-agent via tsup. Never add private packages to changesets.
+- **Changesets include doc site updates.** When adding a changeset, also:
+  1. Add a release entry to `website/content/updates/index.mdx`
+  2. Update `website/content/latest-version.ts` to match the new version
 
 ---
 

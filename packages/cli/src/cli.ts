@@ -4,16 +4,13 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { cleanCommand } from './commands/clean.js';
 import { compactCommand } from './commands/compact.js';
-import { dashboardCommand } from './commands/dashboard.js';
 import { exploreCommand } from './commands/explore.js';
 import { indexCommand } from './commands/index.js';
-import { initCommand } from './commands/init.js';
 import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
 import { resetCommand } from './commands/reset.js';
 import { searchCommand } from './commands/search.js';
 import { setupCommand } from './commands/setup.js';
-import { statsCommand } from './commands/stats.js';
 import { storageCommand } from './commands/storage.js';
 
 // Injected at build time by tsup define
@@ -28,13 +25,10 @@ program
   .version(VERSION);
 
 // Register commands
-program.addCommand(initCommand);
 program.addCommand(indexCommand);
 program.addCommand(searchCommand);
 program.addCommand(exploreCommand);
 program.addCommand(mapCommand);
-program.addCommand(statsCommand);
-program.addCommand(dashboardCommand);
 program.addCommand(compactCommand);
 program.addCommand(cleanCommand);
 program.addCommand(storageCommand);

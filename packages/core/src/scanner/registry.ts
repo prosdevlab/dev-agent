@@ -305,6 +305,30 @@ export class ScannerRegistry {
       '**/analysis-reports/**',
       '**/.research/**',
       '**/benchmarks/**',
+
+      // Secrets & environment
+      '**/.env*',
+
+      // Minified & generated
+      '**/*.min.js',
+      '**/*.min.css',
+      '**/*.map',
+      '**/*.d.ts',
+      '**/generated/**',
+
+      // Infrastructure & deployment
+      '**/.terraform/**',
+      '**/.serverless/**',
+      '**/cdk.out/**',
+
+      // Binary & assets
+      '**/*.wasm',
+      '**/public/**',
+      '**/static/**',
+
+      // AI tooling meta
+      '**/.claude/**',
+      '**/.changeset/**',
     ];
   }
 
