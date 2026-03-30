@@ -1,6 +1,4 @@
 ---
-"@prosdevlab/dev-agent-core": minor
-"@prosdevlab/dev-agent-cli": minor
 "@prosdevlab/dev-agent": minor
 ---
 
