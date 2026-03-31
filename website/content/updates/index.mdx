@@ -9,6 +9,20 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.2 — MCP Install Fix & Dependency Cleanup
+
+*March 30, 2026*
+
+**Fixed `dev mcp install` and removed dead metrics module.**
+
+- Fixed `dev mcp install` failing with "Repository not indexed" after successful indexing (was checking for stale LanceDB `vectors` directory instead of `metadata.json`)
+- Removed dead metrics module — MetricsStore, analytics, collector were write-only with no consumers
+- Removed `better-sqlite3` native dependency (-36 transitive packages)
+- Updated storage help text to reflect actual Antfly-based storage
+- 1,568 tests passing, 0 failures
+
+---
+
 ## v0.10.1 — Tool Refinements & Docs Cleanup
 
 *March 30, 2026*
