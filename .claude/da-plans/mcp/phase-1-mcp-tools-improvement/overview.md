@@ -1,6 +1,6 @@
 # Phase 1: MCP Tools Improvement
 
-**Status:** In progress (Parts 1.1–1.5 merged, 1.6 in progress)
+**Status:** Complete (all parts merged)
 
 ## Context
 
