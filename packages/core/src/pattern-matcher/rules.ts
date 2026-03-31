@@ -90,6 +90,18 @@ export const TYPE_COVERAGE_QUERIES: PatternMatchRule[] = [
     category: 'type-coverage',
     query: '(function_declaration return_type: (type_annotation)) @match',
   },
+  {
+    // Count ALL arrow functions (typed or not) for accurate denominator
+    id: 'arrow-total',
+    category: 'type-coverage',
+    query: '(arrow_function) @match',
+  },
+  {
+    // Count ALL function declarations (typed or not) for accurate denominator
+    id: 'function-total',
+    category: 'type-coverage',
+    query: '(function_declaration) @match',
+  },
 ];
 
 // ============================================================================
