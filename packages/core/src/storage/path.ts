@@ -104,7 +104,6 @@ export async function ensureStorageDirectory(storagePath: string): Promise<void>
 export function getStorageFilePaths(storagePath: string): {
   vectors: string;
   metadata: string;
-  metrics: string;
   watcherSnapshot: string;
   /** @deprecated Removed in Phase 2 — only used for migration cleanup */
   indexerState: string;
@@ -114,7 +113,6 @@ export function getStorageFilePaths(storagePath: string): {
   return {
     vectors: path.join(storagePath, 'vectors'),
     metadata: path.join(storagePath, 'metadata.json'),
-    metrics: path.join(storagePath, 'metrics.db'),
     watcherSnapshot: path.join(storagePath, 'watcher-snapshot'),
     // Legacy paths — kept for migration cleanup only
     indexerState: path.join(storagePath, 'indexer-state.json'),

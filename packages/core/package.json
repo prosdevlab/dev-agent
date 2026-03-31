@@ -30,7 +30,6 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/mdast": "^4.0.4",
     "@types/node": "^24.10.1",
     "tree-sitter-wasms": "^0.1.13",
@@ -40,7 +39,6 @@
     "@antfly/sdk": "0.0.14",
     "@prosdevlab/dev-agent-types": "workspace:*",
     "@prosdevlab/kero": "workspace:*",
-    "better-sqlite3": "^12.5.0",
     "globby": "^16.0.0",
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",

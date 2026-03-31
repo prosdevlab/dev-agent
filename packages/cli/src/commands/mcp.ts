@@ -70,13 +70,13 @@ Available Tools (6):
         try {
           // Check if repository is indexed
           const storagePath = await getStoragePath(repositoryPath);
-          const { vectors, watcherSnapshot } = getStorageFilePaths(storagePath);
+          const { vectors, metadata, watcherSnapshot } = getStorageFilePaths(storagePath);
 
-          const vectorsExist = await fs
-            .access(vectors)
+          const isIndexed = await fs
+            .access(metadata)
             .then(() => true)
             .catch(() => false);
-          if (!vectorsExist) {
+          if (!isIndexed) {
             logger.error(`Repository not indexed. Run: ${chalk.yellow('dev index')}`);
             process.exit(1);
           }
@@ -205,15 +205,15 @@ Available Tools (6):
         const spinner = ora(`Installing dev-agent MCP server in ${targetIDE}...`).start();
 
         try {
-          // Check if repository is indexed
+          // Check if repository is indexed (metadata.json is written at index time)
           const storagePath = await getStoragePath(repositoryPath);
-          const { vectors } = getStorageFilePaths(storagePath);
+          const { metadata } = getStorageFilePaths(storagePath);
 
-          const vectorsExist = await fs
-            .access(vectors)
+          const isIndexed = await fs
+            .access(metadata)
             .then(() => true)
             .catch(() => false);
-          if (!vectorsExist) {
+          if (!isIndexed) {
             spinner.fail(`Repository not indexed. Run: ${chalk.yellow('dev index')}`);
             process.exit(1);
           }

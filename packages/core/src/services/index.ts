@@ -12,7 +12,6 @@ export {
   HealthService,
   type HealthServiceConfig,
 } from './health-service.js';
-export { MetricsService, type MetricsServiceConfig } from './metrics-service.js';
 export {
   type ErrorHandlingComparison,
   type ErrorHandlingPattern,
