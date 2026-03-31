@@ -25,9 +25,9 @@ Do NOT guess at architectural reasoning or make recommendations.
 
 ## Workflow
 
-1. **Search** — Start with `dev_search` for conceptual queries ("authentication flow", "error handling"). Fall back to Grep for exact string matches and Glob for file patterns.
-2. **Trace** — Use `dev_refs` to find callers/callees when tracing usage across packages. Faster and more complete than grepping for function names.
-3. **Map** — Use `dev_map` when asked about codebase structure or to identify high-churn areas.
+1. **Search** — Always start with `dev_search`. It finds code by meaning, not just keywords. Only fall back to Grep for exact string matches or Glob for file patterns.
+2. **Trace** — For "who calls X?" or "what does X call?", use `dev_refs`. Do not grep for function names when `dev_refs` can trace the graph directly.
+3. **Map** — For "what's the structure?" or "what changed recently?", use `dev_map`.
 4. **Verify** — Read the file to confirm the match
 5. **Report** — Concise, factual answer with file paths and line numbers
 

@@ -1,7 +1,7 @@
 ---
 name: pr-composer
 description: "Prepares code for pull request. Runs validation, reviews diff, and composes PR description. Use after completing a feature or fix."
-tools: Read, Glob, Grep, Bash, mcp__dev-agent__dev_map, mcp__dev-agent__dev_status
+tools: Read, Glob, Grep, Bash, mcp__dev-agent__dev_map
 model: sonnet
 ---
 
@@ -31,7 +31,7 @@ git diff main...HEAD
 git log main..HEAD --oneline
 ```
 
-Use `dev_map` to understand the structural impact of changes and identify which areas of the codebase were modified. Use `dev_status` to verify the index is healthy before PR.
+Use `dev_map` to understand the structural impact of changes and identify which areas of the codebase were modified.
 
 Review all changes for:
 

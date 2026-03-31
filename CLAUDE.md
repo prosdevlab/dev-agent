@@ -107,19 +107,21 @@ research-planner  — investigation planning before implementation
 Agents dogfood the dev-agent MCP tools. ★ = high impact, ● = useful.
 
 ```
-┌───────────────────┬────────────┬──────────┬─────────┬──────────────┬────────────┬────────────┐
-│       Agent       │ dev_search │ dev_refs │ dev_map │ dev_patterns │ dev_status │ dev_health │
-├───────────────────┼────────────┼──────────┼─────────┼──────────────┼────────────┼────────────┤
-│ bug-investigator  │     ★      │    ★     │    ●    │              │            │            │
-│ quick-scout       │     ★      │    ★     │    ●    │              │            │            │
-│ research-planner  │     ★      │    ●     │    ★    │      ★       │            │            │
-│ logic-reviewer    │     ●      │    ★     │         │      ●       │            │            │
-│ security-reviewer │     ★      │    ●     │         │      ★       │            │            │
-│ quality-reviewer  │     ●      │          │         │      ★       │            │            │
-│ plan-reviewer     │            │    ★     │    ★    │      ●       │            │            │
-│ pr-composer       │            │          │    ●    │              │     ●      │            │
-│ code-reviewer     │            │          │         │              │            │            │
-└───────────────────┴────────────┴──────────┴─────────┴──────────────┴────────────┴────────────┘
+┌───────────────────┬────────────┬──────────┬─────────┬──────────────┐
+│       Agent       │ dev_search │ dev_refs │ dev_map │ dev_patterns │
+├───────────────────┼────────────┼──────────┼─────────┼──────────────┤
+│ bug-investigator  │     ★      │    ★     │    ●    │              │
+│ quick-scout       │     ★      │    ★     │    ●    │              │
+│ research-planner  │     ★      │    ●     │    ★    │      ★       │
+│ logic-reviewer    │     ●      │    ★     │         │      ●       │
+│ security-reviewer │     ★      │    ★     │         │      ★       │
+│ quality-reviewer  │     ●      │          │         │      ★       │
+│ plan-reviewer     │            │    ★     │    ★    │      ●       │
+│ pr-composer       │            │          │    ●    │              │
+│ code-reviewer*    │            │          │         │              │
+└───────────────────┴────────────┴──────────┴─────────┴──────────────┘
+
+* code-reviewer is an orchestrator — it delegates to security/logic/quality reviewers.
 ```
 
 ---
