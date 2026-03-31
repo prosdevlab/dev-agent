@@ -17,7 +17,7 @@ This is invaluable for understanding impact of changes and navigating unfamiliar
 | `name` | string | required | Symbol name to query |
 | `direction` | string | `"both"` | `"callers"`, `"callees"`, or `"both"` |
 | `limit` | number | `10` | Maximum results |
-| `traceTo` | string | — | Trace dependency chain to a target file (e.g., `"src/database.ts"`) |
+| `dependsOn` | string | — | Trace the call chain to a file this function depends on (e.g., `"src/database.ts"`) |
 | `tokenBudget` | number | `2000` | Max tokens for output |
 
 ## Examples
@@ -92,7 +92,7 @@ What does the validateToken function call?
 ```json
 {
   "name": "authenticate",
-  "traceTo": "src/database.ts"
+  "dependsOn": "src/database.ts"
 }
 ```
 

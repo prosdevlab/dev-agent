@@ -71,6 +71,8 @@ export class RefsAdapter extends ToolAdapter {
   };
 
   private indexer?: RepositoryIndexer;
+  private cachedGraph?: Map<string, import('@prosdevlab/dev-agent-core').WeightedEdge[]>;
+  private cachedGraphTime = 0;
 
   constructor(config: RefsAdapterConfig) {
     super();
@@ -86,6 +88,31 @@ export class RefsAdapter extends ToolAdapter {
     context.logger.info('RefsAdapter initialized', {
       defaultLimit: this.config.defaultLimit,
     });
+  }
+
+  /**
+   * Get dependency graph, cached for 60 seconds.
+   * Avoids rebuilding the full graph on every dependsOn call.
+   */
+  private async getDependencyGraph(): Promise<
+    Map<string, import('@prosdevlab/dev-agent-core').WeightedEdge[]>
+  > {
+    const CACHE_TTL_MS = 60_000;
+    if (this.cachedGraph && Date.now() - this.cachedGraphTime < CACHE_TTL_MS) {
+      return this.cachedGraph;
+    }
+
+    const DOC_LIMIT = 10_000;
+    const allDocs = await this.indexer!.getAll({ limit: DOC_LIMIT });
+    if (allDocs.length >= DOC_LIMIT) {
+      console.error(
+        `[dev-agent] Warning: dependency graph hit ${DOC_LIMIT} doc limit. Results may be incomplete.`
+      );
+    }
+
+    this.cachedGraph = buildDependencyGraph(allDocs);
+    this.cachedGraphTime = Date.now();
+    return this.cachedGraph;
   }
 
   getToolDefinition(): ToolDefinition {
@@ -116,11 +143,11 @@ export class RefsAdapter extends ToolAdapter {
             maximum: 50,
             default: this.config.defaultLimit,
           },
-          traceTo: {
+          dependsOn: {
             type: 'string',
             description:
-              "Trace the dependency chain from this function's file to a target file " +
-              '(e.g., "src/database.ts"). Follows directed call graph edges (A calls B, not B calls A).',
+              "Trace the call chain from this function's file to a target it depends on " +
+              '(e.g., "src/database.ts"). Follows call direction: A calls B, B calls C.',
           },
         },
         required: ['name'],
@@ -135,11 +162,11 @@ export class RefsAdapter extends ToolAdapter {
       return validation.error;
     }
 
-    const { name, direction, limit, traceTo } = validation.data;
+    const { name, direction, limit, dependsOn } = validation.data;
 
     try {
       const timer = startTimer();
-      context.logger.debug('Executing refs query', { name, direction, limit, traceTo });
+      context.logger.debug('Executing refs query', { name, direction, limit, dependsOn });
 
       // First, find the target component
       const searchResults = await this.searchService.search(name, { limit: 10 });
@@ -157,27 +184,26 @@ export class RefsAdapter extends ToolAdapter {
         };
       }
 
-      // Handle traceTo — find shortest dependency path
-      if (traceTo && !this.indexer) {
+      // Handle dependsOn — find shortest dependency path
+      if (dependsOn && !this.indexer) {
         return {
           success: false,
           error: {
             code: 'INDEX_REQUIRED',
-            message: 'Path tracing requires a repository index.',
+            message: 'Dependency path tracing requires a repository index.',
             suggestion: 'Run "dev index" to index the repository first.',
           },
         };
       }
 
-      if (traceTo && this.indexer) {
+      if (dependsOn && this.indexer) {
         const sourceFile = (target.metadata.path as string) || '';
-        const allDocs = await this.indexer.getAll({ limit: 10000 });
-        const graph = buildDependencyGraph(allDocs);
-        const path = shortestPath(graph, sourceFile, traceTo);
+        const graph = await this.getDependencyGraph();
+        const path = shortestPath(graph, sourceFile, dependsOn);
 
         const content = path
-          ? `## Dependency Path: ${sourceFile} → ${traceTo}\n\n${path.join(' → ')}\n\n**${path.length - 1} hop${path.length - 1 === 1 ? '' : 's'}**`
-          : `## No Path Found\n\nNo dependency chain from \`${sourceFile}\` to \`${traceTo}\`.\nThese files may be in separate subsystems.`;
+          ? `## Dependency Path: ${sourceFile} → ${dependsOn}\n\n${path.join(' → ')}\n\n**${path.length - 1} hop${path.length - 1 === 1 ? '' : 's'}**`
+          : `## No Path Found\n\nNo dependency chain from \`${sourceFile}\` to \`${dependsOn}\`.\nThese files may be in separate subsystems.`;
 
         return {
           success: true,
