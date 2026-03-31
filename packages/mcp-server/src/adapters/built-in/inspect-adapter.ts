@@ -8,6 +8,7 @@
 import {
   PatternAnalysisService,
   type PatternComparison,
+  type PatternMatcher,
   type SearchService,
   type VectorStorage,
 } from '@prosdevlab/dev-agent-core';
@@ -20,6 +21,7 @@ export interface InspectAdapterConfig {
   repositoryPath: string;
   searchService: SearchService;
   vectorStorage?: VectorStorage;
+  patternMatcher?: PatternMatcher;
   defaultLimit?: number;
   defaultThreshold?: number;
   defaultFormat?: 'compact' | 'verbose';
@@ -52,6 +54,7 @@ export class InspectAdapter extends ToolAdapter {
     this.patternService = new PatternAnalysisService({
       repositoryPath: config.repositoryPath,
       vectorStorage: config.vectorStorage,
+      patternMatcher: config.patternMatcher,
     });
     this.defaultLimit = config.defaultLimit ?? 10;
     this.defaultThreshold = config.defaultThreshold ?? 0.7;

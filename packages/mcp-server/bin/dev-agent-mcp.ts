@@ -5,6 +5,7 @@
  */
 
 import {
+  createPatternMatcher,
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
@@ -268,6 +269,7 @@ async function main() {
       repositoryPath,
       searchService,
       vectorStorage: indexer.getVectorStorage(),
+      patternMatcher: createPatternMatcher(),
       defaultLimit: 10,
       defaultThreshold: 0.7,
       defaultFormat: 'compact',

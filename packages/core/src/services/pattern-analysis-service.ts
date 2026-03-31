@@ -7,6 +7,13 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import {
+  ERROR_HANDLING_QUERIES,
+  IMPORT_STYLE_QUERIES,
+  TYPE_COVERAGE_QUERIES,
+} from '../pattern-matcher/rules';
+import type { PatternMatcher, PatternMatchRule } from '../pattern-matcher/wasm-matcher';
+import { resolveLanguage } from '../pattern-matcher/wasm-matcher';
 import { scanRepository } from '../scanner';
 import type { Document } from '../scanner/types';
 import { findTestFile, isTestFile } from '../utils/test-utils';
@@ -102,6 +109,121 @@ export function extractTypeCoverageFromSignatures(signatures: string[]): TypeAnn
   return { coverage, annotatedCount: annotated.length, totalCount: signatures.length };
 }
 
+// ========================================================================
+// AST-Enhanced Extractors — use PatternMatcher when available, regex fallback
+// ========================================================================
+
+/**
+ * Run AST queries if matcher and language are available, else return empty map.
+ */
+async function runAstQueries(
+  content: string,
+  filePath: string | undefined,
+  matcher: PatternMatcher | undefined,
+  queries: PatternMatchRule[]
+): Promise<Map<string, number>> {
+  if (!matcher || !filePath) return new Map();
+  const language = resolveLanguage(filePath);
+  if (!language) return new Map();
+  return matcher.match(content, language, queries);
+}
+
+/**
+ * Extract error handling using AST (preferred) + regex (fallback/supplement).
+ */
+export async function extractErrorHandlingWithAst(
+  content: string,
+  filePath?: string,
+  matcher?: PatternMatcher
+): Promise<ErrorHandlingPattern> {
+  const regex = extractErrorHandlingFromContent(content);
+  const ast = await runAstQueries(content, filePath, matcher, ERROR_HANDLING_QUERIES);
+
+  if (ast.size === 0) return regex;
+
+  const hasThrow = (ast.get('throw') ?? 0) > 0;
+  const hasTryCatch = (ast.get('try-catch') ?? 0) > 0;
+  const hasPromiseCatch = (ast.get('promise-catch') ?? 0) > 0;
+  const hasResultRegex = regex.style === 'result';
+
+  // Classification: throw is the style, try-catch is the mechanism
+  if (hasThrow && (hasTryCatch || hasPromiseCatch || hasResultRegex)) {
+    return { style: 'mixed', examples: [] };
+  }
+  if (hasThrow) return { style: 'throw', examples: [] };
+  if (hasResultRegex) return regex; // AST can't detect Result<T>, keep regex
+  if (hasTryCatch || hasPromiseCatch) return { style: 'throw', examples: [] };
+
+  return regex;
+}
+
+/**
+ * Extract import style using AST (preferred) + regex (fallback/supplement).
+ */
+export async function extractImportStyleWithAst(
+  content: string,
+  filePath?: string,
+  matcher?: PatternMatcher
+): Promise<ImportStylePattern> {
+  const regex = extractImportStyleFromContent(content);
+  const ast = await runAstQueries(content, filePath, matcher, IMPORT_STYLE_QUERIES);
+
+  if (ast.size === 0) return regex;
+
+  const dynamicImports = ast.get('dynamic-import') ?? 0;
+  const reExports = ast.get('re-export') ?? 0;
+  const requires = ast.get('require') ?? 0;
+
+  // Dynamic imports count as ESM
+  const esmCount =
+    (regex.style === 'esm' || regex.style === 'mixed' ? regex.importCount : 0) +
+    dynamicImports +
+    reExports;
+  const cjsCount = requires;
+
+  if (esmCount === 0 && cjsCount === 0) return regex;
+
+  const hasESM = esmCount > 0 || regex.style === 'esm' || regex.style === 'mixed';
+  const hasCJS = cjsCount > 0 || regex.style === 'cjs' || regex.style === 'mixed';
+  const style: ImportStylePattern['style'] = hasESM && hasCJS ? 'mixed' : hasESM ? 'esm' : 'cjs';
+  return { style, importCount: regex.importCount + dynamicImports };
+}
+
+/**
+ * Extract type coverage using AST (preferred) + regex signatures (supplement).
+ */
+export async function extractTypeCoverageWithAst(
+  content: string,
+  filePath?: string,
+  matcher?: PatternMatcher,
+  signatures?: string[]
+): Promise<TypeAnnotationPattern> {
+  // Start with signature-based detection (from index or ts-morph)
+  const regex = extractTypeCoverageFromSignatures(signatures ?? []);
+  const ast = await runAstQueries(content, filePath, matcher, TYPE_COVERAGE_QUERIES);
+
+  if (ast.size === 0) return regex;
+
+  const arrowTyped = ast.get('arrow-return-type') ?? 0;
+  const functionTyped = ast.get('function-return-type') ?? 0;
+  const astAnnotated = arrowTyped + functionTyped;
+
+  // Merge: use the higher count (AST catches arrows that signatures miss)
+  const annotatedCount = Math.max(regex.annotatedCount, astAnnotated);
+  const totalCount = Math.max(regex.totalCount, astAnnotated); // at least as many as annotated
+
+  if (totalCount === 0) return regex;
+
+  const ratio = annotatedCount / totalCount;
+  let coverage: TypeAnnotationPattern['coverage'];
+  if (ratio >= 0.9) coverage = 'full';
+  else if (ratio >= 0.5) coverage = 'partial';
+  else if (ratio > 0) coverage = 'minimal';
+  else coverage = 'none';
+
+  return { coverage, annotatedCount, totalCount };
+}
+
 /**
  * Pattern Analysis Service
  *
@@ -160,12 +282,18 @@ export class PatternAnalysisService {
       .map((d) => (d.metadata.signature as string) || '')
       .filter(Boolean);
 
+    const [importStyle, errorHandling, typeAnnotations] = await Promise.all([
+      extractImportStyleWithAst(content, filePath, this.config.patternMatcher),
+      extractErrorHandlingWithAst(content, filePath, this.config.patternMatcher),
+      extractTypeCoverageWithAst(content, filePath, this.config.patternMatcher, signatures),
+    ]);
+
     return {
       fileSize: { lines, bytes },
       testing,
-      importStyle: extractImportStyleFromContent(content),
-      errorHandling: extractErrorHandlingFromContent(content),
-      typeAnnotations: extractTypeCoverageFromSignatures(signatures),
+      importStyle,
+      errorHandling,
+      typeAnnotations,
     };
   }
 
@@ -256,12 +384,18 @@ export class PatternAnalysisService {
       .map((d) => d.metadata.signature || '')
       .filter(Boolean);
 
+    const [importStyle, errorHandling, typeAnnotations] = await Promise.all([
+      extractImportStyleWithAst(content, filePath, this.config.patternMatcher),
+      extractErrorHandlingWithAst(content, filePath, this.config.patternMatcher),
+      extractTypeCoverageWithAst(content, filePath, this.config.patternMatcher, signatures),
+    ]);
+
     return {
       fileSize: { lines: content.split('\n').length, bytes: stat.size },
       testing,
-      importStyle: extractImportStyleFromContent(content),
-      errorHandling: extractErrorHandlingFromContent(content),
-      typeAnnotations: extractTypeCoverageFromSignatures(signatures),
+      importStyle,
+      errorHandling,
+      typeAnnotations,
     };
   }
 

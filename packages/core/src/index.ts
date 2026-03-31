@@ -6,6 +6,7 @@ export * from './events';
 export * from './indexer';
 export * from './map';
 export * from './observability';
+export { createPatternMatcher, type PatternMatcher } from './pattern-matcher';
 export * from './scanner';
 export * from './services';
 export * from './storage';
