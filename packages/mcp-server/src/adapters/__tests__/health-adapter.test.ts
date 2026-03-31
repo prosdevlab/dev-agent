@@ -9,7 +9,6 @@ describe('HealthAdapter', () => {
   let testDir: string;
   let vectorStorePath: string;
   let repositoryPath: string;
-  let githubStatePath: string;
   let adapter: HealthAdapter;
   let context: AdapterContext;
   let execContext: ToolExecutionContext;
@@ -19,8 +18,6 @@ describe('HealthAdapter', () => {
     testDir = path.join(os.tmpdir(), `health-adapter-test-${Date.now()}`);
     vectorStorePath = path.join(testDir, 'vectors');
     repositoryPath = path.join(testDir, 'repo');
-    githubStatePath = path.join(testDir, 'github-state.json');
-
     await fs.mkdir(testDir, { recursive: true });
     await fs.mkdir(vectorStorePath, { recursive: true });
     await fs.mkdir(repositoryPath, { recursive: true });
@@ -28,7 +25,6 @@ describe('HealthAdapter', () => {
     adapter = new HealthAdapter({
       repositoryPath,
       vectorStorePath,
-      githubStatePath,
     });
 
     context = {
@@ -75,16 +71,6 @@ describe('HealthAdapter', () => {
       // Setup: Create git repository
       await fs.mkdir(path.join(repositoryPath, '.git'));
 
-      // Setup: Create GitHub index
-      await fs.writeFile(
-        githubStatePath,
-        JSON.stringify({
-          version: '1.0.0',
-          lastIndexed: new Date().toISOString(),
-          items: [{ id: 1 }, { id: 2 }],
-        })
-      );
-
       const result = await adapter.execute({}, execContext);
 
       expect(result.success).toBe(true);
@@ -95,13 +81,11 @@ describe('HealthAdapter', () => {
       expect(result.data).toContain('HEALTHY');
       expect(result.data).toContain('Vector Storage');
       expect(result.data).toContain('Repository');
-      expect(result.data).toContain('Github Index');
     });
 
     it('should report degraded when components have warnings', async () => {
       // Vector storage is empty (warning)
       // Repository exists but no .git (warning)
-      // No GitHub index
 
       const result = await adapter.execute({}, execContext);
 
@@ -188,67 +172,6 @@ describe('HealthAdapter', () => {
     });
   });
 
-  describe('GitHub Index Check', () => {
-    it('should pass when index is recent', async () => {
-      await fs.writeFile(
-        githubStatePath,
-        JSON.stringify({
-          version: '1.0.0',
-          lastIndexed: new Date().toISOString(),
-          items: [{ id: 1 }, { id: 2 }, { id: 3 }],
-        })
-      );
-
-      const result = await adapter.execute({}, execContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toContain('Github Index');
-      expect(result.data).toContain('3 items');
-    });
-
-    it('should warn when index is stale (>24 hours)', async () => {
-      const yesterday = new Date(Date.now() - 25 * 60 * 60 * 1000);
-      await fs.writeFile(
-        githubStatePath,
-        JSON.stringify({
-          version: '1.0.0',
-          lastIndexed: yesterday.toISOString(),
-          items: [{ id: 1 }],
-        })
-      );
-
-      const result = await adapter.execute({}, execContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toContain('Github Index');
-      expect(result.data).toContain('old');
-    });
-
-    it('should warn when index file does not exist', async () => {
-      const result = await adapter.execute({}, execContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toContain('not accessible');
-    });
-
-    it('should not check GitHub index when not configured', async () => {
-      const adapterWithoutGithub = new HealthAdapter({
-        repositoryPath,
-        vectorStorePath,
-      });
-
-      await adapterWithoutGithub.initialize(context);
-
-      const result = await adapterWithoutGithub.execute({}, execContext);
-
-      expect(result.success).toBe(true);
-      // Github Index section should not appear when not configured
-      expect(result.data).not.toContain('Github Index');
-
-      await adapterWithoutGithub.shutdown();
-    });
-  });
-
   describe('Output Formatting', () => {
     it('should format uptime correctly', async () => {
       // Wait a moment to accumulate uptime
@@ -309,16 +232,6 @@ describe('HealthAdapter', () => {
       await fs.writeFile(path.join(vectorStorePath, 'data.db'), 'test');
       await fs.mkdir(path.join(repositoryPath, '.git'));
 
-      // Add GitHub index to make it fully healthy
-      await fs.writeFile(
-        githubStatePath,
-        JSON.stringify({
-          version: '1.0.0',
-          lastIndexed: new Date().toISOString(),
-          items: [{ id: 1 }],
-        })
-      );
-
       const healthy = await adapter.healthCheck();
 
       expect(healthy).toBe(true);
@@ -334,15 +247,6 @@ describe('HealthAdapter', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid GitHub state JSON', async () => {
-      await fs.writeFile(githubStatePath, 'invalid json');
-
-      const result = await adapter.execute({}, execContext);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toContain('⚠️');
-    });
-
     it('should handle permission errors gracefully', async () => {
       // This test is platform-dependent, so we'll skip it if we can't set permissions
       if (process.platform !== 'win32') {
