@@ -33,6 +33,9 @@ describeE2E('E2E: Incremental indexing', () => {
 
     await indexer.initialize();
     await indexer.index();
+
+    // Allow Antfly to finish embedding before running queries
+    await new Promise((r) => setTimeout(r, 2000));
   }, 60_000);
 
   afterAll(async () => {
