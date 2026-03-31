@@ -83,8 +83,10 @@ export interface MapOptions {
 export interface HotPath {
   /** File path */
   file: string;
-  /** Number of incoming references (callers) */
+  /** Number of distinct files that depend on this file */
   incomingRefs: number;
+  /** PageRank score (used for sorting — higher = more architecturally central) */
+  score: number;
   /** Primary component name in this file */
   primaryComponent?: string;
 }
