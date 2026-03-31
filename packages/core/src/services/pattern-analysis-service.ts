@@ -7,12 +7,8 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {
-  ERROR_HANDLING_QUERIES,
-  IMPORT_STYLE_QUERIES,
-  TYPE_COVERAGE_QUERIES,
-} from '../pattern-matcher/rules';
-import type { PatternMatcher, PatternMatchRule } from '../pattern-matcher/wasm-matcher';
+import { ALL_QUERIES } from '../pattern-matcher/rules';
+import type { PatternMatcher } from '../pattern-matcher/wasm-matcher';
 import { resolveLanguage } from '../pattern-matcher/wasm-matcher';
 import { scanRepository } from '../scanner';
 import type { Document } from '../scanner/types';
@@ -110,34 +106,34 @@ export function extractTypeCoverageFromSignatures(signatures: string[]): TypeAnn
 }
 
 // ========================================================================
-// AST-Enhanced Extractors — use PatternMatcher when available, regex fallback
+// AST-Enhanced Extractors — accept pre-computed AST results, regex fallback
 // ========================================================================
 
 /**
- * Run AST queries if matcher and language are available, else return empty map.
+ * Run all AST queries in a single parse. Call once per file, pass results
+ * to each extractor. Avoids parsing the same source 3 times.
+ *
+ * Returns empty map when matcher or filePath is unavailable (regex fallback).
  */
-async function runAstQueries(
+export async function runAllAstQueries(
   content: string,
   filePath: string | undefined,
-  matcher: PatternMatcher | undefined,
-  queries: PatternMatchRule[]
+  matcher: PatternMatcher | undefined
 ): Promise<Map<string, number>> {
   if (!matcher || !filePath) return new Map();
   const language = resolveLanguage(filePath);
   if (!language) return new Map();
-  return matcher.match(content, language, queries);
+  return matcher.match(content, language, ALL_QUERIES);
 }
 
 /**
- * Extract error handling using AST (preferred) + regex (fallback/supplement).
+ * Extract error handling using pre-computed AST results + regex fallback.
  */
-export async function extractErrorHandlingWithAst(
+export function extractErrorHandlingWithAst(
   content: string,
-  filePath?: string,
-  matcher?: PatternMatcher
-): Promise<ErrorHandlingPattern> {
+  ast: Map<string, number>
+): ErrorHandlingPattern {
   const regex = extractErrorHandlingFromContent(content);
-  const ast = await runAstQueries(content, filePath, matcher, ERROR_HANDLING_QUERIES);
 
   if (ast.size === 0) return regex;
 
@@ -158,15 +154,13 @@ export async function extractErrorHandlingWithAst(
 }
 
 /**
- * Extract import style using AST (preferred) + regex (fallback/supplement).
+ * Extract import style using pre-computed AST results + regex fallback.
  */
-export async function extractImportStyleWithAst(
+export function extractImportStyleWithAst(
   content: string,
-  filePath?: string,
-  matcher?: PatternMatcher
-): Promise<ImportStylePattern> {
+  ast: Map<string, number>
+): ImportStylePattern {
   const regex = extractImportStyleFromContent(content);
-  const ast = await runAstQueries(content, filePath, matcher, IMPORT_STYLE_QUERIES);
 
   if (ast.size === 0) return regex;
 
@@ -192,17 +186,14 @@ export async function extractImportStyleWithAst(
 }
 
 /**
- * Extract type coverage using AST (preferred) + regex signatures (supplement).
+ * Extract type coverage using pre-computed AST results + regex signatures.
  */
-export async function extractTypeCoverageWithAst(
+export function extractTypeCoverageWithAst(
   content: string,
-  filePath?: string,
-  matcher?: PatternMatcher,
+  ast: Map<string, number>,
   signatures?: string[]
-): Promise<TypeAnnotationPattern> {
-  // Start with signature-based detection (from index or ts-morph)
+): TypeAnnotationPattern {
   const regex = extractTypeCoverageFromSignatures(signatures ?? []);
-  const ast = await runAstQueries(content, filePath, matcher, TYPE_COVERAGE_QUERIES);
 
   if (ast.size === 0) return regex;
 
@@ -287,18 +278,15 @@ export class PatternAnalysisService {
       .map((d) => (d.metadata.signature as string) || '')
       .filter(Boolean);
 
-    const [importStyle, errorHandling, typeAnnotations] = await Promise.all([
-      extractImportStyleWithAst(content, filePath, this.config.patternMatcher),
-      extractErrorHandlingWithAst(content, filePath, this.config.patternMatcher),
-      extractTypeCoverageWithAst(content, filePath, this.config.patternMatcher, signatures),
-    ]);
+    // Parse once, run all 12 AST queries, pass results to each extractor
+    const ast = await runAllAstQueries(content, filePath, this.config.patternMatcher);
 
     return {
       fileSize: { lines, bytes },
       testing,
-      importStyle,
-      errorHandling,
-      typeAnnotations,
+      importStyle: extractImportStyleWithAst(content, ast),
+      errorHandling: extractErrorHandlingWithAst(content, ast),
+      typeAnnotations: extractTypeCoverageWithAst(content, ast, signatures),
     };
   }
 
@@ -389,18 +377,15 @@ export class PatternAnalysisService {
       .map((d) => d.metadata.signature || '')
       .filter(Boolean);
 
-    const [importStyle, errorHandling, typeAnnotations] = await Promise.all([
-      extractImportStyleWithAst(content, filePath, this.config.patternMatcher),
-      extractErrorHandlingWithAst(content, filePath, this.config.patternMatcher),
-      extractTypeCoverageWithAst(content, filePath, this.config.patternMatcher, signatures),
-    ]);
+    // Parse once, run all 12 AST queries, pass results to each extractor
+    const ast = await runAllAstQueries(content, filePath, this.config.patternMatcher);
 
     return {
       fileSize: { lines: content.split('\n').length, bytes: stat.size },
       testing,
-      importStyle,
-      errorHandling,
-      typeAnnotations,
+      importStyle: extractImportStyleWithAst(content, ast),
+      errorHandling: extractErrorHandlingWithAst(content, ast),
+      typeAnnotations: extractTypeCoverageWithAst(content, ast, signatures),
     };
   }
 
