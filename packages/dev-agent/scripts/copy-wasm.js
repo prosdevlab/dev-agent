@@ -95,7 +95,7 @@ if (!fs.existsSync(wasmSourceDir)) {
 // 3. Ensure tree-sitter-wasms package contains tree-sitter-{lang}.wasm
 // 4. Create a language-specific scanner in packages/core/src/scanner/{lang}.ts
 // 5. Update scanner registration in packages/core/src/scanner/index.ts
-const SUPPORTED_LANGUAGES = ['go'];
+const SUPPORTED_LANGUAGES = ['go', 'typescript', 'tsx', 'javascript'];
 const SUPPORTED_FILES = new Set([
   ...SUPPORTED_LANGUAGES.map((lang) => `tree-sitter-${lang}.wasm`),
   'tree-sitter.wasm', // Runtime if present
