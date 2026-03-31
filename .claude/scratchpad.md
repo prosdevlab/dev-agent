@@ -17,6 +17,10 @@
 - Vue/Svelte SFC support — `.vue`/`.svelte` files have embedded `<script lang="ts">` blocks. Would need script block extraction before tree-sitter parsing. Lower priority — co-located `.ts` files in those projects already get full analysis.
 - Swap `WasmPatternMatcher` to `@ast-grep/napi` if bulk scanning perf becomes an issue (~4x faster native Rust). Interface is ready; implementation is mechanical.
 
+## Flaky Tests
+
+- **`packages/cli/src/commands/commands.test.ts:119` — "should display indexing summary without storage size"** times out at 30s on GitHub CI runners. The test indexes files and the slower CI runner can't finish in time. Needs either a higher timeout, a smaller test fixture, or mocking the indexer. Seen on PR #17 CI run.
+
 ## Test Gaps
 
 - **InspectAdapter integration test with PatternMatcher.** The InspectAdapter test constructs without a `patternMatcher` — the AST path is never exercised through the MCP layer. Needs a test that constructs `InspectAdapter` with `createPatternMatcher()`, mocks the search service, calls `execute()`, and verifies AST-enhanced results flow through. Requires mock search service setup — larger integration test scope.

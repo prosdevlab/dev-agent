@@ -9,6 +9,21 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.5 — AST-Based Pattern Analysis
+
+*March 31, 2026*
+
+**`dev_patterns` now uses tree-sitter AST queries for more accurate code analysis.**
+
+- Detects try/catch, promise.catch, error classes, async/await in try — patterns regex couldn't see
+- Arrow function return types now detected accurately (regex was fragile on `(): Type => ...`)
+- Dynamic `import()` now counts as ESM, `require()` detection more precise
+- Bundles TypeScript, TSX, and JavaScript grammars — covers the full JS/TS ecosystem
+- 12 verified S-expression queries, 51 new tests with exact match counts
+- Regex fallback preserved for non-JS/TS files
+
+---
+
 ## v0.10.4 — MCP Tools Improvement (Phase 1)
 
 *March 31, 2026*
