@@ -152,8 +152,8 @@ export async function extractErrorHandlingWithAst(
   }
   if (hasThrow) return { style: 'throw', examples: [] };
   if (hasResultRegex) return regex; // AST can't detect Result<T>, keep regex
-  if (hasTryCatch || hasPromiseCatch) return { style: 'throw', examples: [] };
-
+  // try-catch or promise.catch alone is a mechanism, not a style —
+  // fall through to regex which may have found throw/Result in content
   return regex;
 }
 
@@ -174,7 +174,9 @@ export async function extractImportStyleWithAst(
   const reExports = ast.get('re-export') ?? 0;
   const requires = ast.get('require') ?? 0;
 
-  // Dynamic imports count as ESM
+  // AST affects style classification but not importCount — importCount only adds
+  // genuinely new detections (dynamic imports) that regex missed. AST require
+  // matches overlap with regex require matches so they don't inflate the count.
   const esmCount =
     (regex.style === 'esm' || regex.style === 'mixed' ? regex.importCount : 0) +
     dynamicImports +
@@ -206,11 +208,14 @@ export async function extractTypeCoverageWithAst(
 
   const arrowTyped = ast.get('arrow-return-type') ?? 0;
   const functionTyped = ast.get('function-return-type') ?? 0;
+  const arrowTotal = ast.get('arrow-total') ?? 0;
+  const functionTotal = ast.get('function-total') ?? 0;
   const astAnnotated = arrowTyped + functionTyped;
+  const astTotal = arrowTotal + functionTotal;
 
-  // Merge: use the higher count (AST catches arrows that signatures miss)
+  // Merge: use the higher of AST total vs regex total for accurate denominator
   const annotatedCount = Math.max(regex.annotatedCount, astAnnotated);
-  const totalCount = Math.max(regex.totalCount, astAnnotated); // at least as many as annotated
+  const totalCount = Math.max(regex.totalCount, astTotal);
 
   if (totalCount === 0) return regex;
 

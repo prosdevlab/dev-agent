@@ -365,13 +365,16 @@ export async function runQueries(
 
     const QueryCls = QueryClass;
     for (const { id, query: queryString } of queries) {
+      let q: InstanceType<typeof QueryCls> | null = null;
       try {
-        const q = new QueryCls(lang, queryString);
+        q = new QueryCls(lang, queryString);
         const matches = q.matches(tree.rootNode);
         results.set(id, matches.length);
       } catch {
         // Invalid query — skip, return 0 for this rule
         results.set(id, 0);
+      } finally {
+        q?.delete();
       }
     }
   } catch {
