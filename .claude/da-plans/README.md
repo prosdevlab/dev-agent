@@ -11,7 +11,7 @@ Implementation deviations are logged at the bottom of each plan file.
 |-------|-------------|--------|
 | [Core](core/) | Scanner, vector storage, services, indexer | Phase 1: Merged, Phase 2: Merged (indexing rethink) |
 | [CLI](cli/) | Command-line interface | Not started |
-| [MCP Server](mcp/) | Model Context Protocol server + adapters | Phase 1: Draft (tools improvement) |
+| [MCP Server](mcp/) | Model Context Protocol server + adapters | Phase 1: Merged (tools improvement) |
 | [Subagents](subagents/) | Coordinator, explorer, planner, GitHub agents | Not started |
 | [Integrations](integrations/) | Claude Code, VS Code, Cursor | Not started |
 | [Logger](logger/) | @prosdevlab/kero centralized logging | Not started |
