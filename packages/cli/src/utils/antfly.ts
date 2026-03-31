@@ -5,6 +5,8 @@
  */
 
 import { execSync, spawn } from 'node:child_process';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { logger } from './logger.js';
 
 const DEFAULT_ANTFLY_URL = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
@@ -13,6 +15,18 @@ const DOCKER_IMAGE = 'ghcr.io/antflydb/antfly:latest';
 const DOCKER_PORT = 18080;
 const STARTUP_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 500;
+
+/**
+ * The Termite models directory used by the running Antfly swarm server.
+ *
+ * `antfly swarm` uses `--data-dir` (default: ~/.antfly) as its root for all
+ * storage, including Termite models at {data-dir}/models.
+ * `antfly termite list/pull` defaults to --models-dir ~/.termite/models, which
+ * is a DIFFERENT path. We must always pass --models-dir explicitly so that
+ * `pullModel` and `hasModel` operate on the same directory the server uses.
+ */
+const ANTFLY_DATA_DIR = process.env.ANTFLY_DATA_DIR ?? join(homedir(), '.antfly');
+const TERMITE_MODELS_DIR = join(ANTFLY_DATA_DIR, 'models');
 
 /**
  * Ensure antfly is running. Auto-starts if needed.
@@ -32,10 +46,14 @@ export async function ensureAntfly(options?: { quiet?: boolean }): Promise<strin
     if (!options?.quiet) logger.info('Starting Antfly server...');
     // Use custom ports to avoid 8080 conflicts (Docker, other services).
     // metadata-api on 18080 (our default), store-api on 18381, raft on 19017/19021.
+    // --data-dir is passed explicitly so the server's embedded Termite node stores
+    // models in the same directory that pullModel/hasModel use (TERMITE_MODELS_DIR).
     const child = spawn(
       'antfly',
       [
         'swarm',
+        '--data-dir',
+        ANTFLY_DATA_DIR,
         '--metadata-api',
         'http://0.0.0.0:18080',
         '--store-api',
@@ -187,9 +205,14 @@ export function getNativeVersion(): string | null {
 
 /**
  * Pull a Termite embedding model (native binary).
+ *
+ * Always targets TERMITE_MODELS_DIR so the model ends up in the same directory
+ * the running Antfly swarm server uses for its embedded Termite node.
  */
 export function pullModel(model: string): void {
-  execSync(`antfly termite pull ${model}`, { stdio: 'inherit' });
+  execSync(`antfly termite pull --models-dir ${TERMITE_MODELS_DIR} ${model}`, {
+    stdio: 'inherit',
+  });
 }
 
 /**
@@ -201,16 +224,23 @@ export function pullModelDocker(model: string): void {
 }
 
 /**
- * Check if a Termite model is available locally (native binary).
+ * Check if a Termite model is available in the directory used by the running
+ * Antfly swarm server (TERMITE_MODELS_DIR = ~/.antfly/models by default).
+ *
+ * Checks for the full model name first (e.g. "BAAI/bge-small-en-v1.5"), then
+ * the short name as a whole word (e.g. "bge-small-en-v1.5"). Previously used
+ * a simple substring match on the short name, which caused false positives when
+ * `antfly termite list` defaulted to ~/.termite/models — a different directory
+ * from the one the server reads, so the model appeared present but was not
+ * available to the server during embedding.
  */
 export function hasModel(model: string): boolean {
   try {
-    const output = execSync('antfly termite list', {
+    const output = execSync(`antfly termite list --models-dir ${TERMITE_MODELS_DIR}`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    const shortName = model.split('/').pop() ?? model;
-    return output.includes(shortName);
+    return modelPresentInOutput(model, output);
   } catch {
     return false;
   }
@@ -218,6 +248,11 @@ export function hasModel(model: string): boolean {
 
 /**
  * Check if a Termite model is available inside the Docker container.
+ *
+ * Checks for the full model name first (e.g. "BAAI/bge-small-en-v1.5"), then
+ * the short name as a whole word (e.g. "bge-small-en-v1.5"). Simple substring
+ * matching on the short name was causing false positives when other models or
+ * partial download records shared the suffix.
  */
 export function hasModelDocker(model: string): boolean {
   try {
@@ -225,9 +260,27 @@ export function hasModelDocker(model: string): boolean {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    const shortName = model.split('/').pop() ?? model;
-    return output.includes(shortName);
+    return modelPresentInOutput(model, output);
   } catch {
     return false;
   }
+}
+
+/**
+ * Return true when the model name is present in `antfly termite list` output.
+ *
+ * Strategy (most-specific first):
+ *   1. Full name exact match  — "BAAI/bge-small-en-v1.5" appears verbatim.
+ *   2. Short name word-boundary — "bge-small-en-v1.5" appears as a whole token
+ *      (not as a suffix of a different model name).
+ */
+function modelPresentInOutput(model: string, output: string): boolean {
+  // Full name check (covers "BAAI/bge-small-en-v1.5" style output)
+  if (output.includes(model)) return true;
+
+  // Short name check with word-boundary anchors so "bge-small-en-v1.5" does not
+  // match inside "other-bge-small-en-v1.5" or a partial download entry.
+  const shortName = model.split('/').pop() ?? model;
+  const escaped = shortName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\w/-])${escaped}(?![\\w/-])`).test(output);
 }

@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.2',
-  title: 'MCP Install Fix & Dependency Cleanup',
+  version: '0.10.3',
+  title: 'Fix Setup/Index Model Directory Mismatch',
   date: 'March 30, 2026',
   summary:
-    'Fixed dev mcp install check, removed dead metrics module and better-sqlite3 dependency.',
-  link: '/updates#v0102--mcp-install-fix--dependency-cleanup',
+    'Fixed dev setup reporting model ready while dev index fails with "model not found" due to mismatched model directories.',
+  link: '/updates#v0103--fix-setupindex-model-directory-mismatch',
 } as const;

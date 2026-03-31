@@ -24,9 +24,8 @@ dev-agent indexes your codebase and provides 6 MCP tools to AI assistants. Inste
 ```bash
 # Install
 npm install -g @prosdevlab/dev-agent
-brew install --cask antflydb/antfly/antfly
 
-# One-time setup
+# One-time setup (installs Antfly, pulls embedding model, starts server)
 dev setup
 
 # Index your repository
@@ -138,7 +137,7 @@ Server health, Antfly connectivity, and repository access.
 ## Prerequisites
 
 - Node.js 22+ (LTS)
-- [Antfly](https://antfly.io) — `brew install --cask antflydb/antfly/antfly`
+- [Antfly](https://antfly.io) — installed automatically by `dev setup`
 
 ## Development
 
