@@ -119,25 +119,20 @@ Adjust score threshold:
 - `0.4-0.6` — Balanced
 - `0.25-0.3` — Exploratory
 
-## GitHub Integration
-
-### `dev github index` fails
-
-```bash
-# Check GitHub CLI
-gh auth status
-
-# Login if needed
-gh auth login
-```
-
-### Stale GitHub data
-
-```bash
-dev github index  # Re-index
-```
-
 ## Antfly Issues
+
+### "Embedding model is missing" after `dev setup`
+
+If `dev setup` says "Embedding model ready" but `dev index` fails with "model not found", you may have a stale Docker container from a previous installation. The native binary and Docker container use separate model directories.
+
+```bash
+# Check if a Docker container is running
+docker ps --filter name=dev-agent-antfly
+
+# If so, remove it and switch to native
+docker stop dev-agent-antfly && docker rm dev-agent-antfly
+dev setup
+```
 
 ### Antfly server not running
 
