@@ -122,4 +122,5 @@ export interface PatternComparison {
  */
 export interface PatternAnalysisConfig {
   repositoryPath: string;
+  vectorStorage?: import('../vector/index.js').VectorStorage;
 }

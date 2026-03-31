@@ -268,6 +268,7 @@ async function main() {
     const inspectAdapter = new InspectAdapter({
       repositoryPath,
       searchService,
+      vectorStorage: indexer.getVectorStorage(),
       defaultLimit: 10,
       defaultThreshold: 0.7,
       defaultFormat: 'compact',
