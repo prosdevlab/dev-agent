@@ -1,6 +1,6 @@
 # Phase 1: MCP Tools Improvement
 
-**Status:** Draft
+**Status:** In progress (Parts 1.1–1.5 merged, 1.6 in progress)
 
 ## Context
 
@@ -67,8 +67,18 @@ This is an acceptable trade-off: line count is a cheap stat call.
 | [1.2](./1.2-index-based-analysis.md) | Add `getDocsByFilePath`, index analysis path, wire VectorStorage | Medium — new code path |
 | [1.3](./1.3-cleanup.md) | Consolidate reads, remove dead code, remove GitHub from health | Low — cleanup |
 | [1.4](./1.4-agent-usability.md) | Merge status/health, add error suggestions, rename params, JSON output | Medium — tool surface change |
-| [1.5](./1.5-ast-pattern-analysis.md) | AST-based pattern analysis via ast-grep (optional dep) | Low — additive, regex fallback |
-| [1.6](./1.6-pagerank-map.md) | PageRank file ranking for dev_map hot paths | Low — replaces simple counting |
+| [1.5](./1.5-ast-pattern-analysis.md) | AST-based pattern analysis via tree-sitter queries | Low — additive, regex fallback |
+| [1.6](./1.6-pagerank-map.md) | Graph algorithms: PageRank, connected components, shortest path | Low — replaces simple counting |
+
+### Part 1.6 Commit Plan
+
+| # | Commit | What changes |
+|---|--------|-------------|
+| 1 | `feat(core): add graph algorithms — PageRank, connected components, shortest path` | New `graph.ts` with pure functions + `graph.test.ts` (~20 tests). No wiring. |
+| 2 | `feat(core): replace ref counting with PageRank in dev_map` | Wire PageRank into `computeHotPaths`. Add `score` to `HotPath`. Rewrite 3 callers→callees tests. |
+| 3 | `feat(core): wire connected components into dev_map output` | Add `components` to `CodebaseMap` + `formatCodebaseMap`. |
+| 4 | `feat(mcp): add path tracing to dev_refs` | New `trace` param on RefsAdapter. Schema + tests. |
+| 5 | `docs: complete MCP Phase 1, attribution, plan status` | Plan updates, aider attribution, mark Phase 1 complete. |
 
 ---
 

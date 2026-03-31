@@ -11,7 +11,9 @@
 ## Future Work
 
 - Antfly SDK: server-side path filter for `getDocsByFilePath` (eliminates 5k cap)
-- PageRank for `dev_map` hot paths (MCP Phase 1, Part 1.6)
+- Wire `shortestPath` into `dev_refs` as a "trace path" feature (graph.ts is ready, adapter wiring is separate scope)
+- Wire `connectedComponents` into `dev_map` verbose output (graph.ts is ready)
+- Betweenness centrality — identifies bridge files between subsystems. Worth adding if agents need refactoring guidance. graphology (MIT, 1.6k stars) is the upgrade path if we need more than 3 hand-rolled algorithms.
 - E2E tests in CI — blocked on Antfly memory requirements vs GitHub runner limits (7GB)
 - **Python language support** — tree-sitter-python WASM is ~300KB, already in tree-sitter-wasms. Needs a Python scanner (document extraction) + Python-specific pattern rules. High demand — large ecosystem. Worth a standalone plan covering: scanner, pattern rules, test fixtures, indexer integration. The PatternMatcher interface from 1.5 is language-agnostic so pattern rules slot right in; the scanner is the real work.
 - Vue/Svelte SFC support — `.vue`/`.svelte` files have embedded `<script lang="ts">` blocks. Would need script block extraction before tree-sitter parsing. Lower priority — co-located `.ts` files in those projects already get full analysis.
