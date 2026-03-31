@@ -238,46 +238,37 @@ export class PatternAnalysisService {
   }
 
   /**
-   * Analyze file patterns using pre-scanned documents (faster)
-   *
-   * @param filePath - Relative path from repository root
-   * @param documents - Pre-scanned documents for this file
-   * @returns Pattern analysis results
+   * Analyze file patterns using pre-scanned documents (fallback path).
    */
   private async analyzeFileWithDocs(
     filePath: string,
     documents: Document[]
   ): Promise<FilePatterns> {
-    // Step 1: Get file stats and content
     const fullPath = path.join(this.config.repositoryPath, filePath);
-    const [stat, content] = await Promise.all([fs.stat(fullPath), fs.readFile(fullPath, 'utf-8')]);
+    const [content, stat, testing] = await Promise.all([
+      fs.readFile(fullPath, 'utf-8'),
+      fs.stat(fullPath),
+      this.analyzeTesting(filePath),
+    ]);
 
-    const lines = content.split('\n').length;
+    const signatures = documents
+      .filter((d) => d.type === 'function' || d.type === 'method')
+      .map((d) => d.metadata.signature || '')
+      .filter(Boolean);
 
-    // Step 2: Extract all patterns (using cached documents)
     return {
-      fileSize: {
-        lines,
-        bytes: stat.size,
-      },
-      testing: await this.analyzeTesting(filePath),
-      importStyle: await this.analyzeImportsFromFile(filePath, documents),
-      errorHandling: this.analyzeErrorHandling(content),
-      typeAnnotations: this.analyzeTypes(documents),
+      fileSize: { lines: content.split('\n').length, bytes: stat.size },
+      testing,
+      importStyle: extractImportStyleFromContent(content),
+      errorHandling: extractErrorHandlingFromContent(content),
+      typeAnnotations: extractTypeCoverageFromSignatures(signatures),
     };
   }
 
-  // ========================================================================
-  // Pattern Extractors (MVP: 5 core patterns)
-  // ========================================================================
-
   /**
    * Analyze test coverage for a file
-   *
-   * Checks for co-located test files (*.test.*, *.spec.*)
    */
   private async analyzeTesting(filePath: string): Promise<TestingPattern> {
-    // Skip if already a test file
     if (isTestFile(filePath)) {
       return { hasTest: false };
     }
@@ -287,37 +278,6 @@ export class PatternAnalysisService {
       hasTest: testFile !== null,
       testPath: testFile || undefined,
     };
-  }
-
-  /**
-   * Analyze import style from documents
-   *
-   * Always uses content analysis for reliability (scanner may not extract imports from all files).
-   */
-  private async analyzeImportsFromFile(
-    filePath: string,
-    _documents: Document[]
-  ): Promise<ImportStylePattern> {
-    const fullPath = path.join(this.config.repositoryPath, filePath);
-    const content = await fs.readFile(fullPath, 'utf-8');
-    return extractImportStyleFromContent(content);
-  }
-
-  /**
-   * Analyze error handling patterns in file content
-   */
-  private analyzeErrorHandling(content: string): ErrorHandlingPattern {
-    return extractErrorHandlingFromContent(content);
-  }
-
-  /**
-   * Analyze type annotation coverage from documents
-   */
-  private analyzeTypes(documents: Document[]): TypeAnnotationPattern {
-    const signatures = documents
-      .filter((d) => d.type === 'function' || d.type === 'method')
-      .map((d) => d.metadata.signature || '');
-    return extractTypeCoverageFromSignatures(signatures);
   }
 
   // ========================================================================

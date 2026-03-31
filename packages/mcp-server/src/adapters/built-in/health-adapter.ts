@@ -13,7 +13,6 @@ import { validateArgs } from '../validation.js';
 export interface HealthCheckConfig {
   repositoryPath: string;
   vectorStorePath: string;
-  githubStatePath?: string;
 }
 
 export interface HealthStatus {
@@ -21,7 +20,6 @@ export interface HealthStatus {
   checks: {
     vectorStorage: CheckResult;
     repository: CheckResult;
-    githubIndex?: CheckResult;
   };
   timestamp: string;
   uptime: number; // milliseconds
@@ -61,7 +59,7 @@ export class HealthAdapter extends ToolAdapter {
     return {
       name: 'dev_health',
       description:
-        'Check the health status of the dev-agent MCP server and its dependencies (vector storage, repository, GitHub index)',
+        'Check the health status of the dev-agent MCP server and its dependencies (Antfly vector storage, repository access)',
       inputSchema: {
         type: 'object',
         properties: {
@@ -114,20 +112,12 @@ export class HealthAdapter extends ToolAdapter {
   }
 
   private async performHealthChecks(verbose: boolean): Promise<HealthStatus> {
-    const [vectorStorage, repository, githubIndex] = await Promise.all([
+    const [vectorStorage, repository] = await Promise.all([
       this.checkVectorStorage(verbose),
       this.checkRepository(verbose),
-      this.config.githubStatePath ? this.checkGitHubIndex(verbose) : Promise.resolve(undefined),
     ]);
 
-    const checks: HealthStatus['checks'] = {
-      vectorStorage,
-      repository,
-    };
-
-    if (githubIndex) {
-      checks.githubIndex = githubIndex;
-    }
+    const checks: HealthStatus['checks'] = { vectorStorage, repository };
 
     return {
       status: this.getOverallStatus({ checks } as HealthStatus),
@@ -207,59 +197,6 @@ export class HealthAdapter extends ToolAdapter {
         status: 'fail',
         message: `Repository not accessible: ${error instanceof Error ? error.message : String(error)}`,
         details: verbose ? { path: this.config.repositoryPath } : undefined,
-      };
-    }
-  }
-
-  private async checkGitHubIndex(verbose: boolean): Promise<CheckResult> {
-    if (!this.config.githubStatePath) {
-      return {
-        status: 'warn',
-        message: 'GitHub index not configured',
-      };
-    }
-
-    try {
-      const content = await fs.readFile(this.config.githubStatePath, 'utf-8');
-      const state = JSON.parse(content);
-
-      const lastIndexed = state.lastIndexed ? new Date(state.lastIndexed) : null;
-      const itemCount = state.items?.length ?? 0;
-
-      if (!lastIndexed) {
-        return {
-          status: 'warn',
-          message: 'GitHub index exists but has no lastIndexed timestamp',
-          details: verbose ? { path: this.config.githubStatePath } : undefined,
-        };
-      }
-
-      const ageMs = Date.now() - lastIndexed.getTime();
-      const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
-
-      // Warn if index is older than 24 hours
-      if (ageHours > 24) {
-        return {
-          status: 'warn',
-          message: `GitHub index is ${ageHours}h old (${itemCount} items) - consider re-indexing`,
-          details: verbose
-            ? { path: this.config.githubStatePath, lastIndexed: lastIndexed.toISOString() }
-            : undefined,
-        };
-      }
-
-      return {
-        status: 'pass',
-        message: `GitHub index operational (${itemCount} items, indexed ${ageHours}h ago)`,
-        details: verbose
-          ? { path: this.config.githubStatePath, lastIndexed: lastIndexed.toISOString() }
-          : undefined,
-      };
-    } catch (error) {
-      return {
-        status: 'warn',
-        message: `GitHub index not accessible: ${error instanceof Error ? error.message : String(error)}`,
-        details: verbose ? { path: this.config.githubStatePath } : undefined,
       };
     }
   }
