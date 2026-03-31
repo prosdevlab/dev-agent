@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.4',
-  title: 'MCP Tools Improvement (Phase 1)',
+  version: '0.10.5',
+  title: 'AST-Based Pattern Analysis',
   date: 'March 31, 2026',
   summary:
-    'dev_patterns is 10-30x faster, dev_health merged into dev_status, all tools return error recovery suggestions.',
-  link: '/updates#v0104--mcp-tools-improvement-phase-1',
+    'dev_patterns uses tree-sitter AST queries for more accurate detection of error handling, imports, and type coverage across .ts, .tsx, .js, .jsx files.',
+  link: '/updates#v0105--ast-based-pattern-analysis',
 } as const;
