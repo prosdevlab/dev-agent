@@ -277,6 +277,7 @@ async function main() {
 
     const refsAdapter = new RefsAdapter({
       searchService,
+      indexer,
       defaultLimit: 20,
     });
 

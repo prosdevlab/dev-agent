@@ -3,7 +3,13 @@
  * Provides call graph queries via the dev_refs tool
  */
 
-import type { CalleeInfo, SearchResult, SearchService } from '@prosdevlab/dev-agent-core';
+import type {
+  CalleeInfo,
+  RepositoryIndexer,
+  SearchResult,
+  SearchService,
+} from '@prosdevlab/dev-agent-core';
+import { buildDependencyGraph, shortestPath } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { RefsArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';
@@ -23,6 +29,11 @@ export interface RefsAdapterConfig {
    * Search service instance
    */
   searchService: SearchService;
+
+  /**
+   * Repository indexer — needed for path tracing (optional)
+   */
+  indexer?: RepositoryIndexer;
 
   /**
    * Default result limit
@@ -54,13 +65,17 @@ export class RefsAdapter extends ToolAdapter {
   };
 
   private searchService: SearchService;
-  private config: Required<Omit<RefsAdapterConfig, 'searchService'>> & {
+  private config: {
     searchService: SearchService;
+    defaultLimit: number;
   };
+
+  private indexer?: RepositoryIndexer;
 
   constructor(config: RefsAdapterConfig) {
     super();
     this.searchService = config.searchService;
+    this.indexer = config.indexer;
     this.config = {
       searchService: config.searchService,
       defaultLimit: config.defaultLimit ?? 20,
@@ -101,6 +116,12 @@ export class RefsAdapter extends ToolAdapter {
             maximum: 50,
             default: this.config.defaultLimit,
           },
+          traceTo: {
+            type: 'string',
+            description:
+              "Trace the dependency chain from this function's file to a target file " +
+              '(e.g., "src/database.ts"). Shows the shortest path through the call graph.',
+          },
         },
         required: ['name'],
       },
@@ -114,11 +135,11 @@ export class RefsAdapter extends ToolAdapter {
       return validation.error;
     }
 
-    const { name, direction, limit } = validation.data;
+    const { name, direction, limit, traceTo } = validation.data;
 
     try {
       const timer = startTimer();
-      context.logger.debug('Executing refs query', { name, direction, limit });
+      context.logger.debug('Executing refs query', { name, direction, limit, traceTo });
 
       // First, find the target component
       const searchResults = await this.searchService.search(name, { limit: 10 });
@@ -132,6 +153,29 @@ export class RefsAdapter extends ToolAdapter {
             message: `Could not find function or method named "${name}"`,
             suggestion:
               'Verify the function name exists with dev_search first. Names are case-sensitive.',
+          },
+        };
+      }
+
+      // Handle traceTo — find shortest dependency path
+      if (traceTo && this.indexer) {
+        const sourceFile = (target.metadata.path as string) || '';
+        const allDocs = await this.indexer.getAll({ limit: 10000 });
+        const graph = buildDependencyGraph(allDocs);
+        const path = shortestPath(graph, sourceFile, traceTo);
+
+        const content = path
+          ? `## Dependency Path: ${sourceFile} → ${traceTo}\n\n${path.join(' → ')}\n\n**${path.length - 1} hop${path.length - 1 === 1 ? '' : 's'}**`
+          : `## No Path Found\n\nNo dependency chain from \`${sourceFile}\` to \`${traceTo}\`.\nThese files may be in separate subsystems.`;
+
+        return {
+          success: true,
+          data: content,
+          metadata: {
+            tokens: estimateTokensForText(content),
+            duration_ms: timer.elapsed(),
+            timestamp: new Date().toISOString(),
+            cached: false,
           },
         };
       }
