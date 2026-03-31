@@ -70,7 +70,7 @@ Use `dev_refs` to trace caller/callee chains across package boundaries. Use `dev
 - [ ] Core exports consumed correctly by CLI, MCP server, and subagents — verify with `dev_refs`
 - [ ] Type boundaries between packages match (no `any` casting to bridge mismatches)
 - [ ] Logger (@prosdevlab/kero) configuration consistent across consumers
-- [ ] Use `dev_patterns` to check if error handling patterns are consistent with existing code
+- [ ] Error handling patterns are consistent with existing code (verify with `dev_patterns`)
 
 ## Design Echo Pass (Deep+ Effort)
 
