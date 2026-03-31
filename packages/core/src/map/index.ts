@@ -10,7 +10,7 @@ import { stripFocusPrefix } from '../indexer/utils/change-frequency.js';
 import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
 import type { LocalGitExtractor } from './git-extractor';
-import { buildDependencyGraph, pageRank } from './graph';
+import { buildDependencyGraph, connectedComponents, pageRank } from './graph';
 import type {
   ChangeFrequency,
   CodebaseMap,
@@ -117,11 +117,19 @@ export async function generateCodebaseMap(
     'Counted components'
   );
 
-  // Compute hot paths (most referenced files)
+  // Compute hot paths and connected components (share the dependency graph)
   const t7 = Date.now();
   const hotPaths = opts.includeHotPaths ? computeHotPaths(allDocs, opts.maxHotPaths) : [];
+  const graph = buildDependencyGraph(allDocs);
+  const rawComponents = connectedComponents(graph);
+  const components = rawComponents
+    .filter((c) => c.length > 1) // Only show multi-file subsystems
+    .map((files) => ({ files, size: files.length }));
   const t8 = Date.now();
-  logger?.debug({ duration_ms: t8 - t7, hotPathCount: hotPaths.length }, 'Computed hot paths');
+  logger?.debug(
+    { duration_ms: t8 - t7, hotPathCount: hotPaths.length, componentCount: components.length },
+    'Computed hot paths and components'
+  );
 
   // Compute change frequency if requested and git extractor is available
   if (opts.includeChangeFrequency && context.gitExtractor) {
@@ -147,6 +155,7 @@ export async function generateCodebaseMap(
     totalComponents,
     totalDirectories,
     hotPaths,
+    components: components.length > 0 ? components : undefined,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -515,6 +524,22 @@ export function formatCodebaseMap(map: CodebaseMap, options: MapOptions = {}): s
     lines.push('');
   }
 
+  // Format connected components if present
+  if (map.components && map.components.length > 1) {
+    lines.push(`Subsystems (${map.components.length} connected):`);
+    for (let i = 0; i < Math.min(5, map.components.length); i++) {
+      const comp = map.components[i];
+      // Show the common directory prefix for the component
+      const prefix = findCommonPrefix(comp.files);
+      const label = prefix || 'mixed';
+      lines.push(`  ${i + 1}. ${label} (${comp.size} files)`);
+    }
+    if (map.components.length > 5) {
+      lines.push(`  ...${map.components.length - 5} more`);
+    }
+    lines.push('');
+  }
+
   // Format tree
   lines.push('Structure:');
   formatNode(map.root, lines, '  ', true, opts, true);
@@ -549,4 +574,21 @@ function formatNode(
     const isChildLast = i === node.children.length - 1;
     formatNode(child, lines, childPrefix, isChildLast, opts);
   }
+}
+
+/**
+ * Find common directory prefix for a set of file paths
+ */
+function findCommonPrefix(files: string[]): string {
+  if (files.length === 0) return '';
+  const dirs = files.map((f) => f.substring(0, f.lastIndexOf('/')));
+  if (dirs.length === 0) return '';
+
+  let prefix = dirs[0];
+  for (const dir of dirs) {
+    while (prefix && !dir.startsWith(prefix)) {
+      prefix = prefix.substring(0, prefix.lastIndexOf('/'));
+    }
+  }
+  return prefix;
 }
