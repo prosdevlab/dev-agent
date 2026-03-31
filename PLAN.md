@@ -47,7 +47,7 @@ Dev-agent provides semantic code search, codebase intelligence, and GitHub integ
 | `dev_patterns` - File analysis | ✅ Done | MCP adapter |
 | `dev_plan` - Issue planning | ✅ Done | MCP adapter |
 | `dev_gh` - GitHub search | ✅ Done | MCP adapter |
-| `dev_health` - Health checks | ✅ Done | MCP adapter |
+| `dev_health` - Health checks | ✅ Merged into `dev_status` | MCP adapter |
 | Cursor integration | ✅ Done | CLI command |
 | Claude Code integration | ✅ Done | CLI command |
 | Rate limiting (token bucket) | ✅ Done | MCP server |

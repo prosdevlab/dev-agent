@@ -150,16 +150,18 @@ dev_status:
 
 ---
 
-### `dev_health` - Health Check
+### Health Check (via `dev_status`)
 
 Diagnose issues:
 
 ```
-dev_health
+dev_status:
+  section: health
 
 # Verbose output
-dev_health:
-  verbose: true
+dev_status:
+  section: health
+  format: verbose
 ```
 
 ---
@@ -230,7 +232,7 @@ dev_health:
 dev index
 
 # Check health
-dev_health
+dev_status section="health"
 ```
 
 ---
@@ -292,7 +294,7 @@ dev mcp install --cursor
 
 - Reduce `limit`
 - Use `compact` format
-- Check `dev_health`
+- Check `dev_status section="health"`
 
 ---
 

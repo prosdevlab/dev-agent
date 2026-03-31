@@ -23,7 +23,7 @@ Everything runs on your machine. No data leaves.
 packages/
   core/          # Scanner (ts-morph, tree-sitter), vector storage (Antfly), services
   cli/           # Commander.js CLI — dev index, dev mcp install, etc.
-  mcp-server/    # MCP server with 6 built-in adapters
+  mcp-server/    # MCP server with 5 built-in adapters
   subagents/     # Coordinator, explorer, planner, PR agents
   integrations/  # Claude Code, VS Code, Cursor
   logger/        # @prosdevlab/kero — centralized logging
@@ -139,16 +139,15 @@ See `.claude/da-plans/README.md` for status and format details.
 
 ---
 
-## MCP tools (6 adapters)
+## MCP tools (5 adapters)
 
 | Tool | Purpose |
 |------|---------|
 | `dev_search` | Hybrid code search — BM25 + vector + RRF (use FIRST for conceptual queries) |
 | `dev_refs` | Find callers/callees of functions |
 | `dev_map` | Codebase structure with change frequency |
-| `dev_patterns` | File pattern analysis (similar code, error handling, types) |
-| `dev_status` | Repository indexing status + Antfly stats + watcher status |
-| `dev_health` | Server health checks (Antfly connectivity) |
+| `dev_patterns` | File pattern analysis (similar code, error handling, types). Takes `filePath`, not `query`. |
+| `dev_status` | Repository indexing status + Antfly stats + health checks (`section="health"`) |
 
 ---
 

@@ -39,8 +39,7 @@ When integrated with Cursor or Claude Code, you get 6 powerful tools:
 - `dev_refs` - Find callers/callees of functions
 - `dev_map` - Codebase structure with change frequency
 - `dev_patterns` - File analysis and pattern checking
-- `dev_status` - Repository status and health
-- `dev_health` - Component health checks
+- `dev_status` - Repository status, health checks, and Antfly stats
 
 ## Requirements
 
@@ -110,11 +109,11 @@ All processing happens on your machine:
 # Find authentication-related code
 dev_search: "JWT token validation middleware"
 
-# Find similar code patterns
-dev_patterns: { action: "compare", query: "src/auth/middleware.ts" }
+# Analyze coding patterns
+dev_patterns: { filePath: "src/auth/middleware.ts" }
 
 # Check system health
-dev_health: verbose
+dev_status: { section: "health" }
 ```
 
 ## Support

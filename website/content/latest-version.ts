@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.3',
-  title: 'Fix Setup/Index Model Directory Mismatch',
-  date: 'March 30, 2026',
+  version: '0.10.4',
+  title: 'MCP Tools Improvement (Phase 1)',
+  date: 'March 31, 2026',
   summary:
-    'Fixed dev setup reporting model ready while dev index fails with "model not found" due to mismatched model directories.',
-  link: '/updates#v0103--fix-setupindex-model-directory-mismatch',
+    'dev_patterns is 10-30x faster, dev_health merged into dev_status, all tools return error recovery suggestions.',
+  link: '/updates#v0104--mcp-tools-improvement-phase-1',
 } as const;
