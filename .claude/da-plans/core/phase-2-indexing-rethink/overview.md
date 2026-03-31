@@ -1,6 +1,6 @@
 # Phase 2: Rethink Indexing & Search Flow
 
-**Status:** In progress (Parts 2.2–2.7 merged, 2.8 E2E tests remaining)
+**Status:** Complete (all parts merged)
 
 ## Context
 
