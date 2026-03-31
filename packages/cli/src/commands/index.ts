@@ -1,11 +1,8 @@
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import {
-  AsyncEventBus,
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
-  type IndexUpdatedEvent,
-  MetricsStore,
   RepositoryIndexer,
   updateIndexedStats,
 } from '@prosdevlab/dev-agent-core';
@@ -72,28 +69,12 @@ export const indexCommand = new Command('index')
       await ensureStorageDirectory(storagePath);
       const filePaths = getStorageFilePaths(storagePath);
 
-      // Create event bus for metrics
-      const eventBus = new AsyncEventBus();
-      const metricsDbPath = join(storagePath, 'metrics.db');
-      const metricsStore = new MetricsStore(metricsDbPath);
-
-      eventBus.on<IndexUpdatedEvent>('index.updated', async (event) => {
-        try {
-          metricsStore.recordSnapshot(event.stats, event.isIncremental ? 'update' : 'index');
-        } catch {
-          // Metrics are non-critical — don't fail indexing
-        }
+      const indexer = new RepositoryIndexer({
+        repositoryPath: resolvedRepoPath,
+        vectorStorePath: filePaths.vectors,
+        excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
+        languages: config.repository?.languages || config.languages,
       });
-
-      const indexer = new RepositoryIndexer(
-        {
-          repositoryPath: resolvedRepoPath,
-          vectorStorePath: filePaths.vectors,
-          excludePatterns: config.repository?.excludePatterns || config.excludePatterns,
-          languages: config.repository?.languages || config.languages,
-        },
-        eventBus
-      );
 
       await indexer.initialize();
 
@@ -149,7 +130,6 @@ export const indexCommand = new Command('index')
 
       // Finalize
       await indexer.close();
-      metricsStore.close();
 
       await updateIndexedStats(storagePath, {
         files: stats.filesScanned,

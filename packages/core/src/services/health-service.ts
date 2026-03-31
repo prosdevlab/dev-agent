@@ -7,7 +7,6 @@
 
 import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer/index.js';
-import type { MetricsStore } from '../metrics/store.js';
 import type { VectorStorage } from '../vector/index.js';
 
 export interface ComponentHealth {
@@ -22,7 +21,6 @@ export interface HealthCheckResult {
   checks: {
     indexer: ComponentHealth;
     vectorStorage: ComponentHealth;
-    metricsStore: ComponentHealth;
   };
 }
 
@@ -52,13 +50,12 @@ export interface VectorStorageFactoryConfig {
 export interface HealthServiceFactories {
   createIndexer?: (config: IndexerFactoryConfig) => Promise<RepositoryIndexer>;
   createVectorStorage?: (config: VectorStorageFactoryConfig) => Promise<VectorStorage>;
-  createMetricsStore?: (path: string, logger?: Logger) => MetricsStore;
 }
 
 /**
  * Service for checking component health
  *
- * Runs health checks on indexer, vector storage, and metrics store.
+ * Runs health checks on indexer and vector storage.
  * Returns structured health information.
  */
 export class HealthService {
@@ -75,8 +72,6 @@ export class HealthService {
       createIndexer: factories?.createIndexer || this.defaultIndexerFactory.bind(this),
       createVectorStorage:
         factories?.createVectorStorage || this.defaultVectorStorageFactory.bind(this),
-      createMetricsStore:
-        factories?.createMetricsStore || this.defaultMetricsStoreFactory.bind(this),
     };
   }
 
@@ -103,11 +98,6 @@ export class HealthService {
     });
   }
 
-  private defaultMetricsStoreFactory(path: string, logger?: Logger): MetricsStore {
-    const { MetricsStore: Store } = require('../metrics/store.js');
-    return new Store(path, logger);
-  }
-
   /**
    * Run comprehensive health checks
    *
@@ -121,15 +111,14 @@ export class HealthService {
     const filePaths = getStorageFilePaths(storagePath);
 
     // Run checks in parallel
-    const [indexer, vectorStorage, metricsStore] = await Promise.all([
+    const [indexer, vectorStorage] = await Promise.all([
       this.checkIndexer(filePaths),
       this.checkVectorStorage(filePaths),
-      this.checkMetricsStore(filePaths),
     ]);
 
     // Determine overall status
-    const hasError = [indexer, vectorStorage, metricsStore].some((c) => c.status === 'error');
-    const hasWarning = [indexer, vectorStorage, metricsStore].some((c) => c.status === 'warning');
+    const hasError = [indexer, vectorStorage].some((c) => c.status === 'error');
+    const hasWarning = [indexer, vectorStorage].some((c) => c.status === 'warning');
 
     const overallStatus = hasError ? 'unhealthy' : hasWarning ? 'degraded' : 'healthy';
 
@@ -139,14 +128,12 @@ export class HealthService {
       checks: {
         indexer,
         vectorStorage,
-        metricsStore,
       },
     };
   }
 
   private async checkIndexer(filePaths: {
     vectors: string;
-    indexerState: string;
     [key: string]: string;
   }): Promise<ComponentHealth> {
     try {
@@ -205,30 +192,6 @@ export class HealthService {
       return {
         status: 'error',
         message: error instanceof Error ? error.message : 'Vector storage check failed',
-      };
-    }
-  }
-
-  private async checkMetricsStore(filePaths: {
-    metrics: string;
-    [key: string]: string;
-  }): Promise<ComponentHealth> {
-    try {
-      const metricsStore = this.factories.createMetricsStore(filePaths.metrics, this.logger);
-      const count = metricsStore.getCount();
-      metricsStore.close();
-
-      return {
-        status: 'ok',
-        details: {
-          snapshotCount: count,
-        },
-      };
-    } catch (error) {
-      // Metrics is optional, so warning instead of error
-      return {
-        status: 'warning',
-        message: error instanceof Error ? error.message : 'Metrics store unavailable',
       };
     }
   }

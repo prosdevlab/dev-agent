@@ -99,11 +99,9 @@ Storage Location:
   Each repository gets its own subdirectory based on path hash
   
 What's Stored:
-  • vectors.lance/        Vector embeddings for semantic search
-  • indexer-state.json    Repository indexing state
-  • github-state.json     GitHub issues/PRs state
   • metadata.json         Repository metadata
-  • metrics.db            Historical metrics (SQLite)
+
+  Vector data is stored in Antfly (local search backend).
 `
   );
 
