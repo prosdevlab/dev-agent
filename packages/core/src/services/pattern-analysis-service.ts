@@ -10,6 +10,7 @@ import * as path from 'node:path';
 import { scanRepository } from '../scanner';
 import type { Document } from '../scanner/types';
 import { findTestFile, isTestFile } from '../utils/test-utils';
+import type { SearchResult } from '../vector/types';
 import type {
   ErrorHandlingComparison,
   ErrorHandlingPattern,
@@ -129,45 +130,88 @@ export class PatternAnalysisService {
   }
 
   /**
-   * Compare patterns between target file and similar files
+   * Analyze file patterns using indexed metadata (fast — no ts-morph).
    *
-   * OPTIMIZED: Batch scans all files in one pass to avoid repeated ts-morph initialization
-   *
-   * @param targetFile - Target file to analyze
-   * @param similarFiles - Array of similar file paths
-   * @returns Pattern comparison results
+   * Reads signatures from the Antfly index, content from disk (for line count
+   * and error handling regex). Falls back gracefully on ENOENT (deleted file).
    */
-  async comparePatterns(targetFile: string, similarFiles: string[]): Promise<PatternComparison> {
-    // OPTIMIZATION: Batch scan all files at once (5-10x faster than individual scans)
-    const allFiles = [targetFile, ...similarFiles];
-    const batchResult = await scanRepository({
-      repoRoot: this.config.repositoryPath,
-      include: allFiles,
-    });
+  async analyzeFileFromIndex(filePath: string, indexedDocs: SearchResult[]): Promise<FilePatterns> {
+    const fullPath = path.join(this.config.repositoryPath, filePath);
 
-    // Group documents by file for fast lookup
-    const docsByFile = new Map<string, Document[]>();
-    for (const doc of batchResult.documents) {
-      const file = doc.metadata.file;
-      if (!docsByFile.has(file)) {
-        docsByFile.set(file, []);
-      }
-      const docs = docsByFile.get(file);
-      if (docs) {
-        docs.push(doc);
-      }
+    let content = '';
+    let bytes = 0;
+    let lines = 0;
+    try {
+      const [fileContent, stat] = await Promise.all([
+        fs.readFile(fullPath, 'utf-8'),
+        fs.stat(fullPath),
+      ]);
+      content = fileContent;
+      bytes = stat.size;
+      lines = content.split('\n').length;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      // File deleted between index and analysis — return empty patterns
     }
 
-    // Analyze target file with cached documents
-    const targetPatterns = await this.analyzeFileWithDocs(
-      targetFile,
-      docsByFile.get(targetFile) || []
-    );
+    const testing = await this.analyzeTesting(filePath);
+    const signatures = indexedDocs
+      .filter((d) => d.metadata.type === 'function' || d.metadata.type === 'method')
+      .map((d) => (d.metadata.signature as string) || '')
+      .filter(Boolean);
 
-    // Analyze similar files in parallel with cached documents
-    const similarPatterns = await Promise.all(
-      similarFiles.map((f) => this.analyzeFileWithDocs(f, docsByFile.get(f) || []))
-    );
+    return {
+      fileSize: { lines, bytes },
+      testing,
+      importStyle: extractImportStyleFromContent(content),
+      errorHandling: extractErrorHandlingFromContent(content),
+      typeAnnotations: extractTypeCoverageFromSignatures(signatures),
+    };
+  }
+
+  /**
+   * Compare patterns between target file and similar files
+   *
+   * Uses Antfly index when vectorStorage is available (fast path, ~100ms).
+   * Falls back to ts-morph scanning when not (tests, offline).
+   */
+  async comparePatterns(targetFile: string, similarFiles: string[]): Promise<PatternComparison> {
+    const allFiles = [targetFile, ...similarFiles];
+    let targetPatterns: FilePatterns;
+    let similarPatterns: FilePatterns[];
+
+    if (this.config.vectorStorage) {
+      // FAST PATH: read from Antfly index
+      // Fast path: index-based analysis (~100ms vs 1-3s)
+      const docsByFile = await this.config.vectorStorage.getDocsByFilePath(allFiles);
+
+      targetPatterns = await this.analyzeFileFromIndex(
+        targetFile,
+        docsByFile.get(targetFile) || []
+      );
+      similarPatterns = await Promise.all(
+        similarFiles.map((f) => this.analyzeFileFromIndex(f, docsByFile.get(f) || []))
+      );
+    } else {
+      // FALLBACK: scan files with ts-morph
+      // Fallback: ts-morph scan (for tests/offline)
+      const batchResult = await scanRepository({
+        repoRoot: this.config.repositoryPath,
+        include: allFiles,
+      });
+
+      const docsByFile = new Map<string, Document[]>();
+      for (const doc of batchResult.documents) {
+        const file = doc.metadata.file;
+        if (!docsByFile.has(file)) docsByFile.set(file, []);
+        docsByFile.get(file)!.push(doc);
+      }
+
+      targetPatterns = await this.analyzeFileWithDocs(targetFile, docsByFile.get(targetFile) || []);
+      similarPatterns = await Promise.all(
+        similarFiles.map((f) => this.analyzeFileWithDocs(f, docsByFile.get(f) || []))
+      );
+    }
 
     return {
       fileSize: this.compareFileSize(

@@ -7,7 +7,7 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   extractErrorHandlingFromContent,
   extractImportStyleFromContent,
@@ -107,6 +107,153 @@ describe('Pure Pattern Extractors', () => {
       const result = extractTypeCoverageFromSignatures(signatures);
       expect(result.coverage).toBe('none');
     });
+  });
+});
+
+// ========================================================================
+// analyzeFileFromIndex (index-based, no ts-morph)
+// ========================================================================
+
+describe('analyzeFileFromIndex', () => {
+  let tempDir: string;
+  let service: PatternAnalysisService;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'analyze-from-index-'));
+    service = new PatternAnalysisService({ repositoryPath: tempDir });
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('should extract patterns from indexed metadata', async () => {
+    await fs.mkdir(path.join(tempDir, 'src'), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, 'src/test.ts'),
+      'import { foo } from "./bar";\n\nexport function test(): string {\n  throw new Error("oops");\n  return "hello";\n}\n'
+    );
+
+    const indexedDocs = [
+      {
+        id: 'src/test.ts:test:3',
+        score: 0.9,
+        metadata: {
+          path: 'src/test.ts',
+          type: 'function',
+          name: 'test',
+          signature: 'function test(): string',
+          exported: true,
+        },
+      },
+    ];
+
+    const result = await service.analyzeFileFromIndex('src/test.ts', indexedDocs);
+    expect(result.importStyle.style).toBe('esm');
+    expect(result.typeAnnotations.coverage).toBe('full');
+    expect(result.fileSize.lines).toBe(7);
+    expect(result.errorHandling.style).toBe('throw');
+  });
+
+  it('should handle files with no indexed docs', async () => {
+    await fs.writeFile(path.join(tempDir, 'empty.ts'), 'const x = 1;\n');
+    const result = await service.analyzeFileFromIndex('empty.ts', []);
+    expect(result.typeAnnotations.coverage).toBe('none');
+    expect(result.typeAnnotations.totalCount).toBe(0);
+  });
+
+  it('should handle deleted files gracefully (ENOENT)', async () => {
+    const result = await service.analyzeFileFromIndex('nonexistent.ts', []);
+    expect(result.fileSize.lines).toBe(0);
+    expect(result.fileSize.bytes).toBe(0);
+    expect(result.importStyle.style).toBe('unknown');
+    expect(result.errorHandling.style).toBe('unknown');
+  });
+});
+
+// ========================================================================
+// comparePatterns with vectorStorage (fast path)
+// ========================================================================
+
+describe('comparePatterns with vectorStorage', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'compare-index-'));
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('should use index path when vectorStorage is provided', async () => {
+    await fs.mkdir(path.join(tempDir, 'src'), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, 'src/target.ts'),
+      'import { x } from "./y";\nexport function target(): string { throw new Error("oops"); }\n'
+    );
+    await fs.writeFile(
+      path.join(tempDir, 'src/similar.ts'),
+      'import { a } from "./b";\nexport function similar(): number { throw new Error("bad"); }\n'
+    );
+
+    const mockGetDocsByFilePath = vi.fn().mockResolvedValue(
+      new Map([
+        [
+          'src/target.ts',
+          [
+            {
+              id: 'src/target.ts:target:2',
+              score: 0.9,
+              metadata: {
+                path: 'src/target.ts',
+                type: 'function',
+                signature: 'function target(): string',
+              },
+            },
+          ],
+        ],
+        [
+          'src/similar.ts',
+          [
+            {
+              id: 'src/similar.ts:similar:2',
+              score: 0.9,
+              metadata: {
+                path: 'src/similar.ts',
+                type: 'function',
+                signature: 'function similar(): number',
+              },
+            },
+          ],
+        ],
+      ])
+    );
+
+    const mockVectorStorage = { getDocsByFilePath: mockGetDocsByFilePath } as any;
+    const serviceWithIndex = new PatternAnalysisService({
+      repositoryPath: tempDir,
+      vectorStorage: mockVectorStorage,
+    });
+
+    const result = await serviceWithIndex.comparePatterns('src/target.ts', ['src/similar.ts']);
+    expect(mockGetDocsByFilePath).toHaveBeenCalledWith(['src/target.ts', 'src/similar.ts']);
+    expect(result.importStyle.yourFile).toBe('esm');
+    expect(result.typeAnnotations.yourFile).toBe('full');
+  });
+
+  it('should handle empty results from index gracefully', async () => {
+    await fs.writeFile(path.join(tempDir, 'solo.ts'), 'const x = 1;\n');
+
+    const mockGetDocsByFilePath = vi.fn().mockResolvedValue(new Map());
+    const mockVectorStorage = { getDocsByFilePath: mockGetDocsByFilePath } as any;
+    const serviceWithIndex = new PatternAnalysisService({
+      repositoryPath: tempDir,
+      vectorStorage: mockVectorStorage,
+    });
+
+    const result = await serviceWithIndex.comparePatterns('solo.ts', []);
+    expect(result.fileSize.yourFile).toBeGreaterThan(0);
   });
 });
 

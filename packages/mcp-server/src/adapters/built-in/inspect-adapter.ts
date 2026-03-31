@@ -9,6 +9,7 @@ import {
   PatternAnalysisService,
   type PatternComparison,
   type SearchService,
+  type VectorStorage,
 } from '@prosdevlab/dev-agent-core';
 import { InspectArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter.js';
@@ -18,6 +19,7 @@ import { validateArgs } from '../validation.js';
 export interface InspectAdapterConfig {
   repositoryPath: string;
   searchService: SearchService;
+  vectorStorage?: VectorStorage;
   defaultLimit?: number;
   defaultThreshold?: number;
   defaultFormat?: 'compact' | 'verbose';
@@ -49,6 +51,7 @@ export class InspectAdapter extends ToolAdapter {
     this.searchService = config.searchService;
     this.patternService = new PatternAnalysisService({
       repositoryPath: config.repositoryPath,
+      vectorStorage: config.vectorStorage,
     });
     this.defaultLimit = config.defaultLimit ?? 10;
     this.defaultThreshold = config.defaultThreshold ?? 0.7;

@@ -111,6 +111,38 @@ export class VectorStorage {
   }
 
   /**
+   * Get indexed documents grouped by file path.
+   *
+   * Uses getAll with a capped limit + client-side exact path filter.
+   * More reliable than BM25 search which tokenizes paths unpredictably.
+   *
+   * Note: Fetches up to 5,000 docs client-side. Fine for single repos,
+   * won't scale to monorepos with 50k+ files. See .claude/scratchpad.md.
+   */
+  async getDocsByFilePath(filePaths: string[]): Promise<Map<string, SearchResult[]>> {
+    this.assertReady();
+    const DOC_LIMIT = 5000;
+    const pathSet = new Set(filePaths);
+    const allDocs = await this.getAll({ limit: DOC_LIMIT });
+
+    if (allDocs.length >= DOC_LIMIT) {
+      console.error(
+        `[dev-agent] Warning: getDocsByFilePath hit ${DOC_LIMIT} doc limit. Some files may be missing.`
+      );
+    }
+
+    const byFile = new Map<string, SearchResult[]>();
+    for (const doc of allDocs) {
+      const docPath = doc.metadata.path as string;
+      if (pathSet.has(docPath)) {
+        if (!byFile.has(docPath)) byFile.set(docPath, []);
+        byFile.get(docPath)!.push(doc);
+      }
+    }
+    return byFile;
+  }
+
+  /**
    * Get a document by ID
    */
   async getDocument(id: string): Promise<EmbeddingDocument | null> {
