@@ -10,14 +10,13 @@
 
 ## What it does
 
-dev-agent indexes your codebase and provides 6 MCP tools to AI assistants. Instead of grepping through files, they can ask conceptual questions like "where do we handle authentication?"
+dev-agent indexes your codebase and provides 5 MCP tools to AI assistants. Instead of grepping through files, they can ask conceptual questions like "where do we handle authentication?"
 
 - `dev_search` — Hybrid search (BM25 + vector + RRF) — returns code snippets, not just paths
 - `dev_refs` — Find callers/callees of any function
 - `dev_map` — Codebase structure with hot paths (most referenced files)
 - `dev_patterns` — Compare coding patterns against similar files
-- `dev_status` — Repository indexing status and health
-- `dev_health` — Server health checks
+- `dev_status` — Repository indexing status, health checks, and Antfly stats
 
 ## Quick Start
 
@@ -110,13 +109,9 @@ Compare a file's coding patterns (imports, error handling, type coverage, testin
 Analyze patterns in src/auth/middleware.ts
 ```
 
-### `dev_status` — Repository Status
+### `dev_status` — Repository Status & Health
 
-Indexing status, document counts, Antfly stats, and file watcher state.
-
-### `dev_health` — Health Checks
-
-Server health, Antfly connectivity, and repository access.
+Indexing status, document counts, Antfly stats, file watcher state, and health checks (`section="health"`).
 
 ## Supported Languages
 
@@ -155,7 +150,7 @@ pnpm lint
 packages/
   core/          # Scanner, vector storage, indexer, services
   cli/           # Commander.js CLI
-  mcp-server/    # MCP server with 6 tool adapters
+  mcp-server/    # MCP server with 5 tool adapters
   subagents/     # Explorer, planner, PR agents
   integrations/  # Claude Code, VS Code, Cursor
   logger/        # @prosdevlab/kero centralized logging

@@ -48,9 +48,9 @@ Setup:
   2. Install MCP integration: dev mcp install --cursor
   3. Restart Cursor to activate
 
-Available Tools (6):
+Available Tools (5):
   dev_search, dev_status, dev_patterns,
-  dev_health, dev_refs, dev_map
+  dev_refs, dev_map
 `
   )
   .addCommand(
@@ -161,9 +161,7 @@ Available Tools (6):
           await server.start();
 
           logger.info(chalk.green('MCP server started successfully!'));
-          logger.info(
-            'Available tools: dev_search, dev_status, dev_patterns, dev_health, dev_refs, dev_map'
-          );
+          logger.info('Available tools: dev_search, dev_status, dev_patterns, dev_refs, dev_map');
 
           if (options.transport === 'stdio') {
             logger.info('Server running on stdio transport (for AI tools)');

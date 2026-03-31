@@ -9,6 +9,22 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.4 — MCP Tools Improvement (Phase 1)
+
+*March 31, 2026*
+
+**Faster pattern analysis, merged health into status, better agent usability.**
+
+- `dev_patterns` is 10-30x faster — reads from Antfly index instead of re-scanning with ts-morph
+- `dev_health` merged into `dev_status` (`section="health"`) — reduced from 6 tools to 5
+- `dev_patterns` parameter renamed from `query` to `filePath` to prevent LLM misuse
+- New `format: "json"` option on `dev_patterns` for token-efficient agent workflows
+- All tools now return a `suggestion` field on errors for agent recovery guidance
+- Removed stale GitHub code from health adapter
+- Extracted pure pattern analyzers for testability
+
+---
+
 ## v0.10.3 — Fix Setup/Index Model Directory Mismatch
 
 *March 30, 2026*

@@ -92,7 +92,7 @@ dev index
 ### Rate limit errors (429)
 
 - Wait for `retryAfterMs` period
-- Check health: `dev_health`
+- Check health: `dev_status section="health"`
 - Restart AI tool if persistent
 
 ## Search Issues
@@ -183,7 +183,7 @@ dev mcp install --cursor
 ### Check health
 
 ```
-Use dev_health tool in Cursor/Claude Code
+Use dev_status with section="health" in Cursor/Claude Code
 ```
 
 ### Enable debug logging
@@ -195,10 +195,10 @@ Use dev_health tool in Cursor/Claude Code
 
 ## Getting Help
 
-1. Run `dev_health` for diagnostics
+1. Run `dev_status section="health"` for diagnostics
 2. Check [full troubleshooting guide](https://github.com/prosdevlab/dev-agent/blob/main/TROUBLESHOOTING.md)
 3. [File an issue](https://github.com/prosdevlab/dev-agent/issues) with:
    - `dev --version`
-   - `dev_health` output
+   - `dev_status section="health"` output
    - Steps to reproduce
 

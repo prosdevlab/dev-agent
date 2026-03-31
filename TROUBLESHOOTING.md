@@ -252,7 +252,7 @@ killall dev
 
 2. **Check health:**
    ```
-   Use dev_health tool to see rate limit status
+   Use dev_status section="health" tool to see rate limit status
    ```
 
 3. **If persistent:**
@@ -446,7 +446,7 @@ Failed to fetch issues: spawnSync /bin/sh ENOBUFS
 
 3. **Monitor health:**
    ```
-   dev_health --verbose
+   dev_status section="health" format="verbose"
    ```
 
 ---
@@ -466,7 +466,7 @@ Failed to fetch issues: spawnSync /bin/sh ENOBUFS
 
 **Diagnosis:**
 ```
-Use dev_health tool to check component status
+Use dev_status section="health" tool to check component status
 ```
 
 **Common causes:**
@@ -505,7 +505,7 @@ Check the tool's input schema:
 
 3. Check server health:
    ```
-   dev_health
+   dev_status section="health"
    ```
 
 ---
@@ -573,9 +573,9 @@ claude mcp add --env LOG_LEVEL=debug dev-agent -- dev mcp start
 ### Check component health
 
 ```
-Use dev_health tool with verbose flag:
+Use dev_status section="health" tool with verbose flag:
 
-dev_health --verbose
+dev_status section="health" format="verbose"
 
 Shows:
 - Vector storage status
@@ -596,7 +596,7 @@ dev mcp start --verbose
 # In another terminal, send test message
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | dev mcp start
 
-# Should list all 6 tools: dev_search, dev_refs, dev_map, dev_patterns, dev_status, dev_health
+# Should list all 5 tools: dev_search, dev_refs, dev_map, dev_patterns, dev_status
 ```
 
 ### Inspect storage
@@ -666,7 +666,7 @@ If you encounter a bug:
 
 2. **Get diagnostics:**
    ```
-   Use dev_health --verbose
+   Use dev_status section="health" format="verbose"
    ```
 
 3. **Enable debug logs:**
@@ -720,7 +720,7 @@ dev index
 dev_status
 
 # Verify health
-dev_health
+dev_status section="health"
 ```
 
 ### Debugging search quality
@@ -855,7 +855,7 @@ dev index
 
 ## Health Check Guide
 
-The `dev_health` tool provides comprehensive diagnostics:
+The `dev_status section="health"` tool provides comprehensive diagnostics:
 
 ### Interpreting Health Status
 
@@ -919,7 +919,7 @@ du -sh ~/.dev-agent/indexes/
 - After major code changes (adding features, refactoring)
 - Weekly for active projects
 - Monthly for stable projects
-- Use `dev_health` to check if index is stale
+- Use `dev_status section="health"` to check if index is stale
 
 ### Q: Can multiple AI tools use dev-agent simultaneously?
 
@@ -942,7 +942,7 @@ du -sh ~/.dev-agent/indexes/
 
 2. **Use health check:**
    ```
-   dev_health --verbose
+   dev_status section="health" format="verbose"
    ```
 
 3. **Enable debug logging:**
@@ -953,7 +953,7 @@ du -sh ~/.dev-agent/indexes/
 
 Include:
 - `dev --version`
-- `dev_health --verbose` output
+- `dev_status section="health" format="verbose"` output
 - Steps to reproduce
 - Expected vs actual behavior
 - Debug logs (if applicable)

@@ -1,6 +1,6 @@
 # MCP Tools Overview
 
-dev-agent provides six tools through the Model Context Protocol (MCP). These tools give AI assistants deep understanding of your codebase.
+dev-agent provides five tools through the Model Context Protocol (MCP). These tools give AI assistants deep understanding of your codebase.
 
 ## Available Tools
 
@@ -9,9 +9,8 @@ dev-agent provides six tools through the Model Context Protocol (MCP). These too
 | [`dev_search`](/docs/tools/dev-search) | Semantic code search with snippets |
 | [`dev_refs`](/docs/tools/dev-refs) | Query code relationships (callers/callees) |
 | [`dev_map`](/docs/tools/dev-map) | Codebase structure overview with change frequency |
-| [`dev_patterns`](/docs/tools/dev-inspect) | File pattern analysis (finds similar code, compares 5 pattern categories) ✨ v0.8.5 |
-| [`dev_status`](/docs/tools/dev-status) | Check repository indexing status |
-| [`dev_health`](/docs/tools/dev-health) | Monitor MCP server health |
+| [`dev_patterns`](/docs/tools/dev-patterns) | File pattern analysis (finds similar code, compares 5 pattern categories) |
+| [`dev_status`](/docs/tools/dev-status) | Repository indexing status and health checks |
 
 ## New in v0.8.5
 
@@ -49,8 +48,7 @@ AI Assistant (Cursor/Claude)
         ├── RefsAdapter        → dev_refs
         ├── MapAdapter         → dev_map
         ├── InspectAdapter     → dev_patterns
-        ├── StatusAdapter      → dev_status
-        └── HealthAdapter      → dev_health
+        └── StatusAdapter      → dev_status (includes health checks)
 ```
 
 ## Tool Response Format

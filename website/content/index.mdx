@@ -21,7 +21,7 @@ Local semantic code search for Cursor and Claude Code via MCP.
 
 ## What it does
 
-Your AI tool gets 6 MCP tools that understand your codebase:
+Your AI tool gets 5 MCP tools that understand your codebase:
 
 | Tool | What it does |
 |------|--------------|
@@ -29,8 +29,7 @@ Your AI tool gets 6 MCP tools that understand your codebase:
 | [`dev_refs`](/docs/tools/dev-refs) | Find callers/callees of any function |
 | [`dev_map`](/docs/tools/dev-map) | Codebase structure with hot paths (most referenced files) |
 | [`dev_patterns`](/docs/tools/dev-patterns) | Compare coding patterns against similar files |
-| [`dev_status`](/docs/tools/dev-status) | Repository indexing status and health |
-| [`dev_health`](/docs/tools/dev-health) | Server health checks |
+| [`dev_status`](/docs/tools/dev-status) | Repository indexing status, health checks, and Antfly stats |
 
 ## How it works
 
@@ -42,7 +41,7 @@ flowchart LR
 
     subgraph Agent["dev-agent"]
         B["MCP Server"]
-        C["6 Tools"]
+        C["5 Tools"]
     end
 
     subgraph Local["Antfly (local)"]

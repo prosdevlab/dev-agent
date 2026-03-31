@@ -1,36 +1,35 @@
 # dev_patterns
 
-Inspect a file for pattern analysis. Finds similar code and compares patterns like error handling, type coverage, imports, and testing.
+Analyze coding patterns in a file against similar code in the codebase. Compares import style, error handling, type coverage, test coverage, and file size.
+
+**Not for finding code** (use `dev_search`) **or tracing calls** (use `dev_refs`).
 
 ## Usage
 
 ```
-dev_patterns(query, format?, limit?, threshold?)
+dev_patterns(filePath, format?, limit?)
 ```
 
 ## Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `query` | string | required | File path to inspect |
-| `format` | `"compact"` \| `"verbose"` | `"compact"` | Output format |
+| `filePath` | string | required | File path to analyze (e.g., `src/auth/middleware.ts`) |
+| `format` | `"compact"` \| `"verbose"` \| `"json"` | `"compact"` | Output format |
 | `limit` | number | 10 | Maximum similar files to analyze |
-| `threshold` | number | 0.7 | Similarity threshold (0-1) |
 
 ## What It Does
 
 `dev_patterns` performs comprehensive file analysis in two steps:
 
-1. **Finds similar files** - Uses semantic search to find code with similar structure/purpose
-2. **Analyzes patterns** - Compares error handling, type coverage, imports, testing, and file size
-
-This helps you understand how your file compares to similar code in the repository.
+1. **Finds similar files** — Uses semantic search to find code with similar structure/purpose
+2. **Analyzes patterns** — Compares error handling, type coverage, imports, testing, and file size
 
 ## Examples
 
 ### Basic Inspection
 
-> "Use dev_patterns with query 'src/auth/middleware.ts'"
+> "Use dev_patterns with filePath 'src/auth/middleware.ts'"
 
 ```
 ## File Inspection: src/auth/middleware.ts
@@ -51,96 +50,53 @@ This helps you understand how your file compares to similar code in the reposito
 
 ### Verbose Output
 
-> "Use dev_patterns with query 'packages/core/src/indexer/index.ts', format 'verbose'"
+> "Use dev_patterns with filePath 'packages/core/src/indexer/index.ts', format 'verbose'"
 
 Returns detailed pattern distribution and statistics for each pattern category.
 
-### High Similarity Only
+### JSON Output (Token-Efficient)
 
-> "Use dev_patterns with query 'src/utils/date.ts', threshold 0.9"
+> "Use dev_patterns with filePath 'src/auth/middleware.ts', format 'json'"
 
-Only analyzes very similar files (90%+ match).
+Returns structured JSON — compact and machine-parseable for agent workflows:
+
+```json
+{
+  "fileSize": { "yourFile": 234, "average": 312, "deviation": "smaller" },
+  "importStyle": { "yourFile": "esm", "common": "esm", "percentage": 100 },
+  "errorHandling": { "yourFile": "throw", "common": "result", "percentage": 60 },
+  "typeAnnotations": { "yourFile": "full", "common": "full", "percentage": 80 },
+  "testing": { "yourFile": false, "percentage": 40 }
+}
+```
 
 ## Pattern Categories
-
-`dev_patterns` analyzes 5 key patterns:
 
 | Pattern | What It Checks |
 |---------|----------------|
 | **Import Style** | `esm`, `cjs`, `mixed`, or `unknown` |
-| **Error Handling** | `throw`, `result`, `callback`, or `unknown` |
-| **Type Coverage** | `full`, `partial`, or `none` (TypeScript only) |
+| **Error Handling** | `throw`, `result`, `error-return`, or `unknown` |
+| **Type Coverage** | `full`, `partial`, `minimal`, or `none` (TypeScript only) |
 | **Testing** | Whether a co-located test file exists |
 | **File Size** | Line count vs. similar files |
-
-## Output Formats
-
-### Compact (Default)
-
-Shows pattern summary with actionable insights:
-
-```
-**Error Handling:** Your file uses `throw`, but 60% of similar files use `result`.
-```
-
-Highlights differences from similar files to guide improvements.
-
-### Verbose
-
-Shows full pattern distribution:
-
-```
-#### Error Handling
-- **Your File:** `throw`
-- **Common Style:** `result` (60% of similar files)
-- **Distribution:**
-  - result: 3 files (60%)
-  - throw: 2 files (40%)
-```
-
-## Use Cases
-
-| Use Case | Description |
-|----------|-------------|
-| **Code Review** | Check if your code follows project patterns |
-| **Refactoring** | Understand pattern usage before making changes |
-| **Consistency** | Ensure new code matches similar implementations |
-| **Learning** | See how patterns are used across the codebase |
 
 ## Workflow
 
 **Typical usage pattern:**
 
 1. **Search** for concepts: `dev_search { query: "authentication middleware" }`
-2. **Inspect** what you found: `dev_patterns { query: "src/auth/middleware.ts" }`
+2. **Inspect** what you found: `dev_patterns { filePath: "src/auth/middleware.ts" }`
 3. **Analyze** dependencies: `dev_refs { name: "authMiddleware" }`
-
-## Tips
-
-> **Always provide a file path.** Unlike `dev_search`, `dev_patterns` requires a specific file to analyze.
-
-> **Extension filtering.** Only compares files with the same extension (e.g., `.ts` with `.ts`).
-
-> **Use after search.** `dev_patterns` is most valuable after finding relevant files with `dev_search`.
-
-> **Pattern-driven insights.** Focus on patterns where your file differs from similar code.
 
 ## Performance
 
-`dev_patterns` is optimized for speed:
-- Batch scanning (5-10x faster than individual scans)
-- Semantic similarity matching (not just path-based)
-- Extension-based filtering for relevant comparisons
-
-Typical analysis time: **500-1000ms** for 5 similar files.
+Pattern analysis reads from the Antfly index when available (~100ms). Falls back to ts-morph scanning when not (~1-3s).
 
 ## Migration from dev_explore
 
 If you previously used `dev_explore`:
 
-- `dev_explore { action: "similar", query: "file.ts" }` → `dev_patterns { query: "file.ts" }`
-- `dev_explore { action: "validate", query: "file.ts" }` → `dev_patterns { query: "file.ts" }` (now does both!)
+- `dev_explore { action: "similar", query: "file.ts" }` → `dev_patterns { filePath: "file.ts" }`
+- `dev_explore { action: "validate", query: "file.ts" }` → `dev_patterns { filePath: "file.ts" }` (now does both!)
 - `dev_explore { action: "pattern" }` → Use `dev_search` instead
 - `dev_explore { action: "relationships" }` → Use `dev_refs` instead
-
-**Key change:** `dev_patterns` no longer requires an `action` parameter. It automatically finds similar files AND performs pattern analysis in one call.

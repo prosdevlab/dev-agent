@@ -66,20 +66,17 @@ Compare src/auth/middleware.ts with similar implementations
 - `limit`: Number of results (default: 10, for compare action)
 - `format`: Output format (`compact` or `verbose`)
 
-### `dev_health` - Server Health Check
-Check the health of dev-agent MCP server and its components.
+### Health Checks (via `dev_status`)
+
+Use `dev_status` with `section="health"` for server diagnostics:
 
 ```
-Check server health
+Check server health status
 ```
-
-**Parameters:**
-- `verbose`: Include detailed diagnostics (default: false)
 
 **Checks:**
-- Vector storage (indexed code)
-- Repository accessibility
-- GitHub index status and age
+- Repository access
+- Antfly connectivity
 
 ## Management Commands
 
