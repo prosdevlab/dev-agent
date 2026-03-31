@@ -43,6 +43,64 @@ export type {
   TypeAnnotationPattern,
 } from './pattern-analysis-types';
 
+// ========================================================================
+// Pure Pattern Extractors — no I/O, fully testable
+// ========================================================================
+
+/**
+ * Extract import style from raw file content.
+ */
+export function extractImportStyleFromContent(content: string): ImportStylePattern {
+  const esmImports = content.match(/^import\s/gm) || [];
+  const cjsImports = content.match(/require\s*\(/g) || [];
+  const hasESM = esmImports.length > 0;
+  const hasCJS = cjsImports.length > 0;
+
+  if (!hasESM && !hasCJS) return { style: 'unknown', importCount: 0 };
+
+  const importCount = esmImports.length + cjsImports.length;
+  const style: ImportStylePattern['style'] = hasESM && hasCJS ? 'mixed' : hasESM ? 'esm' : 'cjs';
+  return { style, importCount };
+}
+
+/**
+ * Extract error handling pattern from raw file content.
+ */
+export function extractErrorHandlingFromContent(content: string): ErrorHandlingPattern {
+  const counts = {
+    throw: [...content.matchAll(/throw\s+new\s+\w*Error/g)].length,
+    result: [...content.matchAll(/Result<|{\s*ok:\s*(true|false)/g)].length,
+    errorReturn: [...content.matchAll(/\)\s*:\s*\([^)]*,\s*error\)/g)].length,
+  };
+  const total = counts.throw + counts.result + counts.errorReturn;
+  if (total === 0) return { style: 'unknown', examples: [] };
+
+  const max = Math.max(counts.throw, counts.result, counts.errorReturn);
+  const hasMultiple = Object.values(counts).filter((c) => c > 0).length > 1;
+  let style: ErrorHandlingPattern['style'] = 'unknown';
+  if (hasMultiple) style = 'mixed';
+  else if (counts.throw === max) style = 'throw';
+  else if (counts.result === max) style = 'result';
+  else if (counts.errorReturn === max) style = 'error-return';
+  return { style, examples: [] };
+}
+
+/**
+ * Extract type coverage from function/method signatures.
+ */
+export function extractTypeCoverageFromSignatures(signatures: string[]): TypeAnnotationPattern {
+  if (signatures.length === 0) return { coverage: 'none', annotatedCount: 0, totalCount: 0 };
+
+  const annotated = signatures.filter((sig) => /(\)|=>)\s*:\s*\w+/.test(sig));
+  const ratio = annotated.length / signatures.length;
+  let coverage: TypeAnnotationPattern['coverage'];
+  if (ratio >= 0.9) coverage = 'full';
+  else if (ratio >= 0.5) coverage = 'partial';
+  else if (ratio > 0) coverage = 'minimal';
+  else coverage = 'none';
+  return { coverage, annotatedCount: annotated.length, totalCount: signatures.length };
+}
+
 /**
  * Pattern Analysis Service
  *
@@ -196,126 +254,26 @@ export class PatternAnalysisService {
     filePath: string,
     _documents: Document[]
   ): Promise<ImportStylePattern> {
-    // Always analyze raw content for maximum reliability
-    // Scanner extraction can be incomplete for test files or unusual syntax
     const fullPath = path.join(this.config.repositoryPath, filePath);
     const content = await fs.readFile(fullPath, 'utf-8');
-
-    return this.analyzeImportsFromContent(content);
-  }
-
-  /**
-   * Analyze imports from raw file content (fallback method)
-   */
-  private analyzeImportsFromContent(content: string): ImportStylePattern {
-    // Count actual imports (not exports)
-    const esmImports = content.match(/^import\s/gm) || [];
-    const cjsImports = content.match(/require\s*\(/g) || [];
-
-    const hasESM = esmImports.length > 0;
-    const hasCJS = cjsImports.length > 0;
-
-    if (!hasESM && !hasCJS) {
-      return { style: 'unknown', importCount: 0 };
-    }
-
-    const importCount = esmImports.length + cjsImports.length;
-
-    let style: ImportStylePattern['style'];
-    if (hasESM && hasCJS) {
-      style = 'mixed';
-    } else if (hasESM) {
-      style = 'esm';
-    } else {
-      style = 'cjs';
-    }
-
-    return { style, importCount };
+    return extractImportStyleFromContent(content);
   }
 
   /**
    * Analyze error handling patterns in file content
-   *
-   * Detects: throw, Result<T>, error returns (Go style)
    */
   private analyzeErrorHandling(content: string): ErrorHandlingPattern {
-    const patterns = {
-      throw: /throw\s+new\s+\w*Error/g,
-      result: /Result<|{\s*ok:\s*(true|false)/g,
-      errorReturn: /\)\s*:\s*\([^)]*,\s*error\)/g, // Go: (val, error)
-    };
-
-    const matches = {
-      throw: [...content.matchAll(patterns.throw)],
-      result: [...content.matchAll(patterns.result)],
-      errorReturn: [...content.matchAll(patterns.errorReturn)],
-    };
-
-    const counts = {
-      throw: matches.throw.length,
-      result: matches.result.length,
-      errorReturn: matches.errorReturn.length,
-    };
-
-    // Determine primary style
-    const total = counts.throw + counts.result + counts.errorReturn;
-    if (total === 0) {
-      return { style: 'unknown', examples: [] };
-    }
-
-    const max = Math.max(counts.throw, counts.result, counts.errorReturn);
-    const hasMultiple = Object.values(counts).filter((c) => c > 0).length > 1;
-
-    let style: ErrorHandlingPattern['style'] = 'unknown';
-    if (hasMultiple) {
-      style = 'mixed';
-    } else if (counts.throw === max) {
-      style = 'throw';
-    } else if (counts.result === max) {
-      style = 'result';
-    } else if (counts.errorReturn === max) {
-      style = 'error-return';
-    }
-
-    return { style, examples: [] };
+    return extractErrorHandlingFromContent(content);
   }
 
   /**
    * Analyze type annotation coverage from documents
-   *
-   * Checks function/method signatures for explicit types.
    */
   private analyzeTypes(documents: Document[]): TypeAnnotationPattern {
-    const functions = documents.filter((d) => d.type === 'function' || d.type === 'method');
-
-    if (functions.length === 0) {
-      return { coverage: 'none', annotatedCount: 0, totalCount: 0 };
-    }
-
-    // Check if signatures have explicit return types (contains ': ' after params)
-    const annotated = functions.filter((d) => {
-      const sig = d.metadata.signature || '';
-      // Look for ': Type' pattern after closing paren or arrow
-      return /(\)|=>)\s*:\s*\w+/.test(sig);
-    });
-
-    const coverage = annotated.length / functions.length;
-    let coverageLevel: TypeAnnotationPattern['coverage'];
-    if (coverage >= 0.9) {
-      coverageLevel = 'full';
-    } else if (coverage >= 0.5) {
-      coverageLevel = 'partial';
-    } else if (coverage > 0) {
-      coverageLevel = 'minimal';
-    } else {
-      coverageLevel = 'none';
-    }
-
-    return {
-      coverage: coverageLevel,
-      annotatedCount: annotated.length,
-      totalCount: functions.length,
-    };
+    const signatures = documents
+      .filter((d) => d.type === 'function' || d.type === 'method')
+      .map((d) => d.metadata.signature || '');
+    return extractTypeCoverageFromSignatures(signatures);
   }
 
   // ========================================================================

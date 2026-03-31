@@ -8,7 +8,111 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PatternAnalysisService } from '../pattern-analysis-service';
+import {
+  extractErrorHandlingFromContent,
+  extractImportStyleFromContent,
+  extractTypeCoverageFromSignatures,
+  PatternAnalysisService,
+} from '../pattern-analysis-service';
+
+// ========================================================================
+// Pure Pattern Extractors (no I/O)
+// ========================================================================
+
+describe('Pure Pattern Extractors', () => {
+  describe('extractImportStyleFromContent', () => {
+    it('should detect ESM imports', () => {
+      const content = 'import { foo } from "./bar";\nimport * as baz from "baz";';
+      const result = extractImportStyleFromContent(content);
+      expect(result).toEqual({ style: 'esm', importCount: 2 });
+    });
+
+    it('should detect CJS requires', () => {
+      const content = 'const foo = require("bar");\nconst baz = require("baz");';
+      const result = extractImportStyleFromContent(content);
+      expect(result).toEqual({ style: 'cjs', importCount: 2 });
+    });
+
+    it('should detect mixed imports', () => {
+      const content = 'import { foo } from "./bar";\nconst baz = require("baz");';
+      const result = extractImportStyleFromContent(content);
+      expect(result).toEqual({ style: 'mixed', importCount: 2 });
+    });
+
+    it('should return unknown for no imports', () => {
+      const content = 'const x = 1;';
+      const result = extractImportStyleFromContent(content);
+      expect(result).toEqual({ style: 'unknown', importCount: 0 });
+    });
+  });
+
+  describe('extractErrorHandlingFromContent', () => {
+    it('should detect throw style', () => {
+      const content = 'throw new Error("oops");\nthrow new TypeError("bad");';
+      const result = extractErrorHandlingFromContent(content);
+      expect(result.style).toBe('throw');
+    });
+
+    it('should detect result style', () => {
+      const content = 'function foo(): Result<string> { return { ok: true, value: "x" }; }';
+      const result = extractErrorHandlingFromContent(content);
+      expect(result.style).toBe('result');
+    });
+
+    it('should detect mixed style', () => {
+      const content = 'throw new Error("oops");\nfunction foo(): Result<string> {}';
+      const result = extractErrorHandlingFromContent(content);
+      expect(result.style).toBe('mixed');
+    });
+
+    it('should return unknown for no error handling', () => {
+      const content = 'const x = 1;';
+      const result = extractErrorHandlingFromContent(content);
+      expect(result.style).toBe('unknown');
+    });
+  });
+
+  describe('extractTypeCoverageFromSignatures', () => {
+    it('should detect full coverage', () => {
+      const signatures = ['function foo(x: string): number', 'function bar(y: boolean): void'];
+      const result = extractTypeCoverageFromSignatures(signatures);
+      expect(result.coverage).toBe('full');
+      expect(result.annotatedCount).toBe(2);
+      expect(result.totalCount).toBe(2);
+    });
+
+    it('should detect partial coverage', () => {
+      const signatures = ['function foo(x: string): number', 'function bar(y)'];
+      const result = extractTypeCoverageFromSignatures(signatures);
+      expect(result.coverage).toBe('partial');
+    });
+
+    it('should detect minimal coverage', () => {
+      const signatures = ['function foo(x)', 'function bar(y)', 'function baz(z: string): number'];
+      const result = extractTypeCoverageFromSignatures(signatures);
+      expect(result.coverage).toBe('minimal');
+      expect(result.annotatedCount).toBe(1);
+      expect(result.totalCount).toBe(3);
+    });
+
+    it('should return none for no signatures', () => {
+      const result = extractTypeCoverageFromSignatures([]);
+      expect(result.coverage).toBe('none');
+      expect(result.annotatedCount).toBe(0);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('should return none when no signatures have types', () => {
+      const signatures = ['function foo(x)', 'function bar(y)'];
+      const result = extractTypeCoverageFromSignatures(signatures);
+      expect(result.coverage).toBe('none');
+    });
+  });
+});
+
+// ========================================================================
+// PatternAnalysisService (integration — uses file I/O)
+// ========================================================================
 
 describe('PatternAnalysisService', () => {
   let tempDir: string;
