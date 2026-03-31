@@ -6,370 +6,167 @@
 
 **Local semantic code search for Cursor and Claude Code via MCP.**
 
-> **Origin:** dev-agent started as a hack project at [Lytics](https://github.com/lytics/dev-agent) — built on hack days to scratch an itch around giving AI tools better codebase context. It's now maintained independently as an open source project.
+> dev-agent started as a hack project at [Lytics](https://github.com/lytics/dev-agent) and is now maintained independently as an open source project.
 
 ## What it does
 
-dev-agent indexes your codebase and provides 6 MCP tools to AI assistants. Instead of AI tools grepping through files, they can ask conceptual questions like "where do we handle authentication?"
+dev-agent indexes your codebase and provides 6 MCP tools to AI assistants. Instead of grepping through files, they can ask conceptual questions like "where do we handle authentication?"
 
-- `dev_search` — Semantic code search by meaning
-- `dev_refs` — Find callers/callees of functions
-- `dev_map` — Codebase structure with change frequency
-- `dev_patterns` — Inspect files (compare similar code, check patterns)
-- `dev_status` / `dev_health` — Monitoring
-
-## Measured results
-
-We benchmarked dev-agent against baseline Claude Code across 5 task types:
-
-| Metric | Baseline | With dev-agent | Change |
-|--------|----------|----------------|--------|
-| Cost | $1.82 | $1.02 | **-44%** |
-| Time | 14.1 min | 11.5 min | **-19%** |
-| Tool calls | 69 | 40 | **-42%** |
-
-**Trade-offs:** Faster but sometimes less thorough. Best for implementation tasks and codebase exploration. For deep debugging, baseline Claude may read more files.
-
-## When to use it
-
-**Good fit:**
-- Large or unfamiliar codebases
-- Implementation tasks ("add a feature like X")
-- Exploring how code works
-- Reducing AI API costs
-
-**Less useful:**
-- Small codebases you already know well
-- Deep debugging sessions
-- When thoroughness matters more than speed
+- `dev_search` — Hybrid search (BM25 + vector + RRF) — returns code snippets, not just paths
+- `dev_refs` — Find callers/callees of any function
+- `dev_map` — Codebase structure with hot paths (most referenced files)
+- `dev_patterns` — Compare coding patterns against similar files
+- `dev_status` — Repository indexing status and health
+- `dev_health` — Server health checks
 
 ## Quick Start
 
 ```bash
-# Install globally
-npm install -g dev-agent
+# Install
+npm install -g @prosdevlab/dev-agent
+brew install --cask antflydb/antfly/antfly
 
-# One-time setup (starts Antfly search backend)
-dev setup                 # Native (default)
-dev setup --docker        # Or use Docker
+# One-time setup
+dev setup
 
 # Index your repository
 cd /path/to/your/repo
 dev index
 
-# Install MCP integration
-dev mcp install --cursor  # For Cursor IDE
+# Connect to your AI tool
+dev mcp install --cursor  # For Cursor
 dev mcp install           # For Claude Code
+```
 
-# That's it! AI tools now have access to dev-agent capabilities.
+## How it works
+
+1. **Scanner** parses code using ts-morph (TypeScript/JS) and tree-sitter (Go)
+2. **Antfly** generates embeddings locally via Termite (ONNX, BAAI/bge-small-en-v1.5)
+3. **Hybrid search** combines BM25 keyword matching with vector similarity via RRF
+4. **File watcher** auto-reindexes on save while the MCP server runs
+
+Everything runs locally. Your code never leaves your machine.
+
+## CLI Commands
+
+```bash
+# Setup
+dev setup                              # Start Antfly search backend
+dev setup --docker                     # Use Docker instead of native
+dev reset                              # Tear down and start fresh
+
+# Indexing
+dev index                              # Index current repository
+dev index --force                      # Force full re-index
+
+# Search
+dev search "authentication middleware"  # Semantic search
+dev search "error handling" --verbose   # With signatures and docs
+dev search --similar-to src/auth.ts    # Find similar code
+
+# Codebase structure
+dev map                                # Overview with hot paths
+dev map --depth 3                      # Deeper structure
+dev map --focus packages/core          # Focus on a directory
+
+# Maintenance
+dev compact                            # Optimize vector storage
+dev clean --force                      # Remove all indexed data
+dev storage path                       # Show storage location
 ```
 
 ## MCP Tools
 
-When integrated with Cursor or Claude Code, dev-agent provides 9 powerful tools:
+### `dev_search` — Semantic Code Search
 
-### `dev_search` - Semantic Code Search
-Natural language search with rich results including code snippets, imports, and relationships.
+Hybrid search that combines keyword matching (BM25) and semantic understanding (vector similarity), fused via Reciprocal Rank Fusion. Returns ranked results with code snippets, imports, and call graph data.
 
 ```
 Find authentication middleware that handles JWT tokens
 ```
 
-**Features:**
-- Code snippets included (not just file paths)
-- Import statements for context
-- Caller/callee hints
-- Progressive disclosure based on token budget
+### `dev_refs` — Call Graph Queries
 
-### `dev_refs` - Relationship Queries ✨ New in v0.3
-Query what calls what and what is called by what.
+Find what calls a function and what it calls. Uses the call graph extracted at index time.
 
 ```
 Find all callers of the authenticate function
 Find what functions validateToken calls
 ```
 
-**Features:**
-- Bidirectional queries (callers/callees)
-- File paths and line numbers
-- Relevance scoring
+### `dev_map` — Codebase Overview
 
-### `dev_map` - Codebase Overview ✨ Enhanced in v0.4
-Get a high-level view of repository structure with change frequency.
+Directory structure with component counts and hot paths (most referenced files).
 
 ```
-Show me the codebase structure with depth 3
+Show me the codebase structure
 Focus on the packages/core directory
-Show hot areas with recent changes
 ```
 
-**Features:**
-- Directory tree with component counts
-- **Hot Paths:** Most referenced files
-- **Change Frequency:** 🔥 Hot (5+ commits/30d), ✏️ Active (1-4/30d), 📝 Recent (90d)
-- **Smart Depth:** Adaptive expansion based on density
-- **Signatures:** Function/class signatures in exports
+### `dev_patterns` — Pattern Analysis
 
-**Example output:**
-```markdown
-# Codebase Map
-
-## Hot Paths (most referenced)
-1. `packages/core/src/indexer/index.ts` (RepositoryIndexer) - 47 refs
-2. `packages/core/src/vector/store.ts` (LanceDBVectorStore) - 32 refs
-
-## Directory Structure
-
-└── packages/ (195 components)
-    ├── 🔥 core/ (45 components) — 12 commits in 30d
-    │   └── exports: function search(query): Promise<Result[]>, class RepositoryIndexer
-    ├── ✏️ mcp-server/ (28 components) — 3 commits in 30d
-    │   └── exports: class MCPServer, function createAdapter(config): Adapter
-```
-
-### `dev_patterns` - File Analysis
-Inspect files for pattern analysis. Finds similar code and compares patterns (error handling, type coverage, imports, testing).
+Compare a file's coding patterns (imports, error handling, type coverage, testing, size) against similar files in the codebase.
 
 ```
-Inspect src/auth/middleware.ts for patterns
-Check how src/hooks/useAuth.ts compares to similar hooks
+Analyze patterns in src/auth/middleware.ts
 ```
 
-**Pattern Categories:**
-- Import style (ESM vs CJS)
-- Error handling (throw vs result types)
-- Type coverage (full, partial, none)
-- Test coverage (co-located test files)
-- File size relative to similar code
+### `dev_status` — Repository Status
 
-### `dev_status` - Repository Status
-View indexing status, component health, and repository information.
+Indexing status, document counts, Antfly stats, and file watcher state.
 
-### `dev_health` - Health Monitoring
-Check MCP server and component health.
+### `dev_health` — Health Checks
 
-## Key Features
-
-### Local-First
-- 📦 Works 100% offline
-- 🔐 Your code never leaves your machine
-- ⚡ Fast local embeddings with all-MiniLM-L6-v2
-
-### Production Ready
-- 🛡️ Rate limiting (100 req/min burst)
-- 🔄 Retry logic with exponential backoff
-- ⚡ Incremental indexing (only processes changed files)
-- 💚 Health monitoring
-- 🧹 Memory-safe (circular buffers)
-- ✅ 1300+ tests
-
-### Token Efficient
-- 🪙 Progressive disclosure based on budget
-- 📊 Token estimation in results
-- 🎯 Smart depth for codebase maps
-
-## Installation
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v22 LTS or higher
-- [Antfly](https://antfly.io) — search backend (`brew install --cask antflydb/antfly/antfly`)
-- [GitHub CLI](https://cli.github.com/) (for GitHub features)
-
-### Global Install (Recommended)
-
-```bash
-npm install -g dev-agent
-dev setup    # One-time: starts Antfly search backend
-```
-
-`dev setup` handles everything — installs Antfly if needed, pulls the embedding model, and starts the server. Use `dev setup --docker` if you prefer Docker.
-
-### From Source
-
-```bash
-git clone https://github.com/prosdevlab/dev-agent.git
-cd dev-agent
-pnpm install
-pnpm build
-cd packages/dev-agent
-npm link
-```
-
-## CLI Commands
-
-```bash
-# Index everything (code, git history, GitHub) - can take 5-10 min for large codebases
-dev index
-dev index --no-github               # Skip GitHub indexing
-
-# Semantic search
-dev search "how do agents communicate"
-dev search "error handling" --verbose
-dev search --similar-to src/auth.ts        # Find similar code
-
-# Codebase structure
-dev map
-
-# Storage management
-dev storage path                      # Show storage path
-dev storage size                      # Show storage size
-dev compact                           # Compact vector database
-dev clean --force                     # Remove all indexed data
-
-# MCP management
-dev mcp install --cursor              # Install for Cursor
-dev mcp install                       # Install for Claude Code
-dev mcp list                          # List configured servers
-```
-
-## Configuration
-
-### Performance Tuning
-
-Control scanning and indexing performance using environment variables:
-
-```bash
-# Global concurrency setting (applies to all operations)
-export DEV_AGENT_CONCURRENCY=10
-
-# Language-specific concurrency settings
-export DEV_AGENT_TYPESCRIPT_CONCURRENCY=20  # TypeScript file processing
-export DEV_AGENT_INDEXER_CONCURRENCY=5      # Vector embedding batches
-
-# Index with custom settings
-dev index
-```
-
-**Auto-detection:** If no environment variables are set, dev-agent automatically detects optimal concurrency based on your system's CPU and memory.
-
-**Recommended settings:**
-
-| System Type | Global | TypeScript | Indexer | Notes |
-|-------------|--------|------------|---------|-------|
-| Low memory (<4GB) | 5 | 5 | 2 | Prevents OOM errors |
-| Standard (4-8GB) | 15 | 15 | 3 | Balanced performance |
-| High-end (8GB+, 8+ cores) | 30 | 30 | 5 | Maximum speed |
-
-### Language Support
-
-Current language support:
-
-- **TypeScript/JavaScript**: Full support (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`)
-- **Go**: Full support (`.go`)
-
-To add new languages, see [LANGUAGE_SUPPORT.md](LANGUAGE_SUPPORT.md).
-
-### Troubleshooting
-
-**Indexing too slow:**
-```bash
-# Note: Initial indexing can take 5-10 minutes for mature codebases (4k+ files)
-# Try increasing concurrency (if you have enough memory)
-export DEV_AGENT_CONCURRENCY=20
-dev index
-```
-
-**Out of memory errors:**
-```bash
-# Reduce concurrency
-export DEV_AGENT_CONCURRENCY=5
-export DEV_AGENT_TYPESCRIPT_CONCURRENCY=5
-export DEV_AGENT_INDEXER_CONCURRENCY=2
-dev index
-```
-
-**Search results are outdated:**
-```bash
-# Re-index to pick up recent file changes
-dev index
-```
-
-**Go scanner not working:**
-```bash
-# Check if WASM files are bundled (after installation/build)
-ls -la ~/.local/share/dev-agent/dist/wasm/tree-sitter-go.wasm
-# If missing, try reinstalling or rebuilding from source
-```
-
-## Project Structure
-
-```
-dev-agent/
-├── packages/
-│   ├── core/           # Scanner, vector storage, indexer
-│   ├── cli/            # Command-line interface
-│   ├── subagents/      # Planner, explorer, PR agents
-│   ├── mcp-server/     # MCP protocol server + adapters
-│   └── integrations/   # Claude Code, VS Code
-├── docs/               # Documentation
-└── website/            # Documentation website
-```
+Server health, Antfly connectivity, and repository access.
 
 ## Supported Languages
 
 | Language | Scanner | Features |
 |----------|---------|----------|
-| **TypeScript/JavaScript** | ts-morph | Functions, classes, interfaces, JSDoc |
-| **Go** | tree-sitter | Functions, methods, structs, interfaces, generics |
-| **Markdown** | remark | Documentation sections, code blocks |
+| TypeScript/JavaScript | ts-morph | Functions, classes, interfaces, types, arrow functions, hooks |
+| Go | tree-sitter | Functions, methods, structs, interfaces, generics |
+| Markdown | remark | Documentation sections |
 
-## Technology Stack
+## Technology
 
-- **TypeScript** (strict mode)
-- **ts-morph** / TypeScript Compiler API (TypeScript/JS analysis)
-- **tree-sitter** WASM (Go analysis, extensible to Python/Rust)
-- **[Antfly](https://antfly.io)** (hybrid search: BM25 + vector + RRF, local embeddings via Termite)
-- **MCP** (Model Context Protocol)
-- **Turborepo** (monorepo builds)
-- **Vitest** (1900+ tests)
+- **[Antfly](https://antfly.io)** — Hybrid search (BM25 + vector + RRF), local embeddings via Termite (ONNX)
+- **ts-morph** — TypeScript/JavaScript AST analysis
+- **tree-sitter** — Go analysis (WASM, extensible to Python/Rust)
+- **@parcel/watcher** — File change detection for auto-reindexing
+- **MCP** — Model Context Protocol for AI tool integration
+
+## Prerequisites
+
+- Node.js 22+ (LTS)
+- [Antfly](https://antfly.io) — `brew install --cask antflydb/antfly/antfly`
 
 ## Development
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Build all packages
 pnpm build
-
-# Run tests
-pnpm test
-
-# Lint and format
+pnpm test        # 1,600+ tests
+pnpm typecheck   # After build
 pnpm lint
-pnpm format
-
-# Type check
-pnpm typecheck
 ```
 
-## Version History
+## Project Structure
 
-- **v0.6.0** - Go Language Support & Performance Improvements
-  - Go scanner with tree-sitter WASM (functions, methods, structs, interfaces, generics)
-  - Configurable concurrency via environment variables (`DEV_AGENT_*_CONCURRENCY`)
-  - Auto-detection of optimal performance settings based on system resources
-  - Enhanced error handling and user feedback across all scanners
-  - Improved Go scanner with runtime WASM validation and better error messages
-  - Parallel processing optimizations for TypeScript scanning and indexing
-  - Indexer logging with `--verbose` flag and progress spinners
-  - Go-specific exclusions (*.pb.go, *.gen.go, mocks/, testdata/)
-  - Comprehensive language support documentation (`LANGUAGE_SUPPORT.md`)
-  - Build-time validation to prevent silent WASM dependency failures
-  - Infrastructure for future Python/Rust support
-- **v0.4.0** - Intelligent Git History release
-  - Enhanced `dev_map` with change frequency indicators (🔥 hot, ✏️ active)
-  - New `GitIndexer` and `LocalGitExtractor` in core
-- **v0.3.0** - Context Quality release
-  - New `dev_refs` tool for relationship queries
-  - Enhanced `dev_map` with hot paths, smart depth, signatures
-- **v0.2.0** - Richer search results with snippets and imports
-- **v0.1.0** - Initial release
+```
+packages/
+  core/          # Scanner, vector storage, indexer, services
+  cli/           # Commander.js CLI
+  mcp-server/    # MCP server with 6 tool adapters
+  subagents/     # Explorer, planner, PR agents
+  integrations/  # Claude Code, VS Code, Cursor
+  logger/        # @prosdevlab/kero centralized logging
+  types/         # Shared TypeScript types
+  dev-agent/     # Root package (CLI entry point)
+```
 
 ## Contributing
 
-Contributions welcome! Please follow conventional commit format and include tests.
+Contributions welcome. Follow conventional commit format and include tests.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
