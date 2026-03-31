@@ -10,6 +10,14 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+  extractErrorHandlingFromContent,
+  extractErrorHandlingWithAst,
+  extractImportStyleFromContent,
+  extractImportStyleWithAst,
+  extractTypeCoverageFromSignatures,
+  extractTypeCoverageWithAst,
+} from '../../services/pattern-analysis-service';
+import {
   ALL_QUERIES,
   ERROR_HANDLING_QUERIES,
   IMPORT_STYLE_QUERIES,
@@ -341,5 +349,193 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage('main.py')).toBeUndefined();
     expect(resolveLanguage('main.go')).toBeUndefined(); // Go has scanner, not pattern matcher
     expect(resolveLanguage('README.md')).toBeUndefined();
+  });
+});
+
+// ========================================================================
+// Denominator queries (arrow-total, function-total)
+// ========================================================================
+
+describe('total count queries', () => {
+  let matcher: PatternMatcher;
+
+  beforeAll(() => {
+    matcher = createPatternMatcher();
+  });
+
+  it('arrow-total counts all arrow functions (typed and untyped)', async () => {
+    const source = [
+      'const typed = (x: number): number => x;',
+      'const untyped = (x) => x;',
+      'const another = () => "hello";',
+    ].join('\n');
+    const results = await matcher.match(source, 'typescript', TYPE_COVERAGE_QUERIES);
+    expect(results.get('arrow-total')).toBe(3);
+    expect(results.get('arrow-return-type')).toBe(1); // only typed
+  });
+
+  it('function-total counts all function declarations', async () => {
+    const source = [
+      'function typed(x: number): number { return x; }',
+      'function untyped(x) { return x; }',
+    ].join('\n');
+    const results = await matcher.match(source, 'typescript', TYPE_COVERAGE_QUERIES);
+    expect(results.get('function-total')).toBe(2);
+    expect(results.get('function-return-type')).toBe(1);
+  });
+
+  it('returns 0 for code with no functions', async () => {
+    const results = await matcher.match('const x = 1;', 'typescript', TYPE_COVERAGE_QUERIES);
+    expect(results.get('arrow-total')).toBe(0);
+    expect(results.get('function-total')).toBe(0);
+  });
+});
+
+// ========================================================================
+// AST-enhanced extractor merge logic
+// ========================================================================
+
+describe('extractErrorHandlingWithAst', () => {
+  let matcher: PatternMatcher;
+
+  beforeAll(() => {
+    matcher = createPatternMatcher();
+  });
+
+  it('throw + try-catch → mixed', async () => {
+    const source = 'try { validate(x); } catch (e) { throw new Error("failed"); }';
+    const result = await extractErrorHandlingWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('mixed');
+  });
+
+  it('throw only → throw', async () => {
+    const source = 'throw new Error("bad");';
+    const result = await extractErrorHandlingWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('throw');
+  });
+
+  it('try-catch without throw → falls through to regex', async () => {
+    // try-catch alone is a mechanism, not a style — falls through to regex
+    const source = 'try { x(); } catch (e) { console.log(e); }';
+    const result = await extractErrorHandlingWithAst(source, 'test.ts', matcher);
+    // regex sees no throw/Result either → 'unknown'
+    expect(result.style).toBe('unknown');
+  });
+
+  it('Result<T> from regex + try-catch from AST → mixed', async () => {
+    const source = 'function f(): Result<string> { try { return ok(); } catch { return err(); } }';
+    const result = await extractErrorHandlingWithAst(source, 'test.ts', matcher);
+    // regex detects Result<T>, AST detects try-catch but no throw → regex returns 'result'
+    // then the extractor sees hasThrow=false, hasResultRegex=true → returns regex result
+    expect(result.style).toBe('result');
+  });
+
+  it('promise.catch only → unknown (no style mapping)', async () => {
+    const source = 'fetch("/api").catch(log);';
+    const result = await extractErrorHandlingWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('unknown');
+  });
+
+  it('matcher=undefined → identical to regex', async () => {
+    const source = 'throw new Error("bad"); function f(): Result<string> {}';
+    const withMatcher = await extractErrorHandlingWithAst(source, 'test.ts', undefined);
+    const regexOnly = extractErrorHandlingFromContent(source);
+    expect(withMatcher).toEqual(regexOnly);
+  });
+
+  it('unsupported extension → falls back to regex', async () => {
+    const source = 'throw new Error("bad");';
+    const result = await extractErrorHandlingWithAst(source, 'test.py', matcher);
+    const regexOnly = extractErrorHandlingFromContent(source);
+    expect(result).toEqual(regexOnly);
+  });
+});
+
+describe('extractImportStyleWithAst', () => {
+  let matcher: PatternMatcher;
+
+  beforeAll(() => {
+    matcher = createPatternMatcher();
+  });
+
+  it('static ESM + dynamic import → esm', async () => {
+    const source = 'import { foo } from "./bar";\nconst m = await import("./baz");';
+    const result = await extractImportStyleWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('esm');
+    // importCount should include the dynamic import
+    expect(result.importCount).toBeGreaterThan(1);
+  });
+
+  it('require detected by AST → cjs', async () => {
+    const source = 'const fs = require("fs");';
+    const result = await extractImportStyleWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('cjs');
+  });
+
+  it('mixed: ESM import + require → mixed', async () => {
+    const source = 'import foo from "./bar";\nconst fs = require("fs");';
+    const result = await extractImportStyleWithAst(source, 'test.ts', matcher);
+    expect(result.style).toBe('mixed');
+  });
+
+  it('matcher=undefined → identical to regex', async () => {
+    const source = 'import foo from "./bar";';
+    const withMatcher = await extractImportStyleWithAst(source, 'test.ts', undefined);
+    const regexOnly = extractImportStyleFromContent(source);
+    expect(withMatcher).toEqual(regexOnly);
+  });
+});
+
+describe('extractTypeCoverageWithAst', () => {
+  let matcher: PatternMatcher;
+
+  beforeAll(() => {
+    matcher = createPatternMatcher();
+  });
+
+  it('all functions typed → full', async () => {
+    const source = [
+      'const add = (a: number, b: number): number => a + b;',
+      'function greet(name: string): string { return name; }',
+    ].join('\n');
+    const result = await extractTypeCoverageWithAst(source, 'test.ts', matcher, []);
+    expect(result.coverage).toBe('full');
+    expect(result.annotatedCount).toBe(2);
+    expect(result.totalCount).toBe(2);
+  });
+
+  it('some functions typed → partial (accurate denominator)', async () => {
+    const source = [
+      'const typed = (a: number): number => a;',
+      'const untyped = (a) => a;',
+      'function alsoUntyped(x) { return x; }',
+    ].join('\n');
+    const result = await extractTypeCoverageWithAst(source, 'test.ts', matcher, []);
+    expect(result.coverage).toBe('minimal'); // 1 of 3
+    expect(result.annotatedCount).toBe(1);
+    expect(result.totalCount).toBe(3);
+  });
+
+  it('no functions → none', async () => {
+    const source = 'const x = 1;';
+    const result = await extractTypeCoverageWithAst(source, 'test.ts', matcher, []);
+    expect(result.coverage).toBe('none');
+  });
+
+  it('AST detects arrows that signatures miss', async () => {
+    // Signatures from index don't include arrow functions
+    const source = 'const add = (a: number, b: number): number => a + b;';
+    const signatures: string[] = []; // index has no signatures for this
+    const result = await extractTypeCoverageWithAst(source, 'test.ts', matcher, signatures);
+    expect(result.annotatedCount).toBe(1);
+    expect(result.totalCount).toBe(1);
+    expect(result.coverage).toBe('full');
+  });
+
+  it('matcher=undefined → identical to regex signatures', async () => {
+    const signatures = ['function foo(x: string): number'];
+    const withMatcher = await extractTypeCoverageWithAst('', 'test.ts', undefined, signatures);
+    const regexOnly = extractTypeCoverageFromSignatures(signatures);
+    expect(withMatcher).toEqual(regexOnly);
   });
 });
