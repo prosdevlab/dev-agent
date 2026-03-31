@@ -77,8 +77,8 @@ This surfaces test files without affecting semantic search rankings — tests ar
 
 ## How It Works
 
-1. **Query embedding** — Your query is converted to a vector using MiniLM-L6-v2
-2. **Vector search** — LanceDB finds semantically similar code components
+1. **Query embedding** — Your query is converted to a vector using BAAI/bge-small-en-v1.5
+2. **Vector search** — Antfly finds semantically similar code components
 3. **Ranking** — Results are sorted by cosine similarity score
 4. **Formatting** — Results are formatted for LLM context windows
 

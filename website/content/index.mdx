@@ -2,7 +2,7 @@
 title: dev-agent
 ---
 
-import { Callout, Steps, Tabs, FileTree } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import { latestVersion } from './latest-version'
 
 # dev-agent
@@ -11,87 +11,26 @@ Local semantic code search for Cursor and Claude Code via MCP.
 
 [Get Started](/docs) · [View on GitHub](https://github.com/prosdevlab/dev-agent)
 
-<Callout type="warning">
-  **Project moved.** dev-agent started as a hack project at [Lytics](https://github.com/lytics/dev-agent) and is now maintained independently at [prosdevlab/dev-agent](https://github.com/prosdevlab/dev-agent). All future development happens here.
-</Callout>
-
 <Callout type="info">
   **New in v{latestVersion.version}** — {latestVersion.summary} [See what's new →](/updates)
 </Callout>
 
 <Callout type="default">
-  **Built by engineers, for engineers.** An MCP server that gives your AI tools semantic code search and context bundling. Savings scale with task complexity — up to 42% on debugging tasks.
+  **Built by engineers, for engineers.** An MCP server that gives your AI tools semantic code search — find code by meaning, not keywords. Everything runs locally. Your code never leaves your machine.
 </Callout>
 
-## Why it saves money
+## What it does
 
-dev-agent doesn't just search — it **bundles context** so Claude reads less:
+Your AI tool gets 6 MCP tools that understand your codebase:
 
-| What dev-agent does | Manual equivalent | Savings |
-|---------------------|-------------------|---------|
-| Returns code snippets in search | Read entire files | 99% fewer input tokens |
-| Semantic search finds relevant code | grep chains + manual filtering | 42% cost reduction |
-
-**The harder the task, the bigger the savings.**
-
-## Measured results by task type
-
-| Task Type | Cost Savings | Time Savings | Why |
-|-----------|--------------|--------------|-----|
-| **Debugging** | **42%** | 37% | Semantic search beats grep for "where is the bug?" |
-| **Exploration** | **44%** | 19% | Find code by meaning, not keywords |
-| **Implementation** | **29%** | 22% | Semantic search finds relevant code |
-| **Simple lookup** | ~0% | ~0% | Both approaches are fast |
-
-<Callout type="warning">
-  **Trade-off:** Faster but sometimes less thorough. Baseline Claude provides more diagnostic shell commands. dev-agent excels when you need to explore or understand code.
-</Callout>
-
-## Same question, different approach
-
-We asked Claude Code: *"Debug why search returns duplicates"*
-
-<Tabs items={['Without dev-agent', 'With dev-agent']}>
-  <Tabs.Tab>
-    **Claude's approach:**
-    <FileTree>
-      <FileTree.Folder name="grep 'duplicate' → 30 matches" />
-      <FileTree.Folder name="grep 'search' → 100+ matches" />
-      <FileTree.Folder name="grep 'id' → too many, narrow down" />
-      <FileTree.File name="Read indexer/index.ts (441 lines)" />
-      <FileTree.File name="Read vector/store.ts (258 lines)" />
-      <FileTree.File name="Read scanner/typescript.ts (full file)" />
-      <FileTree.File name="Read scanner/markdown.ts (full file)" />
-      <FileTree.Folder name="... more greps and reads" />
-    </FileTree>
-    
-    **Result:** 18+ tool calls, 10 files read → **$1.37, 12 minutes**
-    
-    *18,800 input tokens consumed*
-  </Tabs.Tab>
-  <Tabs.Tab>
-    **Claude's approach:**
-    <FileTree>
-      <FileTree.Folder name="dev_search 'search duplicate results'" defaultOpen>
-        <FileTree.File name="→ store.ts (with upsert code snippet)" />
-        <FileTree.File name="→ indexer.ts (with ID generation)" />
-      </FileTree.Folder>
-      <FileTree.Folder name="dev_search 'document ID generation'" defaultOpen>
-        <FileTree.File name="→ typescript.ts (ID pattern)" />
-        <FileTree.File name="→ markdown.ts (slug generation)" />
-      </FileTree.Folder>
-      <FileTree.File name="Read store.ts (for detail)" />
-    </FileTree>
-    
-    **Result:** 6 tool calls, 5 files read → **$0.79, 7.5 minutes**
-    
-    *65 input tokens consumed (99.7% less)*
-  </Tabs.Tab>
-</Tabs>
-
-<Callout type="info">
-  **Same root cause identified. 42% cheaper. 37% faster.**
-</Callout>
+| Tool | What it does |
+|------|--------------|
+| [`dev_search`](/docs/tools/dev-search) | Hybrid search (BM25 + vector + RRF) — returns code snippets, not just file paths |
+| [`dev_refs`](/docs/tools/dev-refs) | Find callers/callees of any function |
+| [`dev_map`](/docs/tools/dev-map) | Codebase structure with hot paths (most referenced files) |
+| [`dev_patterns`](/docs/tools/dev-patterns) | Compare coding patterns against similar files |
+| [`dev_status`](/docs/tools/dev-status) | Repository indexing status and health |
+| [`dev_health`](/docs/tools/dev-health) | Server health checks |
 
 ## How it works
 
@@ -117,7 +56,22 @@ flowchart LR
     D <--> E
 ```
 
-**Key insight:** dev-agent returns **code snippets with context** using hybrid search (keyword matching + semantic understanding) — Claude doesn't read entire files. This is why input tokens drop by 99%.
+1. **Index** — Scanner parses your code (ts-morph for TypeScript, tree-sitter for Go), extracts functions, classes, types, imports, and call graphs
+2. **Embed** — Antfly generates vector embeddings locally via Termite (ONNX, BAAI/bge-small-en-v1.5)
+3. **Search** — Hybrid search combines BM25 keyword matching with vector similarity, fused via Reciprocal Rank Fusion (RRF)
+4. **Auto-update** — File watcher detects changes and re-indexes automatically while the MCP server is running
+
+## Why it helps
+
+Instead of grep chains and reading entire files, your AI tool can ask conceptual questions:
+
+| Question | Without dev-agent | With dev-agent |
+|----------|-------------------|----------------|
+| "Where do we handle auth?" | `grep -r "auth"` → 200 matches | `dev_search "authentication"` → 5 ranked results with code |
+| "What calls this function?" | Manual file reading | `dev_refs "validateUser"` → callers + callees |
+| "What's in this codebase?" | `ls`, `find`, read READMEs | `dev_map` → structure with component counts |
+
+The key difference: semantic search finds code by **meaning**, not text matching. "Where do we handle errors?" finds try/catch blocks, error middleware, and validation functions — even if none contain the word "error."
 
 ## Quick Start
 
@@ -125,13 +79,14 @@ flowchart LR
 ### Install
 
 ```bash
-npm install -g dev-agent
+npm install -g @prosdevlab/dev-agent
+brew install --cask antflydb/antfly/antfly
 ```
 
-### Index your repository
+### Setup and index
 
 ```bash
-cd your-project
+dev setup
 dev index
 ```
 
@@ -143,37 +98,18 @@ dev mcp install           # For Claude Code
 ```
 </Steps>
 
-## 6 MCP Tools
-
-| Tool | What it does |
-|------|--------------|
-| [`dev_search`](/docs/tools/dev-search) | Semantic code search — returns snippets, not just paths |
-| [`dev_refs`](/docs/tools/dev-refs) | Find callers/callees of any function |
-| [`dev_map`](/docs/tools/dev-map) | Codebase structure with change frequency |
-| [`dev_patterns`](/docs/tools/dev-inspect) | Inspect files (compare implementations, check patterns) |
-| [`dev_status`](/docs/tools/dev-status) | Repository indexing status |
-| [`dev_health`](/docs/tools/dev-health) | Server health checks |
-
-## When to use it
-
-| Scenario | dev-agent? | Expected Savings |
-|----------|------------|------------------|
-| Debugging unfamiliar code | ✅ Yes | **42% cost** |
-| Exploring large codebase | ✅ Yes | **44% cost** |
-| Implementing GitHub issues | ✅ Yes | **29% cost** |
-| Small codebase you know | ❌ Skip | ~0% |
-| Need exhaustive file reads | ⚠️ Maybe | Trade speed for thoroughness |
-
 ## Features
 
-- **Code Snippets** — Search returns code, not just file paths
+- **Hybrid Search** — BM25 keyword + vector semantic, fused with RRF
+- **Code Snippets** — Search returns actual code, not just file paths
+- **Call Graph** — Callers/callees extracted from AST at index time
 - **Multi-Language** — TypeScript, JavaScript, Go, Markdown
-- **100% Local** — Your code never leaves your machine
-- **Sub-second Search** — Fast even on large repos with LanceDB
-- **1500+ Tests** — Production-grade reliability
+- **100% Local** — Antfly runs on your machine. No data leaves.
+- **Auto-Index** — File watcher re-indexes on save while MCP server runs
+- **1,600+ Tests** — Production-grade reliability
 
 ---
 
-[Read the story behind dev-agent →](https://www.devbypros.com/blog/10-days-of-vibe-coding)
+MIT License
 
-MIT License • Built by [prosdev](https://github.com/prosdev)
+[Read the story behind dev-agent →](https://www.devbypros.com/blog/10-days-of-vibe-coding)

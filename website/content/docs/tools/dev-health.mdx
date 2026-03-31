@@ -48,7 +48,7 @@ Components:
 ┌─────────────────┬────────┬──────────┬─────────────────────┐
 │ Component       │ Status │ Latency  │ Details             │
 ├─────────────────┼────────┼──────────┼─────────────────────┤
-│ Vector Storage  │ ✅ Pass │ 24ms     │ LanceDB connected   │
+│ Vector Storage  │ ✅ Pass │ 24ms     │ Antfly connected    │
 │ Repository Index│ ✅ Pass │ 12ms     │ 1,832 components    │
 │ GitHub Index    │ ✅ Pass │ 8ms      │ 172 documents       │
 │ Rate Limiter    │ ✅ Pass │ <1ms     │ 89/100 tokens       │
@@ -70,7 +70,7 @@ CPU: 2.3%
 
 | Component | What It Checks |
 |-----------|----------------|
-| **Vector Storage** | LanceDB connection and query capability |
+| **Vector Storage** | Antfly connection and query capability |
 | **Repository Index** | Index exists and is readable |
 | **GitHub Index** | GitHub metadata is accessible |
 | **Rate Limiter** | Token bucket has capacity |
