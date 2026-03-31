@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.5',
-  title: 'AST-Based Pattern Analysis',
+  version: '0.10.6',
+  title: 'Graph Algorithms for dev_map and dev_refs',
   date: 'March 31, 2026',
   summary:
-    'dev_patterns uses tree-sitter AST queries for more accurate detection of error handling, imports, and type coverage across .ts, .tsx, .js, .jsx files.',
-  link: '/updates#v0105--ast-based-pattern-analysis',
+    'PageRank-based file ranking, subsystem detection, and dependency path tracing via traceTo.',
+  link: '/updates#v0106--graph-algorithms-for-dev_map-and-dev_refs',
 } as const;

@@ -189,13 +189,14 @@ export function connectedComponents(graph: Map<string, WeightedEdge[]>): string[
   for (const node of allNodes) {
     if (visited.has(node)) continue;
 
-    // BFS from this node
+    // BFS from this node (index-based to avoid O(n) shift)
     const component: string[] = [];
     const queue = [node];
+    let qi = 0;
     visited.add(node);
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    while (qi < queue.length) {
+      const current = queue[qi++];
       component.push(current);
       for (const neighbor of adj.get(current) || []) {
         if (!visited.has(neighbor)) {
@@ -232,9 +233,10 @@ export function shortestPath(
   const visited = new Set<string>([from]);
   const parent = new Map<string, string>();
   const queue = [from];
+  let qi = 0;
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  while (qi < queue.length) {
+    const current = queue[qi++];
     for (const { target } of graph.get(current) || []) {
       if (visited.has(target)) continue;
       visited.add(target);

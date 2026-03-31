@@ -63,14 +63,25 @@ This helps AI assistants quickly understand codebase organization and activity.
 
 ## Features
 
-### Hot Paths
+### Hot Paths (PageRank)
 
-Shows the most referenced files in your codebase. These are typically:
-- Core utilities used everywhere
-- Base classes/interfaces
-- Central orchestrators
+Shows the most architecturally important files in your codebase, ranked by PageRank
+over the weighted dependency graph. Unlike simple reference counting, PageRank identifies
+files that are depended on by other important files — not just files with many direct imports.
 
-Useful for understanding which code is most critical.
+Inspired by [aider's repo map](https://github.com/Aider-AI/aider).
+
+### Subsystems
+
+Shows connected components in the dependency graph — groups of files that depend on each
+other, forming independent subsystems. Helps agents understand codebase boundaries.
+
+```
+Subsystems (3 connected):
+  1. packages/core (45 files)
+  2. packages/cli (12 files)
+  3. packages/mcp-server (18 files)
+```
 
 ### Change Frequency ✨ v0.4
 

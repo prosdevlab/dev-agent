@@ -25,6 +25,7 @@
 
 ## Test Gaps
 
+- **RefsAdapter integration test with `traceTo`.** The `traceTo` path tracing feature is tested at the algorithm level (shortestPath in graph.test.ts) but not at the adapter level. Needs a test that constructs RefsAdapter with a mock indexer, calls `execute()` with `traceTo`, and verifies the path output format. Also needs a test for the error case when indexer is missing.
 - **InspectAdapter integration test with PatternMatcher.** The InspectAdapter test constructs without a `patternMatcher` — the AST path is never exercised through the MCP layer. Needs a test that constructs `InspectAdapter` with `createPatternMatcher()`, mocks the search service, calls `execute()`, and verifies AST-enhanced results flow through. Requires mock search service setup — larger integration test scope.
 
 ## Notes

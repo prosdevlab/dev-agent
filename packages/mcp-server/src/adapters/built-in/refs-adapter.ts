@@ -120,7 +120,7 @@ export class RefsAdapter extends ToolAdapter {
             type: 'string',
             description:
               "Trace the dependency chain from this function's file to a target file " +
-              '(e.g., "src/database.ts"). Shows the shortest path through the call graph.',
+              '(e.g., "src/database.ts"). Follows directed call graph edges (A calls B, not B calls A).',
           },
         },
         required: ['name'],
@@ -158,6 +158,17 @@ export class RefsAdapter extends ToolAdapter {
       }
 
       // Handle traceTo — find shortest dependency path
+      if (traceTo && !this.indexer) {
+        return {
+          success: false,
+          error: {
+            code: 'INDEX_REQUIRED',
+            message: 'Path tracing requires a repository index.',
+            suggestion: 'Run "dev index" to index the repository first.',
+          },
+        };
+      }
+
       if (traceTo && this.indexer) {
         const sourceFile = (target.metadata.path as string) || '';
         const allDocs = await this.indexer.getAll({ limit: 10000 });
