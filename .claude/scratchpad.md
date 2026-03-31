@@ -11,10 +11,11 @@
 ## Future Work
 
 - Antfly SDK: server-side path filter for `getDocsByFilePath` (eliminates 5k cap)
-- `dev_patterns format: "json"` for token-efficient agent output (MCP Phase 1, Part 1.4)
-- ast-grep as optional dep for pattern analysis (MCP Phase 1, Part 1.5)
 - PageRank for `dev_map` hot paths (MCP Phase 1, Part 1.6)
 - E2E tests in CI — blocked on Antfly memory requirements vs GitHub runner limits (7GB)
+- **Python language support** — tree-sitter-python WASM is ~300KB, already in tree-sitter-wasms. Needs a Python scanner (document extraction) + Python-specific pattern rules. High demand — large ecosystem. Worth a standalone plan covering: scanner, pattern rules, test fixtures, indexer integration. The PatternMatcher interface from 1.5 is language-agnostic so pattern rules slot right in; the scanner is the real work.
+- Vue/Svelte SFC support — `.vue`/`.svelte` files have embedded `<script lang="ts">` blocks. Would need script block extraction before tree-sitter parsing. Lower priority — co-located `.ts` files in those projects already get full analysis.
+- Swap `WasmPatternMatcher` to `@ast-grep/napi` if bulk scanning perf becomes an issue (~4x faster native Rust). Interface is ready; implementation is mechanical.
 
 ## Notes
 
