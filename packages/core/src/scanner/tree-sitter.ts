@@ -28,14 +28,16 @@ let parserInitialized = false;
  *
  * Currently supported:
  * - 'go': Go language parsing (bundled in production)
+ * - 'typescript': TypeScript parsing (for AST pattern analysis)
+ * - 'tsx': TSX parsing (TypeScript + JSX, for React codebases)
+ * - 'javascript': JavaScript/JSX parsing (for JS codebases)
  *
  * To add new languages:
  * 1. Add language to this type definition
  * 2. Update SUPPORTED_LANGUAGES in packages/dev-agent/scripts/copy-wasm.js
  * 3. Ensure tree-sitter-wasms contains the required WASM file
- * 4. Add language-specific scanner in packages/core/src/scanner/
  */
-export type TreeSitterLanguage = 'go';
+export type TreeSitterLanguage = 'go' | 'typescript' | 'tsx' | 'javascript';
 
 /**
  * Cache of loaded language grammars
