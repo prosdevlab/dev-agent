@@ -226,7 +226,7 @@ export class MapAdapter extends ToolAdapter {
         error: {
           code: 'MAP_FAILED',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error,
+          suggestion: 'Run "dev index" first. Try a lower depth if the map is too large.',
         },
       };
     }

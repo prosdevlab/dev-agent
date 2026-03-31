@@ -7,7 +7,6 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  HealthArgsSchema,
   InspectArgsSchema,
   MapArgsSchema,
   RefsArgsSchema,
@@ -18,7 +17,7 @@ import {
 describe('InspectArgsSchema', () => {
   it('should validate valid input', () => {
     const result = InspectArgsSchema.safeParse({
-      query: 'src/auth/token.ts',
+      filePath: 'src/auth/token.ts',
     });
 
     expect(result.success).toBe(true);
@@ -29,7 +28,7 @@ describe('InspectArgsSchema', () => {
 
   it('should apply defaults', () => {
     const result = InspectArgsSchema.safeParse({
-      query: 'test',
+      filePath: 'test.ts',
     });
 
     expect(result.success).toBe(true);
@@ -41,9 +40,21 @@ describe('InspectArgsSchema', () => {
     }
   });
 
-  it('should reject empty query', () => {
+  it('should accept json format', () => {
     const result = InspectArgsSchema.safeParse({
-      query: '',
+      filePath: 'test.ts',
+      format: 'json',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.format).toBe('json');
+    }
+  });
+
+  it('should reject empty filePath', () => {
+    const result = InspectArgsSchema.safeParse({
+      filePath: '',
     });
 
     expect(result.success).toBe(false);
@@ -51,7 +62,7 @@ describe('InspectArgsSchema', () => {
 
   it('should reject out-of-range limit', () => {
     const result = InspectArgsSchema.safeParse({
-      query: 'test',
+      filePath: 'test.ts',
       limit: 200,
     });
 
@@ -60,7 +71,7 @@ describe('InspectArgsSchema', () => {
 
   it('should reject unknown properties', () => {
     const result = InspectArgsSchema.safeParse({
-      query: 'test',
+      filePath: 'test.ts',
       unknownProp: 'value',
     });
 
@@ -191,34 +202,5 @@ describe('StatusArgsSchema', () => {
       const result = StatusArgsSchema.safeParse({ section });
       expect(result.success).toBe(true);
     }
-  });
-});
-
-describe('HealthArgsSchema', () => {
-  it('should validate with default', () => {
-    const result = HealthArgsSchema.safeParse({});
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.verbose).toBe(false);
-    }
-  });
-
-  it('should validate verbose flag', () => {
-    const result = HealthArgsSchema.safeParse({ verbose: true });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.verbose).toBe(true);
-    }
-  });
-
-  it('should reject unknown properties', () => {
-    const result = HealthArgsSchema.safeParse({
-      verbose: true,
-      unknownProp: 'value',
-    });
-
-    expect(result.success).toBe(false);
   });
 });

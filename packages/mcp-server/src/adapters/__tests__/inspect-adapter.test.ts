@@ -54,15 +54,21 @@ describe('InspectAdapter', () => {
       expect(definition.name).toBe('dev_patterns');
       expect(definition.description).toContain('pattern');
       expect(definition.description).toContain('similar');
-      expect(definition.inputSchema.required).toContain('query');
-      expect(definition.inputSchema.required).not.toContain('action');
+      expect(definition.inputSchema.required).toContain('filePath');
     });
 
-    it('should have file path description in query field', () => {
+    it('should have file path description in filePath field', () => {
       const definition = adapter.getToolDefinition();
-      const queryProp = (definition.inputSchema.properties as any)?.query;
+      const filePathProp = (definition.inputSchema.properties as any)?.filePath;
 
-      expect(queryProp.description.toLowerCase()).toContain('file path');
+      expect(filePathProp.description.toLowerCase()).toContain('file path');
+    });
+
+    it('should include negative guidance in description', () => {
+      const definition = adapter.getToolDefinition();
+
+      expect(definition.description).toContain('NOT for finding code');
+      expect(definition.description).toContain('dev_search');
     });
 
     it('should not have an output schema (returns plain markdown)', () => {
@@ -74,10 +80,10 @@ describe('InspectAdapter', () => {
   });
 
   describe('Input Validation', () => {
-    it('should reject empty query', async () => {
+    it('should reject empty filePath', async () => {
       const result = await adapter.execute(
         {
-          query: '',
+          filePath: '',
         },
         mockContext
       );
@@ -89,7 +95,7 @@ describe('InspectAdapter', () => {
     it('should reject invalid limit', async () => {
       const result = await adapter.execute(
         {
-          query: 'src/test.ts',
+          filePath: 'src/test.ts',
           limit: -1,
         },
         mockContext
@@ -111,7 +117,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
           limit: 10,
           format: 'compact',
         },
@@ -146,7 +152,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
         },
         mockContext
       );
@@ -181,7 +187,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
         },
         mockContext
       );
@@ -202,7 +208,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'README.md',
+          filePath: 'README.md',
         },
         mockContext
       );
@@ -246,7 +252,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
           limit: 5,
         },
         mockContext
@@ -276,7 +282,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
           format: 'compact',
         },
         mockContext
@@ -303,7 +309,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
           format: 'verbose',
         },
         mockContext
@@ -322,7 +328,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
         },
         mockContext
       );
@@ -336,7 +342,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'missing-file.ts',
+          filePath: 'missing-file.ts',
         },
         mockContext
       );
@@ -350,7 +356,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
         },
         mockContext
       );
@@ -375,7 +381,7 @@ describe('InspectAdapter', () => {
 
       const result = await adapter.execute(
         {
-          query: 'modern-typescript.ts',
+          filePath: 'modern-typescript.ts',
         },
         mockContext
       );

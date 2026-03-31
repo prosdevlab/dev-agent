@@ -30,9 +30,9 @@ export const BaseQuerySchema = z.object({
 
 export const InspectArgsSchema = z
   .object({
-    query: z.string().min(1, 'Query must be a non-empty string (file path)'),
+    filePath: z.string().min(1, 'filePath must be a non-empty file path'),
     limit: z.number().int().min(1).max(50).default(10),
-    format: FormatSchema.default('compact'),
+    format: z.enum(['compact', 'verbose', 'json']).default('compact'),
   })
   .strict(); // Reject unknown properties
 
@@ -110,18 +110,6 @@ export const StatusOutputSchema = z.object({
 export type StatusOutput = z.infer<typeof StatusOutputSchema>;
 
 // ============================================================================
-// Health Adapter
-// ============================================================================
-
-export const HealthArgsSchema = z
-  .object({
-    verbose: z.boolean().default(false),
-  })
-  .strict();
-
-export type HealthArgs = z.infer<typeof HealthArgsSchema>;
-
-// ============================================================================
 // Output Schemas (Runtime validation for adapter responses)
 // ============================================================================
 
@@ -135,29 +123,6 @@ export const SearchOutputSchema = z.object({
 });
 
 export type SearchOutput = z.infer<typeof SearchOutputSchema>;
-
-/**
- * Health check result schema
- */
-export const HealthCheckResultSchema = z.object({
-  status: z.enum(['pass', 'warn', 'fail']),
-  message: z.string(),
-  details: z.any().optional(), // Allow any type for details
-});
-
-export const HealthOutputSchema = z.object({
-  status: z.enum(['healthy', 'degraded', 'unhealthy']),
-  uptime: z.number(),
-  timestamp: z.string(),
-  checks: z.object({
-    vectorStorage: HealthCheckResultSchema,
-    repository: HealthCheckResultSchema,
-    githubIndex: HealthCheckResultSchema.optional(),
-  }),
-  formattedReport: z.string(),
-});
-
-export type HealthOutput = z.infer<typeof HealthOutputSchema>;
 
 /**
  * Map output schema

@@ -130,6 +130,8 @@ export class RefsAdapter extends ToolAdapter {
           error: {
             code: 'NOT_FOUND',
             message: `Could not find function or method named "${name}"`,
+            suggestion:
+              'Verify the function name exists with dev_search first. Names are case-sensitive.',
           },
         };
       }
@@ -193,7 +195,7 @@ export class RefsAdapter extends ToolAdapter {
         error: {
           code: 'REFS_FAILED',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error,
+          suggestion: 'Try dev_search to find the correct function name first.',
         },
       };
     }

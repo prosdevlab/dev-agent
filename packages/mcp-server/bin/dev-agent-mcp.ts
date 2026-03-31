@@ -13,7 +13,6 @@ import {
   saveMetadata,
 } from '@prosdevlab/dev-agent-core';
 import {
-  HealthAdapter,
   InspectAdapter,
   MapAdapter,
   RefsAdapter,
@@ -274,11 +273,6 @@ async function main() {
       defaultFormat: 'compact',
     });
 
-    const healthAdapter = new HealthAdapter({
-      repositoryPath,
-      vectorStorePath: filePaths.vectors,
-    });
-
     const refsAdapter = new RefsAdapter({
       searchService,
       defaultLimit: 20,
@@ -291,7 +285,7 @@ async function main() {
       defaultTokenBudget: 2000,
     });
 
-    // Create MCP server with 6 adapters
+    // Create MCP server with 5 adapters (health merged into status)
     const server = new MCPServer({
       serverInfo: {
         name: 'dev-agent',
@@ -302,14 +296,7 @@ async function main() {
         logLevel,
       },
       transport: 'stdio',
-      adapters: [
-        searchAdapter,
-        statusAdapter,
-        inspectAdapter,
-        healthAdapter,
-        refsAdapter,
-        mapAdapter,
-      ],
+      adapters: [searchAdapter, statusAdapter, inspectAdapter, refsAdapter, mapAdapter],
     });
 
     // Start server
