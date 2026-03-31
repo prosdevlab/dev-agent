@@ -96,6 +96,9 @@ export async function generateCodebaseMap(
   });
   const t2 = Date.now();
   logger?.debug({ duration_ms: t2 - t1, docCount: allDocs.length }, 'Retrieved all documents');
+  if (allDocs.length >= 10000) {
+    logger?.warn('Document limit (10000) reached — map and graph results may be incomplete');
+  }
 
   // Build directory tree from documents
   const t3 = Date.now();

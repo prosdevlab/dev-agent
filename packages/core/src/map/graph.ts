@@ -228,7 +228,6 @@ export function shortestPath(
   to: string
 ): string[] | null {
   if (from === to) return [from];
-  if (!graph.has(from)) return null;
 
   const visited = new Set<string>([from]);
   const parent = new Map<string, string>();
