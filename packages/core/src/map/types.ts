@@ -103,6 +103,8 @@ export interface CodebaseMap {
   totalDirectories: number;
   /** Most referenced files (hot paths) */
   hotPaths: HotPath[];
+  /** Connected subsystems (groups of interdependent files) */
+  components?: Array<{ files: string[]; size: number }>;
   /** Generation timestamp */
   generatedAt: string;
 }
