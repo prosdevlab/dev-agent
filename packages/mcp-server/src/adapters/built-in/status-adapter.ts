@@ -140,7 +140,7 @@ export class StatusAdapter extends ToolAdapter {
         error: {
           code: 'STATUS_FAILED',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error,
+          suggestion: 'Run "dev setup" to ensure Antfly is running, then "dev index" to index.',
         },
       };
     }

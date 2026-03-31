@@ -216,7 +216,8 @@ export class SearchAdapter extends ToolAdapter {
         error: {
           code: 'SEARCH_FAILED',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error,
+          suggestion:
+            'Run "dev index" to index the repository. Try a different query if no results.',
         },
       };
     }

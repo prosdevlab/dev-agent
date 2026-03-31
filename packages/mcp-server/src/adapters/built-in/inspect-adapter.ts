@@ -75,13 +75,14 @@ export class InspectAdapter extends ToolAdapter {
     return {
       name: 'dev_patterns',
       description:
-        'Analyze coding patterns in a file against the codebase. Compares import style, ' +
-        'error handling, type coverage, test coverage, and file size against similar files. ' +
-        'Use for code reviews and consistency checks.',
+        'Analyze coding patterns in a file against similar code in the codebase. ' +
+        'Compares import style, error handling, type coverage, test coverage, and file size. ' +
+        'Use for code reviews and consistency checks. ' +
+        'NOT for finding code (use dev_search) or tracing calls (use dev_refs).',
       inputSchema: {
         type: 'object',
         properties: {
-          query: {
+          filePath: {
             type: 'string',
             description: 'File path to analyze (e.g., "src/auth/middleware.ts")',
           },
@@ -94,13 +95,13 @@ export class InspectAdapter extends ToolAdapter {
           },
           format: {
             type: 'string',
-            enum: ['compact', 'verbose'],
+            enum: ['compact', 'verbose', 'json'],
             description:
-              'Output format: "compact" for summaries (default), "verbose" for full details',
+              'Output format: "compact" (default), "verbose" for details, "json" for structured data',
             default: this.defaultFormat,
           },
         },
-        required: ['query'],
+        required: ['filePath'],
       },
     };
   }
@@ -112,37 +113,51 @@ export class InspectAdapter extends ToolAdapter {
       return validation.error;
     }
 
-    const { query, limit, format } = validation.data;
+    const { filePath, limit, format } = validation.data;
 
     try {
       context.logger.debug('Executing pattern analysis', {
-        query,
+        filePath,
         limit,
         format,
       });
 
       // Perform comprehensive file inspection
-      const { content, similarFilesCount, patternsAnalyzed } = await this.inspectFile(
-        query,
-        limit,
-        0, // No threshold — let the pattern service decide relevance
-        format
-      );
+      const { content, similarFilesCount, patternsAnalyzed, patternComparison } =
+        await this.inspectFile(filePath, limit, 0, format);
 
       context.logger.info('File inspection completed', {
-        query,
+        filePath,
         similarFilesCount,
         patternsAnalyzed,
         contentLength: content.length,
       });
+
+      // JSON format: return structured data for token-efficient agent workflows
+      if (format === 'json' && patternComparison) {
+        const jsonData = JSON.stringify(patternComparison, null, 2);
+        return {
+          success: true,
+          data: jsonData,
+          metadata: {
+            tokens: jsonData.length / 4,
+            duration_ms: 0,
+            timestamp: new Date().toISOString(),
+            cached: false,
+            similar_files_count: similarFilesCount,
+            patterns_analyzed: patternsAnalyzed,
+            format: 'json',
+          },
+        };
+      }
 
       // Return markdown content (MCP will wrap in content blocks)
       return {
         success: true,
         data: content,
         metadata: {
-          tokens: content.length / 4, // Rough estimate
-          duration_ms: 0, // Calculated by MCP server
+          tokens: content.length / 4,
+          duration_ms: 0,
           timestamp: new Date().toISOString(),
           cached: false,
           similar_files_count: similarFilesCount,
@@ -159,7 +174,7 @@ export class InspectAdapter extends ToolAdapter {
             success: false,
             error: {
               code: 'FILE_NOT_FOUND',
-              message: `File not found: ${query}`,
+              message: `File not found: ${filePath}`,
               suggestion: 'Check the file path and ensure it exists in the repository.',
             },
           };
@@ -182,6 +197,7 @@ export class InspectAdapter extends ToolAdapter {
         error: {
           code: 'INSPECTION_ERROR',
           message: error instanceof Error ? error.message : 'Unknown inspection error',
+          suggestion: 'Check the file path is valid and the repository is indexed.',
         },
       };
     }
@@ -198,7 +214,12 @@ export class InspectAdapter extends ToolAdapter {
     limit: number,
     threshold: number,
     format: string
-  ): Promise<{ content: string; similarFilesCount: number; patternsAnalyzed: number }> {
+  ): Promise<{
+    content: string;
+    similarFilesCount: number;
+    patternsAnalyzed: number;
+    patternComparison?: PatternComparison;
+  }> {
     // Step 1: Find similar files (request slightly more to account for extension filtering)
     const similarResults = await this.searchService.findSimilar(filePath, {
       limit: limit + 5, // Small buffer for extension filtering
@@ -232,16 +253,19 @@ export class InspectAdapter extends ToolAdapter {
     const similarFilePaths = filteredResults.map((r) => r.metadata.path as string);
     const patternComparison = await this.patternService.comparePatterns(filePath, similarFilePaths);
 
-    // Step 3: Generate comprehensive inspection report
+    // Step 3: Generate inspection report (skip formatting for JSON)
     const content =
-      format === 'verbose'
-        ? await this.formatInspectionVerbose(filePath, filteredResults, patternComparison)
-        : await this.formatInspectionCompact(filePath, filteredResults, patternComparison);
+      format === 'json'
+        ? '' // JSON handled by execute()
+        : format === 'verbose'
+          ? await this.formatInspectionVerbose(filePath, filteredResults, patternComparison)
+          : await this.formatInspectionCompact(filePath, filteredResults, patternComparison);
 
     return {
       content,
       similarFilesCount: filteredResults.length,
-      patternsAnalyzed: 5, // Currently analyzing 5 pattern categories
+      patternsAnalyzed: 5,
+      patternComparison,
     };
   }
 
