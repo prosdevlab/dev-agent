@@ -338,6 +338,53 @@ export async function parseCode(
 }
 
 /**
+ * Parse source and run multiple S-expression queries, returning match counts.
+ * Handles parser creation, tree cleanup (WASM heap), and error recovery.
+ *
+ * Used by PatternMatcher for AST-based pattern detection.
+ */
+export async function runQueries(
+  sourceText: string,
+  language: TreeSitterLanguage,
+  queries: Array<{ id: string; query: string }>
+): Promise<Map<string, number>> {
+  const results = new Map<string, number>();
+  if (!sourceText.trim()) return results;
+
+  await initTreeSitter();
+  if (!ParserClass || !QueryClass) return results;
+
+  const parser = new ParserClass();
+  let tree: ReturnType<typeof parser.parse> | null = null;
+
+  try {
+    const lang = await loadLanguage(language);
+    parser.setLanguage(lang);
+    tree = parser.parse(sourceText);
+    if (!tree) return results;
+
+    const QueryCls = QueryClass;
+    for (const { id, query: queryString } of queries) {
+      try {
+        const q = new QueryCls(lang, queryString);
+        const matches = q.matches(tree.rootNode);
+        results.set(id, matches.length);
+      } catch {
+        // Invalid query — skip, return 0 for this rule
+        results.set(id, 0);
+      }
+    }
+  } catch {
+    // Parse failure — return empty results
+  } finally {
+    tree?.delete();
+    parser.delete();
+  }
+
+  return results;
+}
+
+/**
  * Helper to get text from source by line numbers (1-based)
  */
 export function getTextByLines(sourceText: string, startLine: number, endLine: number): string {

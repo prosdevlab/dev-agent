@@ -1,0 +1,103 @@
+/**
+ * AST Pattern Rules — verified S-expression queries for tree-sitter.
+ *
+ * All queries validated against web-tree-sitter@0.25.10 + tree-sitter-wasms@0.1.13
+ * by parsing real TypeScript/JavaScript snippets and inspecting AST output.
+ *
+ * These are string constants, not a DSL. If we ever swap to @ast-grep/napi,
+ * add a translation layer at that time (YAGNI).
+ */
+
+import type { PatternMatchRule } from './wasm-matcher.js';
+
+// ============================================================================
+// Error Handling (5 rules)
+// ============================================================================
+
+export const ERROR_HANDLING_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'try-catch',
+    category: 'error-handling',
+    query: '(try_statement) @match',
+  },
+  {
+    id: 'throw',
+    category: 'error-handling',
+    query: '(throw_statement) @match',
+  },
+  {
+    id: 'promise-catch',
+    category: 'error-handling',
+    query:
+      '(call_expression function: (member_expression property: (property_identifier) @method (#eq? @method "catch"))) @match',
+  },
+  {
+    // Intentionally narrow: only catches const/let declarations with await
+    // inside try blocks. Does NOT catch bare `await foo()` as expression
+    // statements or await nested inside if/for within try.
+    id: 'await-in-try',
+    category: 'error-handling',
+    query:
+      '(try_statement body: (statement_block (lexical_declaration (variable_declarator value: (await_expression))))) @match',
+  },
+  {
+    // Matches any class with an extends clause — catches custom error
+    // hierarchies (extends BaseError, extends HttpError, etc.), not just
+    // direct `extends Error`. May have false positives for non-error classes
+    // with extends, but these are rare in error-handling analysis context.
+    id: 'error-class',
+    category: 'error-handling',
+    query: '(class_declaration (class_heritage (extends_clause))) @match',
+  },
+];
+
+// ============================================================================
+// Import Style (3 rules)
+// ============================================================================
+
+export const IMPORT_STYLE_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'dynamic-import',
+    category: 'import-style',
+    query: '(call_expression function: (import)) @match',
+  },
+  {
+    id: 're-export',
+    category: 'import-style',
+    query: '(export_statement source: (string)) @match',
+  },
+  {
+    id: 'require',
+    category: 'import-style',
+    query: '(call_expression function: (identifier) @fn (#eq? @fn "require")) @match',
+  },
+];
+
+// ============================================================================
+// Type Coverage (2 rules)
+// ============================================================================
+
+export const TYPE_COVERAGE_QUERIES: PatternMatchRule[] = [
+  {
+    // Arrow functions with return type — the main win over regex.
+    // Regex is fragile on `(a: number, b: number): number => ...`
+    id: 'arrow-return-type',
+    category: 'type-coverage',
+    query: '(arrow_function return_type: (type_annotation)) @match',
+  },
+  {
+    id: 'function-return-type',
+    category: 'type-coverage',
+    query: '(function_declaration return_type: (type_annotation)) @match',
+  },
+];
+
+// ============================================================================
+// All rules combined
+// ============================================================================
+
+export const ALL_QUERIES: PatternMatchRule[] = [
+  ...ERROR_HANDLING_QUERIES,
+  ...IMPORT_STYLE_QUERIES,
+  ...TYPE_COVERAGE_QUERIES,
+];
