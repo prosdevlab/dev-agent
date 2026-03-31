@@ -19,7 +19,7 @@
 - **PageRank at 10k+ nodes** — convergence tolerance 1e-6 may require all 100 iterations for large sparse graphs. Monitor performance. Consider reducing maxIterations or loosening tolerance for dev_map where approximate ranks are fine.
 - **getAll(limit: 10000) truncation** — medium-large monorepos may exceed 10k docs. Warning is logged but results are silently incomplete. Long-term: paginate or make limit configurable.
 - E2E tests in CI — blocked on Antfly memory requirements vs GitHub runner limits (7GB)
-- **Python language support** — tree-sitter-python WASM is ~300KB, already in tree-sitter-wasms. Needs a Python scanner (document extraction) + Python-specific pattern rules. High demand — large ecosystem. Worth a standalone plan covering: scanner, pattern rules, test fixtures, indexer integration. The PatternMatcher interface from 1.5 is language-agnostic so pattern rules slot right in; the scanner is the real work.
+- **Python language support** — plan written at `.claude/da-plans/core/phase-4-python-support/`. 4 parts: bundle WASM + queries, PythonScanner, pattern rules, test fixtures + docs.
 - Vue/Svelte SFC support — `.vue`/`.svelte` files have embedded `<script lang="ts">` blocks. Would need script block extraction before tree-sitter parsing. Lower priority — co-located `.ts` files in those projects already get full analysis.
 - Swap `WasmPatternMatcher` to `@ast-grep/napi` if bulk scanning perf becomes an issue (~4x faster native Rust). Interface is ready; implementation is mechanical.
 
@@ -31,6 +31,10 @@
 
 - **RefsAdapter integration test with `dependsOn`.** The `traceTo` path tracing feature is tested at the algorithm level (shortestPath in graph.test.ts) but not at the adapter level. Needs a test that constructs RefsAdapter with a mock indexer, calls `execute()` with `traceTo`, and verifies the path output format. Also needs a test for the error case when indexer is missing.
 - **InspectAdapter integration test with PatternMatcher.** The InspectAdapter test constructs without a `patternMatcher` — the AST path is never exercised through the MCP layer. Needs a test that constructs `InspectAdapter` with `createPatternMatcher()`, mocks the search service, calls `execute()`, and verifies AST-enhanced results flow through. Requires mock search service setup — larger integration test scope.
+
+## Tech Debt
+
+- **`isTestFile()` is hardcoded for JS/TS and Go.** Only checks for `.test.`, `.spec.` (JS/TS) and `_test.go` (Go). Python needs `test_*.py`, `*_test.py`, `conftest.py`. Future languages will need their own patterns. Should be refactored to a language-aware registry or pattern map instead of growing if/else chains. Tracked in Phase 4 Part 4.2.
 
 ## Notes
 
