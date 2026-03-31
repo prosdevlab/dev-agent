@@ -117,10 +117,10 @@ export async function generateCodebaseMap(
     'Counted components'
   );
 
-  // Compute hot paths and connected components (share the dependency graph)
+  // Build dependency graph once, share between hot paths and components
   const t7 = Date.now();
-  const hotPaths = opts.includeHotPaths ? computeHotPaths(allDocs, opts.maxHotPaths) : [];
   const graph = buildDependencyGraph(allDocs);
+  const hotPaths = opts.includeHotPaths ? computeHotPaths(allDocs, graph, opts.maxHotPaths) : [];
   const rawComponents = connectedComponents(graph);
   const components = rawComponents
     .filter((c) => c.length > 1) // Only show multi-file subsystems
@@ -462,8 +462,11 @@ function applyChangeFrequency(node: MapNode, frequencyMap: Map<string, ChangeFre
  * Files that are depended on by other important files rank higher.
  * Sort by PageRank score, display real incoming edge count.
  */
-function computeHotPaths(docs: SearchResult[], maxPaths: number): HotPath[] {
-  const graph = buildDependencyGraph(docs);
+function computeHotPaths(
+  docs: SearchResult[],
+  graph: Map<string, import('./graph').WeightedEdge[]>,
+  maxPaths: number
+): HotPath[] {
   const ranks = pageRank(graph);
 
   // Count real incoming edges per file (distinct source files)
@@ -590,5 +593,8 @@ function findCommonPrefix(files: string[]): string {
       prefix = prefix.substring(0, prefix.lastIndexOf('/'));
     }
   }
-  return prefix;
+  // Require at least 2 path segments for a meaningful label
+  // "packages" alone is too generic; "packages/core" is useful
+  const segments = prefix.split('/').filter(Boolean);
+  return segments.length >= 2 ? prefix : '';
 }

@@ -9,6 +9,21 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.6 — Graph Algorithms for dev_map and dev_refs
+
+*March 31, 2026*
+
+**PageRank-based file ranking, subsystem detection, and dependency path tracing.**
+
+- `dev_map` hot paths now use PageRank over the weighted dependency graph — files depended on by other important files rank higher than files with many shallow references
+- `dev_map` shows connected subsystems: groups of interdependent files identified via graph analysis
+- `dev_refs` new `traceTo` parameter: `dev_refs { name: "authenticate", traceTo: "src/database.ts" }` → traces the shortest dependency chain between files
+- Weighted edges with sqrt dampening (inspired by [aider's repo map](https://github.com/Aider-AI/aider))
+- PageRank: 2,000 nodes + 10,000 edges in 4ms — no performance impact
+- All algorithms hand-rolled (~230 lines), no new dependencies
+
+---
+
 ## v0.10.5 — AST-Based Pattern Analysis
 
 *March 31, 2026*
