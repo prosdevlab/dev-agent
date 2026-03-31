@@ -63,6 +63,7 @@ export const RefsArgsSchema = z
     name: z.string().min(1, 'Name must be a non-empty string'),
     direction: z.enum(['callees', 'callers', 'both']).default('both'),
     limit: z.number().int().min(1).max(50).default(20),
+    traceTo: z.string().optional(),
   })
   .strict();
 
