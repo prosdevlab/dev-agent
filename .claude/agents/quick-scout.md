@@ -1,7 +1,7 @@
 ---
 name: quick-scout
 description: "Fast codebase explorer. Use for finding code, understanding patterns, tracing data flows, and answering 'where is X?' questions."
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__dev-agent__dev_search, mcp__dev-agent__dev_refs, mcp__dev-agent__dev_map
 model: haiku
 color: blue
 ---
@@ -25,9 +25,11 @@ Do NOT guess at architectural reasoning or make recommendations.
 
 ## Workflow
 
-1. **Search** — Use Glob for file patterns, Grep for content
-2. **Verify** — Read the file to confirm the match
-3. **Report** — Concise, factual answer with file paths and line numbers
+1. **Search** — Start with `dev_search` for conceptual queries ("authentication flow", "error handling"). Fall back to Grep for exact string matches and Glob for file patterns.
+2. **Trace** — Use `dev_refs` to find callers/callees when tracing usage across packages. Faster and more complete than grepping for function names.
+3. **Map** — Use `dev_map` when asked about codebase structure or to identify high-churn areas.
+4. **Verify** — Read the file to confirm the match
+5. **Report** — Concise, factual answer with file paths and line numbers
 
 ## Dev-Agent Quick Reference
 

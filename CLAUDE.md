@@ -102,6 +102,26 @@ plan-reviewer     — two-pass plan review (engineer + SDET)
 research-planner  — investigation planning before implementation
 ```
 
+### Agent → MCP Tool Matrix
+
+Agents dogfood the dev-agent MCP tools. ★ = high impact, ● = useful.
+
+```
+┌───────────────────┬────────────┬──────────┬─────────┬──────────────┬────────────┬────────────┐
+│       Agent       │ dev_search │ dev_refs │ dev_map │ dev_patterns │ dev_status │ dev_health │
+├───────────────────┼────────────┼──────────┼─────────┼──────────────┼────────────┼────────────┤
+│ bug-investigator  │     ★      │    ★     │    ●    │              │            │            │
+│ quick-scout       │     ★      │    ★     │    ●    │              │            │            │
+│ research-planner  │     ★      │    ●     │    ★    │      ★       │            │            │
+│ logic-reviewer    │     ●      │    ★     │         │      ●       │            │            │
+│ security-reviewer │     ★      │    ●     │         │      ★       │            │            │
+│ quality-reviewer  │     ●      │          │         │      ★       │            │            │
+│ plan-reviewer     │            │    ★     │    ★    │      ●       │            │            │
+│ pr-composer       │            │          │    ●    │              │     ●      │            │
+│ code-reviewer     │            │          │         │              │            │            │
+└───────────────────┴────────────┴──────────┴─────────┴──────────────┴────────────┴────────────┘
+```
+
 ---
 
 ## Plans (`.claude/da-plans/`)
