@@ -9,6 +9,18 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.10.3 — Fix Setup/Index Model Directory Mismatch
+
+*March 30, 2026*
+
+**Fixed `dev setup` reporting model ready while `dev index` fails with "model not found".**
+
+- `hasModel`/`pullModel` used `~/.termite/models` but the running Antfly server looked in `~/.antfly/models` — both now use a shared `--models-dir` pointing at the server's data directory
+- Improved model name matching to avoid false positives from substring collisions
+- Added unit tests for model detection logic
+
+---
+
 ## v0.10.2 — MCP Install Fix & Dependency Cleanup
 
 *March 30, 2026*
