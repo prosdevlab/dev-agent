@@ -10,6 +10,7 @@ import { stripFocusPrefix } from '../indexer/utils/change-frequency.js';
 import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
 import type { LocalGitExtractor } from './git-extractor';
+import { buildDependencyGraph, pageRank } from './graph';
 import type {
   ChangeFrequency,
   CodebaseMap,
@@ -21,6 +22,7 @@ import type {
 
 export { GitExtractor, LocalGitExtractor } from './git-extractor';
 export * from './git-types';
+export * from './graph';
 export * from './types';
 
 /** Default options for map generation */
@@ -445,51 +447,44 @@ function applyChangeFrequency(node: MapNode, frequencyMap: Map<string, ChangeFre
 }
 
 /**
- * Compute hot paths - files with the most incoming references
+ * Compute hot paths using PageRank over the dependency graph.
+ *
+ * Replaces simple reference counting with graph-aware ranking.
+ * Files that are depended on by other important files rank higher.
+ * Sort by PageRank score, display real incoming edge count.
  */
 function computeHotPaths(docs: SearchResult[], maxPaths: number): HotPath[] {
-  // Count incoming references per file
-  const refCounts = new Map<string, { count: number; component?: string }>();
+  const graph = buildDependencyGraph(docs);
+  const ranks = pageRank(graph);
 
-  for (const doc of docs) {
-    const callers = doc.metadata.callers as Array<{ file: string }> | undefined;
-    if (callers && Array.isArray(callers)) {
-      // This document is called by others - count it
-      const filePath = (doc.metadata.path as string) || (doc.metadata.file as string) || '';
-      if (filePath) {
-        const existing = refCounts.get(filePath) || { count: 0 };
-        existing.count += callers.length;
-        existing.component = existing.component || (doc.metadata.name as string);
-        refCounts.set(filePath, existing);
-      }
+  // Count real incoming edges per file (distinct source files)
+  const incomingCounts = new Map<string, Set<string>>();
+  for (const [src, edges] of graph) {
+    for (const e of edges) {
+      if (!incomingCounts.has(e.target)) incomingCounts.set(e.target, new Set());
+      incomingCounts.get(e.target)?.add(src);
     }
   }
 
-  // Also count based on callees pointing to files
+  // Build a lookup for primary component name per file
+  const componentByFile = new Map<string, string>();
   for (const doc of docs) {
-    const callees = doc.metadata.callees as Array<{ file: string; name: string }> | undefined;
-    if (callees && Array.isArray(callees)) {
-      for (const callee of callees) {
-        if (callee.file) {
-          const existing = refCounts.get(callee.file) || { count: 0 };
-          existing.count += 1;
-          refCounts.set(callee.file, existing);
-        }
-      }
+    const filePath = (doc.metadata.path as string) || (doc.metadata.file as string) || '';
+    if (filePath && doc.metadata.name && !componentByFile.has(filePath)) {
+      componentByFile.set(filePath, doc.metadata.name as string);
     }
   }
 
-  // Sort by count and take top N
-  const sorted = Array.from(refCounts.entries())
-    .map(([file, data]) => ({
+  // Sort by PageRank score, display real incoming ref count
+  return Array.from(ranks.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxPaths)
+    .map(([file, score]) => ({
       file,
-      incomingRefs: data.count,
-      primaryComponent: data.component,
-    }))
-    .sort((a, b) => b.incomingRefs - a.incomingRefs)
-    .slice(0, maxPaths);
-
-  return sorted;
+      incomingRefs: incomingCounts.get(file)?.size ?? 0,
+      score,
+      primaryComponent: componentByFile.get(file),
+    }));
 }
 
 /**
