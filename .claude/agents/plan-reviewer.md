@@ -1,7 +1,7 @@
 ---
 name: plan-reviewer
 description: "Reviews execution plans for completeness, risks, and feasibility. Use before approving a plan for implementation."
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__dev-agent__dev_refs, mcp__dev-agent__dev_map, mcp__dev-agent__dev_patterns
 model: opus
 color: purple
 ---
@@ -16,12 +16,12 @@ This agent **NEVER modifies plans**. It reports issues for the author to fix.
 
 ### Pass 1: Engineer Review
 
-Read the plan as a senior engineer. Check:
+Read the plan as a senior engineer. Use `dev_map` to verify structure claims, `dev_refs` to confirm dependency assertions, and `dev_patterns` to check if proposed patterns match existing conventions.
 
-1. **Context** — Does it accurately describe what exists today? (Verify by reading the actual code)
+1. **Context** — Does it accurately describe what exists today? (Verify with `dev_map` and reading actual code)
 2. **Architecture** — Does the proposed design fit the existing monorepo structure?
 3. **Parts breakdown** — Are parts sized correctly? (Each should be 1-2 commits)
-4. **Dependencies** — Are cross-package dependencies identified?
+4. **Dependencies** — Are cross-package dependencies identified? (Verify with `dev_refs`)
 5. **Build order** — Does the implementation order respect the build dependency chain?
 6. **Breaking changes** — Are they identified and migration paths described?
 

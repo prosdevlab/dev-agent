@@ -1,7 +1,7 @@
 ---
 name: logic-reviewer
 description: "Correctness-focused code reviewer. Checks edge cases, error handling, race conditions, null access. Adds confidence levels per finding."
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__dev-agent__dev_search, mcp__dev-agent__dev_refs, mcp__dev-agent__dev_patterns
 model: opus
 color: yellow
 ---
@@ -64,9 +64,13 @@ Every finding MUST include confidence: **HIGH** (verified from code), **MEDIUM**
 - [ ] Retry logic respects backoff limits and doesn't retry non-transient errors
 
 ### Cross-Package Data Flow (Deep+ Effort)
-- [ ] Core exports consumed correctly by CLI, MCP server, and subagents
+
+Use `dev_refs` to trace caller/callee chains across package boundaries. Use `dev_search` to find related code by concept when the function name isn't obvious.
+
+- [ ] Core exports consumed correctly by CLI, MCP server, and subagents — verify with `dev_refs`
 - [ ] Type boundaries between packages match (no `any` casting to bridge mismatches)
 - [ ] Logger (@prosdevlab/kero) configuration consistent across consumers
+- [ ] Use `dev_patterns` to check if error handling patterns are consistent with existing code
 
 ## Design Echo Pass (Deep+ Effort)
 
