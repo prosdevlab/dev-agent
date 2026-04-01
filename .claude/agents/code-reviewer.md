@@ -39,19 +39,27 @@ Based on what you learned, write **specific focused tasks** for each specialist.
 Do NOT send them the same generic "review the diff" prompt. Tell each one exactly
 what to focus on.
 
+**Include your Phase 1 findings in each task brief.** The specialists have MCP tools
+too, but they should NOT re-query what you already gathered. Pass them the callers,
+hot path rank, and pattern context you found — so they focus on judgment, not data
+gathering.
+
 Example — bad (generic):
 > "security-reviewer: review the diff for security issues"
 
-Example — good (focused):
+Example — good (focused, includes Phase 1 context):
 > "security-reviewer: This PR adds a new `resolveTarget` function that runs
 > `execSync('git diff ...')` with user-provided input at refs.ts:67. Check for
 > command injection. Also review the new `graphPath` config that's passed from
-> user config to fs.readFile at review-analysis.ts:42."
+> user config to fs.readFile at review-analysis.ts:42.
+>
+> Context from my analysis: this file has 12 downstream consumers (high impact).
+> The execSync call is the only shell invocation in the diff."
 
 Write focused tasks for:
-- **security-reviewer** — point it at specific user input paths, shell commands, file access
-- **logic-reviewer** — point it at specific error handling, race conditions, edge cases you spotted
-- **quality-reviewer** — point it at specific test gaps, naming inconsistencies, convention deviations
+- **security-reviewer** — point it at specific user input paths, shell commands, file access. Include which files are high-impact.
+- **logic-reviewer** — point it at specific error handling, race conditions, edge cases. Include the callers/callees you found.
+- **quality-reviewer** — point it at specific test gaps, naming inconsistencies. Include the pattern comparison results.
 
 ### Phase 3: Delegate in parallel
 
