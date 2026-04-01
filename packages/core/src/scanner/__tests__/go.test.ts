@@ -477,4 +477,58 @@ describe('GoScanner', () => {
       });
     });
   });
+
+  describe('callee extraction', () => {
+    let calleeDocs: Document[];
+
+    beforeAll(async () => {
+      calleeDocs = await scanner.scan(['callees.go'], fixturesDir);
+    });
+
+    it('should extract callees from functions', () => {
+      const processInput = calleeDocs.find((d) => d.metadata.name === 'processInput');
+      expect(processInput).toBeDefined();
+      expect(processInput!.metadata.callees).toBeDefined();
+      expect(processInput!.metadata.callees!.length).toBeGreaterThan(0);
+    });
+
+    it('should use full selector text for qualified calls', () => {
+      const processInput = calleeDocs.find((d) => d.metadata.name === 'processInput');
+      const calleeNames = processInput!.metadata.callees!.map((c) => c.name);
+      // Should be "fmt.Println" not just "Println"
+      expect(calleeNames.some((n) => n === 'fmt.Println')).toBe(true);
+      expect(calleeNames.some((n) => n === 'strings.TrimSpace')).toBe(true);
+    });
+
+    it('should extract callees from methods', () => {
+      const start = calleeDocs.find((d) => d.metadata.name === 'Server.Start');
+      expect(start).toBeDefined();
+      expect(start!.metadata.callees).toBeDefined();
+      const calleeNames = start!.metadata.callees!.map((c) => c.name);
+      expect(calleeNames.some((n) => n === 'fmt.Println')).toBe(true);
+    });
+
+    it('should include callee line numbers', () => {
+      const main = calleeDocs.find((d) => d.metadata.name === 'main');
+      expect(main!.metadata.callees).toBeDefined();
+      for (const callee of main!.metadata.callees!) {
+        expect(callee.line).toBeGreaterThan(0);
+      }
+    });
+
+    it('should deduplicate callees at same line', () => {
+      const main = calleeDocs.find((d) => d.metadata.name === 'main');
+      const seen = new Set<string>();
+      for (const callee of main!.metadata.callees!) {
+        const key = `${callee.name}:${callee.line}`;
+        expect(seen.has(key)).toBe(false);
+        seen.add(key);
+      }
+    });
+
+    it('should not have callees for structs', () => {
+      const server = calleeDocs.find((d) => d.metadata.name === 'Server' && d.type === 'class');
+      expect(server?.metadata.callees).toBeUndefined();
+    });
+  });
 });
