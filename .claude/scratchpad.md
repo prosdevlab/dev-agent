@@ -11,6 +11,7 @@
 
 ## Future Work
 
+- **Storage management** — Must ship before external repo indexing (MCP Phase 3). Indexes grow unbounded. Need: TTL-based eviction for external repos (30d default), max storage cap with LRU eviction, `dev storage --auto-cleanup`, config in `.dev-agent/config.yml` (`maxSize`, `externalTTL`, `keepPrimary`). Primary repo index never auto-deleted. Check storage health on every `dev index` / `dev status` call.
 - Antfly SDK: server-side path filter for `getDocsByFilePath` (eliminates 5k cap)
 - Betweenness centrality — identifies bridge files between subsystems. Worth adding if agents need refactoring guidance. graphology (MIT, 1.6k stars) is the upgrade path if we need more than 3 hand-rolled algorithms.
 - **Connected components hub filtering** — widely-shared utility files (e.g., logger.ts imported by 50+ files) merge separate subsystems into one component. Filter out hub nodes (high in-degree) before computing components for better subsystem identification.
