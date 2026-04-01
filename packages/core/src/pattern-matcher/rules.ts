@@ -113,3 +113,79 @@ export const ALL_QUERIES: PatternMatchRule[] = [
   ...IMPORT_STYLE_QUERIES,
   ...TYPE_COVERAGE_QUERIES,
 ];
+
+// ============================================================================
+// Python Error Handling (3 rules)
+// ============================================================================
+
+export const PYTHON_ERROR_HANDLING_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'try-except',
+    category: 'error-handling',
+    query: '(try_statement) @match',
+  },
+  {
+    id: 'raise',
+    category: 'error-handling',
+    query: '(raise_statement) @match',
+  },
+  {
+    id: 'except-clause',
+    category: 'error-handling',
+    query: '(except_clause) @match',
+  },
+];
+
+// ============================================================================
+// Python Import Style (3 rules)
+// ============================================================================
+
+export const PYTHON_IMPORT_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'import-module',
+    category: 'import-style',
+    query: '(import_statement) @match',
+  },
+  {
+    id: 'from-import',
+    category: 'import-style',
+    query: '(import_from_statement) @match',
+  },
+  {
+    id: 'relative-import',
+    category: 'import-style',
+    query: '(import_from_statement module_name: (relative_import)) @match',
+  },
+];
+
+// ============================================================================
+// Python Type Coverage (3 rules)
+// ============================================================================
+
+export const PYTHON_TYPE_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'typed-parameter',
+    category: 'type-coverage',
+    query: '(typed_parameter) @match',
+  },
+  {
+    id: 'py-function-return-type',
+    category: 'type-coverage',
+    query: '(function_definition return_type: (type)) @match',
+  },
+  {
+    id: 'py-function-total',
+    category: 'type-coverage',
+    query: '(function_definition) @match',
+  },
+];
+
+// ============================================================================
+// All Python rules combined
+// ============================================================================
+
+export const ALL_PYTHON_QUERIES: PatternMatchRule[] = [
+  ...PYTHON_ERROR_HANDLING_QUERIES,
+  ...PYTHON_IMPORT_QUERIES,
+  ...PYTHON_TYPE_QUERIES,
+];

@@ -40,6 +40,7 @@ const EXTENSION_TO_LANGUAGE: Record<string, TreeSitterLanguage> = {
   '.tsx': 'tsx',
   '.js': 'javascript',
   '.jsx': 'javascript',
+  '.py': 'python',
 };
 
 /**
@@ -61,7 +62,7 @@ class WasmPatternMatcher implements PatternMatcher {
     queries: PatternMatchRule[]
   ): Promise<Map<string, number>> {
     // Validate language is supported
-    const supportedLanguages = new Set<string>(['typescript', 'tsx', 'javascript', 'go']);
+    const supportedLanguages = new Set<string>(['typescript', 'tsx', 'javascript', 'go', 'python']);
     if (!supportedLanguages.has(language)) {
       return new Map();
     }

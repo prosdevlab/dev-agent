@@ -7,9 +7,21 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { ALL_QUERIES } from '../pattern-matcher/rules';
-import type { PatternMatcher } from '../pattern-matcher/wasm-matcher';
+import { ALL_PYTHON_QUERIES, ALL_QUERIES } from '../pattern-matcher/rules';
+import type { PatternMatcher, PatternMatchRule } from '../pattern-matcher/wasm-matcher';
 import { resolveLanguage } from '../pattern-matcher/wasm-matcher';
+
+/**
+ * Language-specific pattern query sets.
+ * Map-based selection instead of if/else chain.
+ */
+const QUERIES_BY_LANGUAGE: Record<string, PatternMatchRule[]> = {
+  typescript: ALL_QUERIES,
+  tsx: ALL_QUERIES,
+  javascript: ALL_QUERIES,
+  python: ALL_PYTHON_QUERIES,
+};
+
 import { scanRepository } from '../scanner';
 import type { Document } from '../scanner/types';
 import { findTestFile, isTestFile } from '../utils/test-utils';
@@ -123,7 +135,9 @@ export async function runAllAstQueries(
   if (!matcher || !filePath) return new Map();
   const language = resolveLanguage(filePath);
   if (!language) return new Map();
-  return matcher.match(content, language, ALL_QUERIES);
+  const queries = QUERIES_BY_LANGUAGE[language] ?? [];
+  if (queries.length === 0) return new Map();
+  return matcher.match(content, language, queries);
 }
 
 /**
