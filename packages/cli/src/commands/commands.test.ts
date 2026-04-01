@@ -162,6 +162,6 @@ export class Calculator {
       // Verify storage size is NOT shown (deferred to `dev stats`)
       const hasStorageSize = loggedMessages.some((msg) => msg.includes('Storage:'));
       expect(hasStorageSize).toBe(false);
-    }, 30000); // 30s timeout for indexing
+    }, 60000); // 60s timeout — ts-morph project init is slow on CI runners
   });
 });

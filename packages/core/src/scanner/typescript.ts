@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import {
@@ -18,6 +19,21 @@ import {
 } from 'ts-morph';
 import { getCurrentSystemResources, getOptimalConcurrency } from '../utils/concurrency';
 import type { CalleeInfo, Document, Scanner, ScannerCapabilities } from './types';
+
+/**
+ * Normalize a resolved file path: dist/ → src/, .d.ts → .ts, absolute → relative.
+ * Pure function — no I/O.
+ */
+export function normalizeAndRelativize(filePath: string, repoRoot: string): string {
+  let normalized = filePath
+    .replaceAll('/dist/', '/src/')
+    .replace(/\.d\.ts$/, '.ts')
+    .replace(/\.js$/, '.ts');
+  if (repoRoot && normalized.startsWith(repoRoot)) {
+    normalized = path.relative(repoRoot, normalized);
+  }
+  return normalized;
+}
 
 /**
  * Enhanced TypeScript scanner using ts-morph
@@ -987,21 +1003,7 @@ export class TypeScriptScanner implements Scanner {
             const declSourceFile = firstDecl.getSourceFile();
             if (declSourceFile) {
               const rawPath = declSourceFile.getFilePath() as string;
-              // Only include if it's within the project (not node_modules)
-              if (rawPath && !rawPath.includes('node_modules')) {
-                // Normalize: dist/ → src/, .d.ts → .ts, then make relative to repo root.
-                // ts-morph resolves imports to absolute dist output paths
-                // (e.g. /abs/packages/logger/dist/types.d.ts) but we store
-                // relative source paths (packages/logger/src/types.ts).
-                let normalized = rawPath
-                  .replaceAll('/dist/', '/src/')
-                  .replace(/\.d\.ts$/, '.ts')
-                  .replace(/\.js$/, '.ts');
-                if (this.repoRoot && normalized.startsWith(this.repoRoot)) {
-                  normalized = path.relative(this.repoRoot, normalized);
-                }
-                file = normalized;
-              }
+              file = this.normalizeCalleePath(rawPath);
             }
           }
         }
@@ -1015,5 +1017,40 @@ export class TypeScriptScanner implements Scanner {
       line,
       file,
     };
+  }
+
+  /**
+   * Normalize a callee file path to a relative source path.
+   *
+   * Handles three cases:
+   * 1. Direct project files (not in node_modules) — normalize dist/ → src/
+   * 2. Workspace package symlinks (node_modules/@scope/pkg → packages/pkg) — resolve symlink
+   * 3. External node_modules — skip (return undefined)
+   */
+  private normalizeCalleePath(rawPath: string): string | undefined {
+    if (!rawPath) return undefined;
+
+    // Case 1: Not in node_modules — direct project file
+    if (!rawPath.includes('node_modules')) {
+      return normalizeAndRelativize(rawPath, this.repoRoot);
+    }
+
+    // Case 2: Workspace package symlink — resolve to real path
+    // pnpm workspace links: node_modules/@scope/pkg → ../../actual-pkg
+    // After resolving, the real path is inside the repo but NOT in node_modules
+    if (this.repoRoot) {
+      try {
+        const realPath = fs.realpathSync(rawPath);
+        if (realPath.startsWith(this.repoRoot) && !realPath.includes('node_modules')) {
+          // It's a workspace package — normalize and make relative
+          return normalizeAndRelativize(realPath, this.repoRoot);
+        }
+      } catch {
+        // realpathSync can fail if the file doesn't exist
+      }
+    }
+
+    // Case 3: External dependency — skip
+    return undefined;
   }
 }

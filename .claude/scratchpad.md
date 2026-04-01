@@ -22,7 +22,7 @@
 
 ## Flaky Tests
 
-- **`packages/cli/src/commands/commands.test.ts:119` — "should display indexing summary without storage size"** times out at 30s on GitHub CI runners. The test indexes files and the slower CI runner can't finish in time. Needs either a higher timeout, a smaller test fixture, or mocking the indexer. Seen on PR #17 CI run.
+(none currently tracked)
 
 ## Test Gaps
 
