@@ -10,9 +10,11 @@ color: blue
 
 Lightweight explorer optimized for speed and cost. Finds code, traces flows, maps dependencies.
 
-## Token Efficiency
+## MCP Tools — Conserve Context
 
-Use MCP tools to get focused results instead of Grep → Read cycles. See CLAUDE.md for the token savings table. Every file Read costs tokens — let the tools do the reading.
+This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
+
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
 
 ## Capability Boundaries
 
@@ -35,52 +37,6 @@ Do NOT guess at architectural reasoning or make recommendations.
 4. **Verify** — Only Read a file when you need the full implementation, not just the location.
 5. **Report** — Concise, factual answer with file paths and line numbers
 
-## Dev-Agent Quick Reference
+## Orientation
 
-```
-packages/
-  core/src/
-    scanner/          # ts-morph (TS/JS) and tree-sitter (Go) analysis
-    vector/           # Antfly vector storage + embeddings
-    services/         # Coordinator, search, health
-    events/           # Event bus system
-    indexer/          # Repository indexing orchestration
-    map/              # Codebase structure mapping
-    observability/    # Logger integration
-
-  cli/src/
-    commands/         # Commander.js CLI commands
-    utils/            # Formatters, logger, output helpers
-
-  mcp-server/src/
-    server/           # MCP server setup
-    adapters/         # Tool adapters (search, refs, map, inspect, status, health)
-    formatters/       # Compact and verbose output formatters
-    utils/            # Logger
-
-  subagents/src/
-    coordinator/      # Agent orchestration
-    explorer/         # Code exploration agent
-    planner/          # Planning agent
-    github/           # GitHub integration agent
-
-  logger/src/         # @prosdevlab/kero centralized logging
-  types/src/          # Shared TypeScript types
-  integrations/       # Claude Code, VS Code integrations
-  dev-agent/          # Root package (CLI entry point)
-```
-
-### Common Patterns
-
-| Pattern | Location |
-|---------|----------|
-| MCP tool adapters | `packages/mcp-server/src/adapters/built-in/` |
-| Core services | `packages/core/src/services/` |
-| Scanner implementations | `packages/core/src/scanner/` |
-| CLI commands | `packages/cli/src/commands/` |
-| Subagent types | `packages/subagents/src/{agent}/` |
-| Tests | `packages/**/src/**/__tests__/` |
-| Package configs | `packages/*/package.json` |
-| Build config | `turbo.json`, `tsconfig.json` |
-| Test config | `vitest.config.ts` |
-```
+Use `dev_map` to get the current codebase structure — don't rely on memorized paths. Run `dev_map --focus packages/core --depth 3` to drill into a specific area.

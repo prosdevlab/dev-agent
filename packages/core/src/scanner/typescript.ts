@@ -994,7 +994,7 @@ export class TypeScriptScanner implements Scanner {
                 // (e.g. /abs/packages/logger/dist/types.d.ts) but we store
                 // relative source paths (packages/logger/src/types.ts).
                 let normalized = rawPath
-                  .replace(/\/dist\//, '/src/')
+                  .replaceAll('/dist/', '/src/')
                   .replace(/\.d\.ts$/, '.ts')
                   .replace(/\.js$/, '.ts');
                 if (this.repoRoot && normalized.startsWith(this.repoRoot)) {

@@ -1,15 +1,15 @@
 import * as path from 'node:path';
 import {
-  buildDependencyGraph,
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
+  loadOrBuildGraph,
   RepositoryIndexer,
   type SearchResult,
   shortestPath,
 } from '@prosdevlab/dev-agent-core';
 import chalk from 'chalk';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import ora from 'ora';
 import { loadConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
@@ -25,7 +25,11 @@ interface CalleeInfo {
 export const refsCommand = new Command('refs')
   .description('Find callers and callees of a function')
   .argument('<name>', 'Function or method name (e.g., "createPlan", "SearchAdapter.execute")')
-  .option('-d, --direction <direction>', 'Query direction: callees, callers, or both', 'both')
+  .addOption(
+    new Option('-d, --direction <direction>', 'Query direction: callees, callers, or both')
+      .choices(['callees', 'callers', 'both'])
+      .default('both')
+  )
   .option('-l, --limit <number>', 'Maximum results per direction', '20')
   .option('--depends-on <file>', 'Trace dependency path to a target file')
   .option('--json', 'Output results as JSON', false)
@@ -44,6 +48,8 @@ export const refsCommand = new Command('refs')
       const indexer = new RepositoryIndexer({
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
+        excludePatterns: config?.repository?.excludePatterns || config?.excludePatterns,
+        languages: config?.repository?.languages || config?.languages,
       });
 
       await indexer.initialize();
@@ -64,8 +70,9 @@ export const refsCommand = new Command('refs')
       // Handle --depends-on
       if (options.dependsOn) {
         spinner.text = `Tracing path: ${name} → ${options.dependsOn}`;
-        const allDocs = await indexer.getAll({ limit: 50000 });
-        const graph = buildDependencyGraph(allDocs);
+        const graph = await loadOrBuildGraph(filePaths.dependencyGraph, async () =>
+          indexer.getAll({ limit: 50000 })
+        );
         const sourceFile = (target.metadata.path as string) || '';
         const tracePath = shortestPath(graph, sourceFile, options.dependsOn);
 
@@ -195,6 +202,7 @@ export const refsCommand = new Command('refs')
     } catch (error) {
       spinner.fail('Refs query failed');
       logger.error(error instanceof Error ? error.message : String(error));
+      // indexer may not be initialized if error was early, but close() is safe to call
       process.exit(1);
     }
   });

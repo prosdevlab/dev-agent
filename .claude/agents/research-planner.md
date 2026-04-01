@@ -12,11 +12,13 @@ Plans investigations before jumping into implementation. Produces a structured r
 
 This agent **NEVER writes code**. It produces investigation plans.
 
-## MCP Tools — Save Tokens, Extend Sessions
+## MCP Tools — Conserve Context
 
-Use MCP tools to map the territory without burning tokens on Grep → Read cycles. See CLAUDE.md for the token savings table.
+This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
 
-- **`dev_search`** — Find relevant code areas by meaning. Returns ranked snippets — no file reading needed.
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
+
+- **`dev_search`** — Find relevant code areas by meaning. Returns ranked snippets, not 200 grep matches.
 - **`dev_map`** — Codebase structure with hot paths and subsystems. One call replaces dozens of ls/glob/read operations.
 - **`dev_patterns`** — Compare patterns across similar files without reading each one.
 - **`dev_refs`** — Trace cross-package dependencies. Use `dependsOn` to trace dependency chains between files.
