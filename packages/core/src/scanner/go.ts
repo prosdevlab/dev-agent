@@ -705,9 +705,6 @@ export class GoScanner implements Scanner {
   }
 
   /**
-   * Check if a Go identifier is exported (starts with uppercase)
-   */
-  /**
    * Walk AST nodes recursively to find all call_expression nodes.
    * Returns full selector text (e.g., "fmt.Println" not just "Println").
    */
@@ -737,6 +734,7 @@ export class GoScanner implements Scanner {
     return callees;
   }
 
+  /** Check if a Go identifier is exported (starts with uppercase) */
   private isExported(name: string): boolean {
     if (!name || name.length === 0) return false;
     const firstChar = name.charAt(0);

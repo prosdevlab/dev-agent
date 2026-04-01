@@ -401,7 +401,10 @@ export class RustScanner implements Scanner {
           }
         }
       }
-      // Recurse into children (but NOT into macro_invocation — those are skipped)
+      // Skip macro_invocation entirely — macros (println!, vec!, format!) are not function calls.
+      // Without this, calls INSIDE macros (e.g., vec![foo()]) would be captured.
+      if (n.type === 'macro_invocation') return;
+
       for (const child of n.namedChildren) {
         walk(child);
       }
@@ -452,6 +455,7 @@ export class RustScanner implements Scanner {
         const commentText = line.slice(3).trim();
         docLines.unshift(commentText);
       } else if (line.startsWith('#[')) {
+        // Skip attributes (#[derive], #[cfg], etc.) between doc comments and the item
       } else if (line === '') {
         // Empty line — stop if we have comments, otherwise continue
         if (docLines.length > 0) break;
