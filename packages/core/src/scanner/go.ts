@@ -12,6 +12,7 @@ import {
   NodeFileSystemValidator,
   validateFile,
 } from '../utils/file-validator';
+import type { TreeSitterNode } from './tree-sitter';
 import {
   extractGoDocComment,
   initTreeSitter,
@@ -19,7 +20,7 @@ import {
   type ParsedTree,
   parseCode,
 } from './tree-sitter';
-import type { Document, Scanner, ScannerCapabilities } from './types';
+import type { CalleeInfo, Document, Scanner, ScannerCapabilities } from './types';
 
 /**
  * Tree-sitter queries for Go code extraction
@@ -383,6 +384,8 @@ export class GoScanner implements Scanner {
       // Check for generics
       const { isGeneric, typeParameters } = this.extractTypeParameters(signature);
 
+      const callees = this.walkCallNodes(defCapture.node);
+
       documents.push({
         id: `${file}:${name}:${startLine}`,
         text: this.buildEmbeddingText('function', name, signature, docstring),
@@ -397,6 +400,7 @@ export class GoScanner implements Scanner {
           exported,
           docstring,
           snippet,
+          callees: callees.length > 0 ? callees : undefined,
           custom: {
             ...(isTestFile ? { isTest: true } : {}),
             ...(isGeneric ? { isGeneric, typeParameters } : {}),
@@ -451,6 +455,8 @@ export class GoScanner implements Scanner {
         this.extractTypeParameters(signature);
       const isGeneric = receiverHasGenerics || signatureHasGenerics;
 
+      const callees = this.walkCallNodes(defCapture.node);
+
       documents.push({
         id: `${file}:${name}:${startLine}`,
         text: this.buildEmbeddingText('method', name, signature, docstring),
@@ -465,6 +471,7 @@ export class GoScanner implements Scanner {
           exported,
           docstring,
           snippet,
+          callees: callees.length > 0 ? callees : undefined,
           custom: {
             receiver: baseReceiverType,
             receiverPointer,
@@ -700,6 +707,36 @@ export class GoScanner implements Scanner {
   /**
    * Check if a Go identifier is exported (starts with uppercase)
    */
+  /**
+   * Walk AST nodes recursively to find all call_expression nodes.
+   * Returns full selector text (e.g., "fmt.Println" not just "Println").
+   */
+  private walkCallNodes(node: TreeSitterNode): CalleeInfo[] {
+    const callees: CalleeInfo[] = [];
+    const seen = new Set<string>();
+
+    function walk(n: TreeSitterNode) {
+      if (n.type === 'call_expression') {
+        const funcNode = n.childForFieldName('function');
+        if (funcNode) {
+          const name = funcNode.text;
+          const line = n.startPosition.row + 1;
+          const key = `${name}:${line}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            callees.push({ name, line });
+          }
+        }
+      }
+      for (const child of n.namedChildren) {
+        walk(child);
+      }
+    }
+
+    walk(node);
+    return callees;
+  }
+
   private isExported(name: string): boolean {
     if (!name || name.length === 0) return false;
     const firstChar = name.charAt(0);
