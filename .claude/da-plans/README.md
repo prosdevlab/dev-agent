@@ -15,6 +15,7 @@ Implementation deviations are logged at the bottom of each plan file.
 | [Core](core/) | Phase 4 | Python language support | Merged |
 | [Core](core/) | Phase 5 | Go callee extraction + Rust language support | Draft |
 | [MCP](mcp/) | Phase 1 | Tools improvement (patterns, consolidation, AST, graph algorithms) | Merged |
+| [MCP](mcp/) | Phase 2 | Composite tools — dev_review and dev_research | Draft |
 
 ## Plan Format
 
