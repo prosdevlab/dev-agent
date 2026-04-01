@@ -7,6 +7,7 @@ import { compactCommand } from './commands/compact.js';
 import { indexCommand } from './commands/index.js';
 import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
+import { refsCommand } from './commands/refs.js';
 import { resetCommand } from './commands/reset.js';
 import { searchCommand } from './commands/search.js';
 import { setupCommand } from './commands/setup.js';
@@ -26,6 +27,7 @@ program
 // Register commands
 program.addCommand(indexCommand);
 program.addCommand(searchCommand);
+program.addCommand(refsCommand);
 program.addCommand(mapCommand);
 program.addCommand(compactCommand);
 program.addCommand(cleanCommand);

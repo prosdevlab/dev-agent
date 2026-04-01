@@ -95,7 +95,10 @@ export class RepositoryIndexer {
       const scanResult = await scanRepository({
         repoRoot: this.config.repositoryPath,
         include: options.languages?.map((lang) => `**/*.${getExtensionForLanguage(lang)}`),
-        exclude: [...this.config.excludePatterns, ...(options.excludePatterns || [])],
+        exclude:
+          this.config.excludePatterns.length > 0 || options.excludePatterns?.length
+            ? [...this.config.excludePatterns, ...(options.excludePatterns || [])]
+            : undefined,
         languages: options.languages,
         logger: options.logger,
         onProgress: (scanProgress) => {
