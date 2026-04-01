@@ -65,7 +65,7 @@ Every finding MUST include confidence: **HIGH** (verified from code), **MEDIUM**
 
 ### Cross-Package Data Flow (Deep+ Effort)
 
-Use MCP tools to trace cross-package flows without reading every file (see CLAUDE.md for token savings). `dev_refs` returns the call graph directly, `dev_search` finds related code by concept, `dev_patterns` compares error handling across files.
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?** `dev_refs` returns the call graph directly, `dev_search` finds related code by concept, `dev_patterns` compares error handling across files — each saves ~3,000-5,000 tokens vs manual file reading.
 
 - [ ] Core exports consumed correctly by CLI, MCP server, and subagents — verify with `dev_refs`
 - [ ] Dependency chains make sense — use `dev_refs` with `dependsOn` to trace file-to-file paths

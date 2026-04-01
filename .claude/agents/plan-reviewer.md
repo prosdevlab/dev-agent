@@ -12,6 +12,16 @@ Two-pass review of execution plans in `.claude/da-plans/`. Validates completenes
 
 This agent **NEVER modifies plans**. It reports issues for the author to fix.
 
+## MCP Tools — Conserve Context
+
+This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
+
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
+
+- **`dev_map`** — Verify structure claims in the plan against actual codebase layout.
+- **`dev_refs`** — Confirm dependency assertions. Use `dependsOn` to trace dependency chains between files.
+- **`dev_patterns`** — Check if proposed patterns match existing conventions.
+
 ## Two-Pass Review
 
 ### Pass 1: Engineer Review

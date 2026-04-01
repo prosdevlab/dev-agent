@@ -48,7 +48,7 @@ Maximum **5 SUGGESTION items** per review. If more found, pick the top 5 and not
 
 ### Readability & Simplification
 
-Use MCP tools to check for duplication without reading every file (see CLAUDE.md for token savings). `dev_patterns` compares patterns across similar files. `dev_search` checks if a utility exists by meaning, not just name.
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?** `dev_patterns` compares patterns across similar files (~500 tokens vs ~3,000 for manual reads). `dev_search` checks if a utility exists by meaning, not just name.
 
 - [ ] No code duplicating existing utilities — verify with `dev_patterns` and `dev_search`
 - [ ] Functions reasonably sized (consider splitting if >50 lines)

@@ -139,9 +139,11 @@ See `.claude/da-plans/README.md` for status and format details.
 
 ---
 
-## MCP tools — token-efficient context
+## MCP tools — conserve context
 
-MCP tools return pre-ranked, pre-snippeted results. Use them to avoid expensive Grep → Read cycles that burn thousands of tokens on irrelevant context.
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
+
+MCP tools return pre-ranked snippets. Every Grep → Read cycle burns ~3,000-5,000 tokens of context window on irrelevant matches. MCP tools return only what you need.
 
 | Instead of | Use | Tokens saved |
 |------------|-----|-------------|
@@ -150,7 +152,7 @@ MCP tools return pre-ranked, pre-snippeted results. Use them to avoid expensive 
 | ls + glob + read READMEs | `dev_map` | ~2,000 |
 | Read multiple files to compare patterns | `dev_patterns filePath` | ~3,000 |
 
-Reserve Grep/Glob for exact string matches where you know the literal text.
+Only use Grep for exact string matches where you know the literal text. Only Read files when you need the full implementation.
 
 ### 5 adapters
 

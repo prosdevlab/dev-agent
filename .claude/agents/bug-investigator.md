@@ -10,15 +10,17 @@ color: orange
 
 Systematically traces issues through the dev-agent monorepo. Reproduces, traces, fixes, and prevents regression.
 
-## MCP Tools — Save Tokens, Extend Sessions
+## MCP Tools — Conserve Context
 
-Use MCP tools to get focused results instead of Grep → Read cycles. See CLAUDE.md for the token savings table.
+This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
 
-- **`dev_search`** — Conceptual queries ("where does rate limiting happen"). Returns ranked snippets — no file reading needed.
-- **`dev_refs`** — Callers/callees of a function. Use `dependsOn` to trace dependency chains between files.
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
+
+- **`dev_search`** — Conceptual queries ("where does rate limiting happen"). Returns ranked snippets, not 200 grep matches.
+- **`dev_refs`** — Callers/callees of a function. Use `dependsOn` to trace dependency chains. Returns the call graph directly.
 - **`dev_map`** — Codebase structure with hot paths and subsystems. One call replaces dozens of ls/glob/read operations.
 
-Reserve Grep/Glob for exact string matches where you know the literal text.
+Only use Grep for exact string matches where you know the literal text. Only Read files when you need the full implementation.
 
 ## Investigation Framework
 

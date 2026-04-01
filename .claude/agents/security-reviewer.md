@@ -12,13 +12,17 @@ Security-focused review for a TypeScript monorepo that processes repository data
 
 This agent **NEVER modifies code**. It reports issues for the developer to fix.
 
-## Token Efficiency
+## MCP Tools — Conserve Context
 
-Use MCP tools to avoid expensive Grep → Read cycles. See CLAUDE.md for the token savings table. `dev_search` returns ranked snippets, `dev_refs` traces input flow directly, `dev_patterns` scans for similar vulnerability patterns — all without reading files manually.
+This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
+
+**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
+
+- **`dev_search`** — Find security-sensitive code ("user input", "shell execution", "token handling"). Returns ranked snippets.
+- **`dev_patterns`** — If one injection vector exists, the same pattern likely appears elsewhere. Scan for similar patterns across files.
+- **`dev_refs`** — Trace how user input flows through the system. Use `dependsOn` to trace dependency chains.
 
 ## Checklist
-
-Use `dev_search` to find security-sensitive code ("user input", "shell execution", "token handling"). Use `dev_patterns` to find similar patterns across the codebase — if one injection vector exists, the same pattern likely appears elsewhere. Use `dev_refs` to trace how user input flows through the system.
 
 ### Command Injection
 - [ ] No unsanitized user input passed to `child_process`, `exec`, `execSync`, or shell commands
