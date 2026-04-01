@@ -7,14 +7,13 @@ Implementation deviations are logged at the bottom of each plan file.
 
 ## Tracks
 
-| Track | Description | Status |
-|-------|-------------|--------|
-| [Core](core/) | Scanner, vector storage, services, indexer | Phase 1-2: Merged, Phase 3: Draft (graph cache), Phase 4: Draft (Python) |
-| [CLI](cli/) | Command-line interface | Not started |
-| [MCP Server](mcp/) | Model Context Protocol server + adapters | Phase 1: Merged (tools improvement) |
-| [Subagents](subagents/) | Coordinator, explorer, planner, GitHub agents | Not started |
-| [Integrations](integrations/) | Claude Code, VS Code, Cursor | Not started |
-| [Logger](logger/) | @prosdevlab/kero centralized logging | Not started |
+| Track | Phase | Description | Status |
+|-------|-------|-------------|--------|
+| [Core](core/) | Phase 1 | Antfly migration | Merged |
+| [Core](core/) | Phase 2 | Indexing rethink (Linear Merge, incremental) | Merged |
+| [Core](core/) | Phase 3 | Cached dependency graph for scale | Merged |
+| [Core](core/) | Phase 4 | Python language support | Merged |
+| [MCP](mcp/) | Phase 1 | Tools improvement (patterns, consolidation, AST, graph algorithms) | Merged |
 
 ## Plan Format
 
