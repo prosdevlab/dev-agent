@@ -33,6 +33,7 @@ export class TypeScriptScanner implements Scanner {
   };
 
   private project: Project | null = null;
+  private repoRoot = '';
 
   /** Default maximum lines for code snippets */
   private static readonly DEFAULT_MAX_SNIPPET_LINES = 50;
@@ -76,6 +77,8 @@ export class TypeScriptScanner implements Scanner {
     logger?: Logger,
     onProgress?: (filesProcessed: number, totalFiles: number) => void
   ): Promise<Document[]> {
+    this.repoRoot = repoRoot;
+
     // Initialize project with lenient type checking enabled
     // - Allows cross-file symbol resolution for better callee extraction
     // - Keeps strict checks disabled to avoid blocking on type errors
@@ -983,10 +986,21 @@ export class TypeScriptScanner implements Scanner {
           if (firstDecl) {
             const declSourceFile = firstDecl.getSourceFile();
             if (declSourceFile) {
-              const filePath = declSourceFile.getFilePath();
+              const rawPath = declSourceFile.getFilePath() as string;
               // Only include if it's within the project (not node_modules)
-              if (filePath && !filePath.includes('node_modules')) {
-                file = filePath;
+              if (rawPath && !rawPath.includes('node_modules')) {
+                // Normalize: dist/ → src/, .d.ts → .ts, then make relative to repo root.
+                // ts-morph resolves imports to absolute dist output paths
+                // (e.g. /abs/packages/logger/dist/types.d.ts) but we store
+                // relative source paths (packages/logger/src/types.ts).
+                let normalized = rawPath
+                  .replace(/\/dist\//, '/src/')
+                  .replace(/\.d\.ts$/, '.ts')
+                  .replace(/\.js$/, '.ts');
+                if (this.repoRoot && normalized.startsWith(this.repoRoot)) {
+                  normalized = path.relative(this.repoRoot, normalized);
+                }
+                file = normalized;
               }
             }
           }

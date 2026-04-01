@@ -707,6 +707,33 @@ describe('Scanner', () => {
       const calleeNames = fn?.metadata.callees?.map((c) => c.name) || [];
       expect(calleeNames.some((n) => n.includes('register'))).toBe(true);
     });
+
+    it('should normalize callee file paths to relative src paths', async () => {
+      // Scan a file that imports from workspace packages (resolves to dist/)
+      const result = await scanRepository({
+        repoRoot,
+        include: ['packages/mcp-server/bin/dev-agent-mcp.ts'],
+      });
+
+      const allCallees = result.documents
+        .flatMap((d) => (d.metadata.callees as Array<{ file?: string }>) || [])
+        .filter((c) => c.file);
+
+      // No callee should have absolute paths
+      for (const callee of allCallees) {
+        expect(callee.file).not.toMatch(/^\//);
+      }
+
+      // No callee should reference dist/ directories
+      for (const callee of allCallees) {
+        expect(callee.file).not.toContain('/dist/');
+      }
+
+      // No callee should reference .d.ts files
+      for (const callee of allCallees) {
+        expect(callee.file).not.toMatch(/\.d\.ts$/);
+      }
+    });
   });
 
   describe('Arrow Function Extraction', () => {
