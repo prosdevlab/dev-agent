@@ -118,6 +118,7 @@ Indexing status, document counts, Antfly stats, file watcher state, and health c
 | Language | Scanner | Features |
 |----------|---------|----------|
 | TypeScript/JavaScript | ts-morph | Functions, classes, interfaces, types, arrow functions, hooks |
+| Python | tree-sitter | Functions, classes, methods, decorators, type hints, docstrings |
 | Go | tree-sitter | Functions, methods, structs, interfaces, generics |
 | Markdown | remark | Documentation sections |
 
@@ -125,7 +126,7 @@ Indexing status, document counts, Antfly stats, file watcher state, and health c
 
 - **[Antfly](https://antfly.io)** — Hybrid search (BM25 + vector + RRF), local embeddings via Termite (ONNX)
 - **ts-morph** — TypeScript/JavaScript AST analysis
-- **tree-sitter** — Go analysis (WASM, extensible to Python/Rust)
+- **tree-sitter** — Python and Go analysis (WASM)
 - **@parcel/watcher** — File change detection for auto-reindexing
 - **MCP** — Model Context Protocol for AI tool integration
 
