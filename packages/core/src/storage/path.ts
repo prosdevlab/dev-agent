@@ -105,6 +105,7 @@ export function getStorageFilePaths(storagePath: string): {
   vectors: string;
   metadata: string;
   watcherSnapshot: string;
+  dependencyGraph: string;
   /** @deprecated Removed in Phase 2 — only used for migration cleanup */
   indexerState: string;
   /** @deprecated Removed in Phase 2 — only used for migration cleanup */
@@ -114,6 +115,7 @@ export function getStorageFilePaths(storagePath: string): {
     vectors: path.join(storagePath, 'vectors'),
     metadata: path.join(storagePath, 'metadata.json'),
     watcherSnapshot: path.join(storagePath, 'watcher-snapshot'),
+    dependencyGraph: path.join(storagePath, 'dependency-graph.json'),
     // Legacy paths — kept for migration cleanup only
     indexerState: path.join(storagePath, 'indexer-state.json'),
     githubState: path.join(storagePath, 'github-state.json'),

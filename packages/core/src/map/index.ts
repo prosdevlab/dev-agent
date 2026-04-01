@@ -10,7 +10,7 @@ import { stripFocusPrefix } from '../indexer/utils/change-frequency.js';
 import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
 import type { LocalGitExtractor } from './git-extractor';
-import { buildDependencyGraph, connectedComponents, pageRank } from './graph';
+import { connectedComponents, loadOrBuildGraph, pageRank } from './graph';
 import type {
   ChangeFrequency,
   CodebaseMap,
@@ -45,6 +45,8 @@ export interface MapGenerationContext {
   indexer: RepositoryIndexer;
   gitExtractor?: LocalGitExtractor;
   logger?: Logger;
+  /** Path to cached dependency-graph.json — avoids rebuilding from getAll */
+  graphPath?: string;
 }
 
 /**
@@ -120,9 +122,9 @@ export async function generateCodebaseMap(
     'Counted components'
   );
 
-  // Build dependency graph once, share between hot paths and components
+  // Load cached dependency graph or build from docs as fallback
   const t7 = Date.now();
-  const graph = buildDependencyGraph(allDocs);
+  const graph = await loadOrBuildGraph(context.graphPath, async () => allDocs);
   const hotPaths = opts.includeHotPaths ? computeHotPaths(allDocs, graph, opts.maxHotPaths) : [];
   const rawComponents = connectedComponents(graph);
   const components = rawComponents

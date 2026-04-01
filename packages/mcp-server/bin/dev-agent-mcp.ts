@@ -105,7 +105,8 @@ function _startIdleMonitor(): void {
 async function startupCatchup(
   indexer: RepositoryIndexer,
   repositoryPath: string,
-  snapshotPath: string
+  snapshotPath: string,
+  graphPath: string
 ): Promise<void> {
   const result = await getEventsSince(repositoryPath, snapshotPath);
 
@@ -130,6 +131,7 @@ async function startupCatchup(
   const incrementalIndexer = createIncrementalIndexer({
     repositoryIndexer: indexer,
     repositoryPath,
+    graphPath,
     logger: {
       info: console.error.bind(console),
       warn: console.error.bind(console),
@@ -245,7 +247,12 @@ async function main() {
     await saveMetadata(storagePath, repositoryPath);
 
     // Startup catchup: index or update since last snapshot
-    await startupCatchup(indexer, repositoryPath, filePaths.watcherSnapshot);
+    await startupCatchup(
+      indexer,
+      repositoryPath,
+      filePaths.watcherSnapshot,
+      filePaths.dependencyGraph
+    );
 
     // Create services
     const searchService = new SearchService({ repositoryPath });
@@ -278,12 +285,14 @@ async function main() {
     const refsAdapter = new RefsAdapter({
       searchService,
       indexer,
+      graphPath: filePaths.dependencyGraph,
       defaultLimit: 20,
     });
 
     const mapAdapter = new MapAdapter({
       repositoryIndexer: indexer,
       repositoryPath,
+      graphPath: filePaths.dependencyGraph,
       defaultDepth: 2,
       defaultTokenBudget: 2000,
     });
@@ -309,6 +318,7 @@ async function main() {
     const incrementalIndexer = createIncrementalIndexer({
       repositoryIndexer: indexer,
       repositoryPath,
+      graphPath: filePaths.dependencyGraph,
       logger: {
         info: console.error.bind(console),
         warn: console.error.bind(console),

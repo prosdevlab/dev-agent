@@ -31,6 +31,11 @@ export interface MapAdapterConfig {
   repositoryPath?: string;
 
   /**
+   * Path to cached dependency-graph.json
+   */
+  graphPath?: string;
+
+  /**
    * Default depth for map generation
    */
   defaultDepth?: number;
@@ -55,12 +60,14 @@ export class MapAdapter extends ToolAdapter {
 
   private indexer: RepositoryIndexer;
   private repositoryPath?: string;
-  private config: Required<Omit<MapAdapterConfig, 'repositoryPath'>>;
+  private graphPath?: string;
+  private config: Required<Omit<MapAdapterConfig, 'repositoryPath' | 'graphPath'>>;
 
   constructor(config: MapAdapterConfig) {
     super();
     this.indexer = config.repositoryIndexer;
     this.repositoryPath = config.repositoryPath;
+    this.graphPath = config.graphPath;
     this.config = {
       repositoryIndexer: config.repositoryIndexer,
       defaultDepth: config.defaultDepth ?? 2,
@@ -153,7 +160,10 @@ export class MapAdapter extends ToolAdapter {
           : undefined;
 
       // Generate the map
-      const map = await generateCodebaseMap({ indexer: this.indexer, gitExtractor }, mapOptions);
+      const map = await generateCodebaseMap(
+        { indexer: this.indexer, gitExtractor, graphPath: this.graphPath },
+        mapOptions
+      );
 
       // Format the output
       let content = formatCodebaseMap(map, mapOptions);
@@ -168,7 +178,7 @@ export class MapAdapter extends ToolAdapter {
         while (tokens > tokenBudget && reducedDepth > 1) {
           reducedDepth--;
           const reducedMap = await generateCodebaseMap(
-            { indexer: this.indexer, gitExtractor },
+            { indexer: this.indexer, gitExtractor, graphPath: this.graphPath },
             { ...mapOptions, depth: reducedDepth }
           );
           content = formatCodebaseMap(reducedMap, { ...mapOptions, depth: reducedDepth });

@@ -9,7 +9,7 @@ import type {
   SearchResult,
   SearchService,
 } from '@prosdevlab/dev-agent-core';
-import { buildDependencyGraph, shortestPath } from '@prosdevlab/dev-agent-core';
+import { loadOrBuildGraph, shortestPath } from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { RefsArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';
@@ -34,6 +34,11 @@ export interface RefsAdapterConfig {
    * Repository indexer — needed for path tracing (optional)
    */
   indexer?: RepositoryIndexer;
+
+  /**
+   * Path to cached dependency-graph.json
+   */
+  graphPath?: string;
 
   /**
    * Default result limit
@@ -71,6 +76,7 @@ export class RefsAdapter extends ToolAdapter {
   };
 
   private indexer?: RepositoryIndexer;
+  private graphPath?: string;
   private cachedGraph?: Map<string, import('@prosdevlab/dev-agent-core').WeightedEdge[]>;
   private cachedGraphTime = 0;
 
@@ -78,6 +84,7 @@ export class RefsAdapter extends ToolAdapter {
     super();
     this.searchService = config.searchService;
     this.indexer = config.indexer;
+    this.graphPath = config.graphPath;
     this.config = {
       searchService: config.searchService,
       defaultLimit: config.defaultLimit ?? 20,
@@ -102,15 +109,16 @@ export class RefsAdapter extends ToolAdapter {
       return this.cachedGraph;
     }
 
-    const DOC_LIMIT = 10_000;
-    const allDocs = await this.indexer!.getAll({ limit: DOC_LIMIT });
-    if (allDocs.length >= DOC_LIMIT) {
-      console.error(
-        `[dev-agent] Warning: dependency graph hit ${DOC_LIMIT} doc limit. Results may be incomplete.`
-      );
-    }
-
-    this.cachedGraph = buildDependencyGraph(allDocs);
+    this.cachedGraph = await loadOrBuildGraph(this.graphPath, async () => {
+      const DOC_LIMIT = 50_000;
+      const allDocs = await this.indexer!.getAll({ limit: DOC_LIMIT });
+      if (allDocs.length >= DOC_LIMIT) {
+        console.error(
+          `[dev-agent] Warning: dependency graph hit ${DOC_LIMIT} doc limit. Results may be incomplete.`
+        );
+      }
+      return allDocs;
+    });
     this.cachedGraphTime = Date.now();
     return this.cachedGraph;
   }
