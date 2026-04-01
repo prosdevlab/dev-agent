@@ -9,6 +9,20 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.11.1 — Cached Dependency Graph
+
+*April 1, 2026*
+
+**`dev_map` and `dev_refs` now load a pre-built dependency graph instead of fetching all docs on every call.** Removes the 10k doc ceiling for medium-to-large repos.
+
+- Dependency graph built at index time, saved as `dependency-graph.json` (~1-5MB)
+- `dev_map` PageRank and `dev_refs dependsOn` load from cache — no `getAll` needed
+- File watcher incrementally updates the graph on save (O(changed files))
+- Graceful fallback: missing or corrupted cache falls back to current behavior
+- Effective doc limit raised from 10k to 50k for graph operations
+
+---
+
 ## v0.11.0 — Python Language Support
 
 *March 31, 2026*
