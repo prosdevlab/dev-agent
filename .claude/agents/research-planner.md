@@ -66,8 +66,10 @@ Plan 2-4 research tasks. Each should:
 
 ### Phase 3: Delegate research in parallel
 
-Launch sub-agents via the Agent tool, one per research task. Use the
-`general-purpose` agent type. Give each a precise brief:
+Launch sub-agents via the Agent tool, one per research task. These use
+Claude Code's built-in `general-purpose` subagent type (not a custom agent
+definition — it's the default when no `subagent_type` is specified).
+Give each a precise brief:
 
 ```
 Agent 1: "Search GitHub for how [specific project] implements [specific thing].
