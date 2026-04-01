@@ -37,7 +37,7 @@ let parserInitialized = false;
  * 2. Update SUPPORTED_LANGUAGES in packages/dev-agent/scripts/copy-wasm.js
  * 3. Ensure tree-sitter-wasms contains the required WASM file
  */
-export type TreeSitterLanguage = 'go' | 'typescript' | 'tsx' | 'javascript';
+export type TreeSitterLanguage = 'go' | 'typescript' | 'tsx' | 'javascript' | 'python';
 
 /**
  * Cache of loaded language grammars
