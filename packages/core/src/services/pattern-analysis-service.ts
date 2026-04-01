@@ -7,7 +7,12 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { ALL_PYTHON_QUERIES, ALL_QUERIES } from '../pattern-matcher/rules';
+import {
+  ALL_GO_QUERIES,
+  ALL_PYTHON_QUERIES,
+  ALL_QUERIES,
+  ALL_RUST_QUERIES,
+} from '../pattern-matcher/rules';
 import type { PatternMatcher, PatternMatchRule } from '../pattern-matcher/wasm-matcher';
 import { resolveLanguage } from '../pattern-matcher/wasm-matcher';
 
@@ -20,6 +25,8 @@ const QUERIES_BY_LANGUAGE: Record<string, PatternMatchRule[]> = {
   tsx: ALL_QUERIES,
   javascript: ALL_QUERIES,
   python: ALL_PYTHON_QUERIES,
+  go: ALL_GO_QUERIES,
+  rust: ALL_RUST_QUERIES,
 };
 
 import { scanRepository } from '../scanner';

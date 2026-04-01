@@ -189,3 +189,82 @@ export const ALL_PYTHON_QUERIES: PatternMatchRule[] = [
   ...PYTHON_IMPORT_QUERIES,
   ...PYTHON_TYPE_QUERIES,
 ];
+
+// ============================================================================
+// Go Error Handling + Concurrency (5 rules)
+// ============================================================================
+
+export const GO_ERROR_HANDLING_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'go-if-err',
+    category: 'error-handling',
+    query: '(if_statement condition: (binary_expression right: (nil))) @match',
+  },
+  {
+    id: 'go-defer',
+    category: 'error-handling',
+    query: '(defer_statement) @match',
+  },
+];
+
+export const GO_CONCURRENCY_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'go-goroutine',
+    category: 'concurrency',
+    query: '(go_statement) @match',
+  },
+  {
+    id: 'go-channel-send',
+    category: 'concurrency',
+    query: '(send_statement) @match',
+  },
+];
+
+export const ALL_GO_QUERIES: PatternMatchRule[] = [
+  ...GO_ERROR_HANDLING_QUERIES,
+  ...GO_CONCURRENCY_QUERIES,
+];
+
+// ============================================================================
+// Rust Error Handling + Unsafe + Types (5 rules)
+// ============================================================================
+
+export const RUST_ERROR_HANDLING_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'rust-try-operator',
+    category: 'error-handling',
+    query: '(try_expression) @match',
+  },
+  {
+    id: 'rust-match',
+    category: 'error-handling',
+    query: '(match_expression) @match',
+  },
+];
+
+export const RUST_UNSAFE_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'rust-unsafe-block',
+    category: 'unsafe',
+    query: '(unsafe_block) @match',
+  },
+];
+
+export const RUST_TYPE_QUERIES: PatternMatchRule[] = [
+  {
+    id: 'rust-impl-block',
+    category: 'types',
+    query: '(impl_item) @match',
+  },
+  {
+    id: 'rust-trait-def',
+    category: 'types',
+    query: '(trait_item) @match',
+  },
+];
+
+export const ALL_RUST_QUERIES: PatternMatchRule[] = [
+  ...RUST_ERROR_HANDLING_QUERIES,
+  ...RUST_UNSAFE_QUERIES,
+  ...RUST_TYPE_QUERIES,
+];
