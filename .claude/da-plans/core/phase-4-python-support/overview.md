@@ -165,6 +165,15 @@ def get_user(user_id: int) -> User
 | [4.3](./4.3-pattern-rules.md) | Add Python-specific pattern rules for dev_patterns | Low — S-expression constants |
 | [4.4](./4.4-test-fixtures.md) | Test fixtures, integration tests, documentation | Low — validation |
 
+### Commit strategy
+
+| # | Commit | Risk | What changes |
+|---|--------|------|-------------|
+| 1 | `feat(core): bundle tree-sitter-python WASM and define extraction queries` | Low | Add `'python'` to languages, `PYTHON_QUERIES` constants, validate against grammar |
+| 2 | `feat(core): implement PythonScanner with full extraction` | **Medium** | Scanner class, `isTestFile()` refactor, registry registration. All extraction logic. **Risk is concentrated here.** |
+| 3 | `feat(core): add Python pattern rules for dev_patterns` | Low | Python S-expression rules, `WasmPatternMatcher` update, `QUERIES_BY_LANGUAGE` map refactor |
+| 4 | `feat(core): add Python test fixtures, integration tests, and docs` | Low | Fixtures (FastAPI, pytest, dataclass, `__init__.py`), parity test, changeset, docs |
+
 ---
 
 ## Decisions
