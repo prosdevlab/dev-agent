@@ -345,7 +345,7 @@ describe('shortestPath', () => {
 describe('serializeGraph / deserializeGraph', () => {
   it('should round-trip correctly', () => {
     const graph = new Map<string, WeightedEdge[]>();
-    graph.set('src/a.ts', [edge('src/b.ts', 1.414), edge('src/c.ts', 1)]);
+    graph.set('src/a.ts', [edge('src/b.ts', 1.5), edge('src/c.ts', 1)]);
     graph.set('src/b.ts', [edge('src/c.ts', 2)]);
 
     const json = serializeGraph(graph);
@@ -354,7 +354,7 @@ describe('serializeGraph / deserializeGraph', () => {
     expect(restored).not.toBeNull();
     expect(restored!.size).toBe(2);
     expect(restored!.get('src/a.ts')).toEqual([
-      { target: 'src/b.ts', weight: 1.414 },
+      { target: 'src/b.ts', weight: 1.5 },
       { target: 'src/c.ts', weight: 1 },
     ]);
     expect(restored!.get('src/b.ts')).toEqual([{ target: 'src/c.ts', weight: 2 }]);

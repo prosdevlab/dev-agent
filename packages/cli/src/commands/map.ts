@@ -20,7 +20,6 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { loadConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { output } from '../utils/output.js';
 
 export const mapCommand = new Command('map')
   .description('Show codebase structure with component counts')

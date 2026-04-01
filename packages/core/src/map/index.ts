@@ -7,7 +7,6 @@ import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import type { RepositoryIndexer } from '../indexer';
 import { stripFocusPrefix } from '../indexer/utils/change-frequency.js';
-import { getFileIcon } from '../utils/icons';
 import type { SearchResult } from '../vector/types';
 import type { LocalGitExtractor } from './git-extractor';
 import { connectedComponents, loadOrBuildGraph, pageRank } from './graph';
