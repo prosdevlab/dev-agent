@@ -9,6 +9,22 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.11.0 — Python Language Support
+
+*March 31, 2026*
+
+**dev-agent now indexes Python codebases.** All MCP tools work with Python automatically.
+
+- Extracts functions, classes, methods, imports, decorators, type hints, and docstrings
+- `__all__` controls export detection; `_` prefix convention as fallback
+- Async function detection (`async def`)
+- Pattern analysis: try/except, import style, type coverage via tree-sitter queries
+- Skip generated files (`_pb2.py`, Django migrations)
+- `isTestFile()` recognizes `test_*.py`, `*_test.py`, `conftest.py`
+- 476KB WASM grammar — minimal bundle impact
+
+---
+
 ## v0.10.6 — Graph Algorithms for dev_map and dev_refs
 
 *March 31, 2026*

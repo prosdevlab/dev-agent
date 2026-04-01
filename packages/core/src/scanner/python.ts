@@ -316,7 +316,8 @@ export class PythonScanner implements Scanner {
     const docstring = this.extractDocstring(defCapture.node);
     const exported = this.isExported(name, allExports);
     const snippet = this.truncateSnippet(fullText);
-    const isAsync = fullText.trimStart().startsWith('async ');
+    // Check for 'async def' anywhere in the text (handles decorators above)
+    const isAsync = /\basync\s+def\b/.test(fullText);
     const callees = this.extractCallees(defCapture.node);
 
     return {
@@ -356,7 +357,7 @@ export class PythonScanner implements Scanner {
     const signature = this.extractSignature(fullText);
     const docstring = this.extractDocstring(defCapture.node);
     const snippet = this.truncateSnippet(fullText);
-    const isAsync = fullText.trimStart().startsWith('async ');
+    const isAsync = /\basync\s+def\b/.test(fullText);
     const callees = this.extractCallees(defCapture.node);
 
     // Methods are not individually exported — the class controls visibility
@@ -401,8 +402,17 @@ export class PythonScanner implements Scanner {
    * Python docstrings are the first expression_statement > string in the body block.
    */
   private extractDocstring(node: TreeSitterNode): string | undefined {
+    // For decorated_definition, look inside the inner function/class
+    let target = node;
+    if (node.type === 'decorated_definition') {
+      const inner = node.children?.find(
+        (c: TreeSitterNode) => c.type === 'function_definition' || c.type === 'class_definition'
+      );
+      if (inner) target = inner;
+    }
+
     // Navigate to body > block > first child
-    const body = node.children?.find((c: TreeSitterNode) => c.type === 'block');
+    const body = target.children?.find((c: TreeSitterNode) => c.type === 'block');
     if (!body) return undefined;
 
     for (const child of body.children || []) {
@@ -498,8 +508,19 @@ export class PythonScanner implements Scanner {
   }
 
   private extractSignature(fullText: string): string {
-    // First line up to and including the colon
-    const firstLine = fullText.split('\n')[0].trim();
+    // Find the 'def' or 'async def' line (skips decorator lines)
+    const lines = fullText.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('def ') || trimmed.startsWith('async def ')) {
+        return trimmed.endsWith(':') ? trimmed.slice(0, -1).trim() : trimmed;
+      }
+      if (trimmed.startsWith('class ')) {
+        return trimmed.endsWith(':') ? trimmed.slice(0, -1).trim() : trimmed;
+      }
+    }
+    // Fallback: first line
+    const firstLine = lines[0].trim();
     return firstLine.endsWith(':') ? firstLine.slice(0, -1).trim() : firstLine;
   }
 

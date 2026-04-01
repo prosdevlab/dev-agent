@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.10.6',
-  title: 'Graph Algorithms for dev_map and dev_refs',
+  version: '0.11.0',
+  title: 'Python Language Support',
   date: 'March 31, 2026',
   summary:
-    'PageRank-based file ranking, subsystem detection, and dependency path tracing via traceTo.',
-  link: '/updates#v0106--graph-algorithms-for-dev_map-and-dev_refs',
+    'Index Python codebases — functions, classes, methods, imports, decorators, type hints, docstrings. All MCP tools work with Python automatically.',
+  link: '/updates#v0110--python-language-support',
 } as const;
