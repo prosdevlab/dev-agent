@@ -9,6 +9,20 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.11.2 — `dev refs` CLI Command
+
+*April 1, 2026*
+
+**Find callers and callees from the terminal** — no MCP server needed.
+
+- `dev refs <name>` — callees (what it calls) and callers (what calls it)
+- `dev refs <name> --depends-on <file>` — trace the dependency chain between files
+- `--direction callees|callers|both` and `--json` for scripting
+- Callee file paths now point to source files instead of build output
+- Hot paths in `dev map` show `packages/logger/src/types.ts` instead of `dist/types.d.ts`
+
+---
+
 ## v0.11.1 — Cached Dependency Graph
 
 *April 1, 2026*
