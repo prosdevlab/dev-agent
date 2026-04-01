@@ -231,11 +231,12 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 ## Commit strategy
 
 ```
-1. feat(core): add review and research analysis services
+1. feat(core): add review analysis service
 2. feat(mcp): add dev_review composite adapter
-3. feat(mcp): add dev_research composite adapter
-4. feat(cli): add dev review and dev research commands
-5. docs: update CLAUDE.md, agents, and doc site for composite tools
+3. feat(core): add research analysis service
+4. feat(mcp): add dev_research composite adapter
+5. feat(cli): add dev review and dev research commands
+6. docs: update CLAUDE.md, agents, and doc site for composite tools
 ```
 
 ---
