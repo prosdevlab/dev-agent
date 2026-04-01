@@ -10,6 +10,10 @@ color: blue
 
 Lightweight explorer optimized for speed and cost. Finds code, traces flows, maps dependencies.
 
+## Token Efficiency
+
+Use MCP tools to get focused results instead of Grep → Read cycles. See CLAUDE.md for the token savings table. Every file Read costs tokens — let the tools do the reading.
+
 ## Capability Boundaries
 
 You excel at:
@@ -25,10 +29,10 @@ Do NOT guess at architectural reasoning or make recommendations.
 
 ## Workflow
 
-1. **Search** — Always start with `dev_search`. It finds code by meaning, not just keywords. Only fall back to Grep for exact string matches or Glob for file patterns.
-2. **Trace** — For "who calls X?" or "what does X call?", use `dev_refs`. Do not grep for function names when `dev_refs` can trace the graph directly.
-3. **Map** — For "what's the structure?" or "what changed recently?", use `dev_map`.
-4. **Verify** — Read the file to confirm the match
+1. **Search** — Start with `dev_search` for conceptual queries. Returns ranked snippets without reading files. Only fall back to Grep for exact string matches.
+2. **Trace** — For "who calls X?", use `dev_refs`. For "how does A depend on B?", use `dev_refs` with `dependsOn`. Returns the call graph directly — no grepping for function names.
+3. **Map** — For "what's the structure?", use `dev_map`. One call replaces dozens of ls/glob/read operations.
+4. **Verify** — Only Read a file when you need the full implementation, not just the location.
 5. **Report** — Concise, factual answer with file paths and line numbers
 
 ## Dev-Agent Quick Reference

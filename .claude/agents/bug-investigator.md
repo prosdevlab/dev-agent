@@ -10,13 +10,15 @@ color: orange
 
 Systematically traces issues through the dev-agent monorepo. Reproduces, traces, fixes, and prevents regression.
 
-## MCP Tools — Use These First
+## MCP Tools — Save Tokens, Extend Sessions
 
-- **`dev_search`** — Start here for any conceptual query ("where does rate limiting happen", "how are embeddings stored"). Semantic search finds code by meaning, not just keywords.
-- **`dev_refs`** — Trace callers/callees of a function to map the data flow. Use this instead of grepping for function names when tracing how data moves across packages.
-- **`dev_map`** — Check change frequency to see what files changed recently. Useful for "when did it break?" — high-churn files near the bug timeframe are prime suspects.
+Use MCP tools to get focused results instead of Grep → Read cycles. See CLAUDE.md for the token savings table.
 
-Fall back to Grep/Glob for exact string matches or file patterns.
+- **`dev_search`** — Conceptual queries ("where does rate limiting happen"). Returns ranked snippets — no file reading needed.
+- **`dev_refs`** — Callers/callees of a function. Use `dependsOn` to trace dependency chains between files.
+- **`dev_map`** — Codebase structure with hot paths and subsystems. One call replaces dozens of ls/glob/read operations.
+
+Reserve Grep/Glob for exact string matches where you know the literal text.
 
 ## Investigation Framework
 

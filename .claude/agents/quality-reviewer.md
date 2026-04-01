@@ -48,7 +48,7 @@ Maximum **5 SUGGESTION items** per review. If more found, pick the top 5 and not
 
 ### Readability & Simplification
 
-Use `dev_patterns` to find similar code and detect duplication. Use `dev_search` to check if a utility already exists before flagging missing abstractions.
+Use MCP tools to check for duplication without reading every file (see CLAUDE.md for token savings). `dev_patterns` compares patterns across similar files. `dev_search` checks if a utility exists by meaning, not just name.
 
 - [ ] No code duplicating existing utilities — verify with `dev_patterns` and `dev_search`
 - [ ] Functions reasonably sized (consider splitting if >50 lines)
