@@ -259,6 +259,122 @@ describe('MapAdapter', () => {
     });
   });
 
+  describe('Connected Components', () => {
+    it('should include subsystems when docs have call graph edges', async () => {
+      // Docs with callees forming two separate clusters
+      const clusterDocs: SearchResult[] = [
+        {
+          id: 'packages/core/src/a.ts:fnA:1',
+          score: 0.9,
+          metadata: {
+            path: 'packages/core/src/a.ts',
+            type: 'function',
+            name: 'fnA',
+            exported: true,
+            callees: [{ name: 'fnB', file: 'packages/core/src/b.ts', line: 1 }],
+          },
+        },
+        {
+          id: 'packages/core/src/b.ts:fnB:1',
+          score: 0.9,
+          metadata: {
+            path: 'packages/core/src/b.ts',
+            type: 'function',
+            name: 'fnB',
+            exported: true,
+            callees: [],
+          },
+        },
+        {
+          id: 'packages/mcp/src/x.ts:fnX:1',
+          score: 0.9,
+          metadata: {
+            path: 'packages/mcp/src/x.ts',
+            type: 'function',
+            name: 'fnX',
+            exported: true,
+            callees: [{ name: 'fnY', file: 'packages/mcp/src/y.ts', line: 1 }],
+          },
+        },
+        {
+          id: 'packages/mcp/src/y.ts:fnY:1',
+          score: 0.9,
+          metadata: {
+            path: 'packages/mcp/src/y.ts',
+            type: 'function',
+            name: 'fnY',
+            exported: true,
+            callees: [],
+          },
+        },
+      ];
+
+      const clusterIndexer = {
+        search: vi.fn().mockResolvedValue(clusterDocs),
+        getAll: vi.fn().mockResolvedValue(clusterDocs),
+      } as unknown as RepositoryIndexer;
+
+      const clusterAdapter = new MapAdapter({
+        repositoryIndexer: clusterIndexer,
+        defaultDepth: 3,
+        defaultTokenBudget: 5000,
+      });
+      await clusterAdapter.initialize(context);
+
+      const result = await clusterAdapter.execute({ depth: 3 }, execContext);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toContain('Subsystems');
+      expect(result.data).toContain('connected');
+    });
+
+    it('should not show subsystems section when all docs are in one cluster', async () => {
+      // All docs in same cluster (single connected component)
+      const singleClusterDocs: SearchResult[] = [
+        {
+          id: 'src/a.ts:fnA:1',
+          score: 0.9,
+          metadata: {
+            path: 'src/a.ts',
+            type: 'function',
+            name: 'fnA',
+            exported: true,
+            callees: [{ name: 'fnB', file: 'src/b.ts', line: 1 }],
+          },
+        },
+        {
+          id: 'src/b.ts:fnB:1',
+          score: 0.9,
+          metadata: {
+            path: 'src/b.ts',
+            type: 'function',
+            name: 'fnB',
+            exported: true,
+            callees: [{ name: 'fnA', file: 'src/a.ts', line: 1 }],
+          },
+        },
+      ];
+
+      const singleIndexer = {
+        search: vi.fn().mockResolvedValue(singleClusterDocs),
+        getAll: vi.fn().mockResolvedValue(singleClusterDocs),
+      } as unknown as RepositoryIndexer;
+
+      const singleAdapter = new MapAdapter({
+        repositoryIndexer: singleIndexer,
+        defaultDepth: 2,
+        defaultTokenBudget: 5000,
+      });
+      await singleAdapter.initialize(context);
+
+      const result = await singleAdapter.execute({}, execContext);
+
+      expect(result.success).toBe(true);
+      // Only 1 component — formatCodebaseMap skips the section when <= 1
+      expect(result.data).not.toContain('Subsystems');
+    });
+  });
+
   describe('Token Estimation', () => {
     it('should estimate tokens based on depth', () => {
       const shallow = adapter.estimateTokens({ depth: 1 });
