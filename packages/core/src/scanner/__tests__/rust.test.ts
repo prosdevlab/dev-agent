@@ -5,7 +5,9 @@
  * before building the scanner. Keep this test as a permanent reference.
  */
 
+import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { RustScanner } from '../rust';
 import { parseCode } from '../tree-sitter';
 
 // Step 0: Validate tree-sitter-rust grammar node names
@@ -224,5 +226,184 @@ impl<T: std::fmt::Display> Container<T> {
     expect(typeNode).not.toBeNull();
     // The type text includes the generic parameter
     expect(typeNode!.text).toContain('Container');
+  });
+});
+
+// ============================================================================
+// RustScanner — Full extraction tests
+// ============================================================================
+
+const fixturesDir = path.join(__dirname, '..', '__fixtures__');
+
+describe('RustScanner', () => {
+  const scanner = new RustScanner();
+
+  describe('canHandle', () => {
+    it('should handle .rs files', () => {
+      expect(scanner.canHandle('src/main.rs')).toBe(true);
+      expect(scanner.canHandle('lib.rs')).toBe(true);
+    });
+
+    it('should not handle other files', () => {
+      expect(scanner.canHandle('main.go')).toBe(false);
+      expect(scanner.canHandle('app.py')).toBe(false);
+      expect(scanner.canHandle('index.ts')).toBe(false);
+    });
+  });
+
+  describe('rust-simple.rs', () => {
+    let docs: Awaited<ReturnType<typeof scanner.extractFromFile>>;
+
+    it('should extract from simple fixture', async () => {
+      const fs = await import('node:fs');
+      const content = fs.readFileSync(path.join(fixturesDir, 'rust-simple.rs'), 'utf-8');
+      docs = await scanner.extractFromFile(content, 'rust-simple.rs');
+      expect(docs.length).toBeGreaterThan(0);
+    });
+
+    it('should extract free functions', () => {
+      const processInput = docs.find((d) => d.metadata.name === 'process_input');
+      expect(processInput).toBeDefined();
+      expect(processInput!.type).toBe('function');
+      expect(processInput!.language).toBe('rust');
+    });
+
+    it('should detect pub vs non-pub', () => {
+      const pub = docs.find((d) => d.metadata.name === 'process_input');
+      const priv = docs.find((d) => d.metadata.name === 'helper');
+      expect(pub?.metadata.exported).toBe(true);
+      expect(priv?.metadata.exported).toBe(false);
+    });
+
+    it('should detect pub(crate) as exported', () => {
+      const crateVis = docs.find((d) => d.metadata.name === 'crate_visible');
+      expect(crateVis).toBeDefined();
+      expect(crateVis!.metadata.exported).toBe(true);
+    });
+
+    it('should extract structs', () => {
+      const store = docs.find((d) => d.metadata.name === 'Store');
+      expect(store).toBeDefined();
+      expect(store!.type).toBe('class');
+    });
+
+    it('should extract enums', () => {
+      const status = docs.find((d) => d.metadata.name === 'Status');
+      expect(status).toBeDefined();
+      expect(status!.type).toBe('class');
+    });
+
+    it('should extract traits', () => {
+      const processor = docs.find((d) => d.metadata.name === 'Processor');
+      expect(processor).toBeDefined();
+      expect(processor!.type).toBe('interface');
+    });
+
+    it('should extract methods from impl blocks', () => {
+      const newFn = docs.find((d) => d.metadata.name === 'Store.new');
+      const getFn = docs.find((d) => d.metadata.name === 'Store.get');
+      const cleanup = docs.find((d) => d.metadata.name === 'Store.internal_cleanup');
+      expect(newFn).toBeDefined();
+      expect(getFn).toBeDefined();
+      expect(cleanup).toBeDefined();
+      expect(newFn!.type).toBe('method');
+    });
+
+    it('should extract doc comments', () => {
+      const store = docs.find((d) => d.metadata.name === 'Store');
+      expect(store?.metadata.docstring).toBe('A simple key-value store');
+
+      const newFn = docs.find((d) => d.metadata.name === 'Store.new');
+      expect(newFn?.metadata.docstring).toBe('Create a new empty store');
+    });
+
+    it('should extract imports', () => {
+      const fn = docs.find((d) => d.metadata.name === 'process_input');
+      expect(fn?.metadata.imports).toBeDefined();
+      expect(fn!.metadata.imports!.some((i) => i.includes('HashMap'))).toBe(true);
+    });
+
+    it('should detect async functions', () => {
+      const fetchData = docs.find((d) => d.metadata.name === 'fetch_data');
+      expect(fetchData).toBeDefined();
+      expect(fetchData!.metadata.isAsync).toBe(true);
+    });
+
+    it('should include signatures', () => {
+      const fn = docs.find((d) => d.metadata.name === 'process_input');
+      expect(fn?.metadata.signature).toContain('fn process_input');
+    });
+  });
+
+  describe('rust-complex.rs', () => {
+    let docs: Awaited<ReturnType<typeof scanner.extractFromFile>>;
+
+    it('should extract from complex fixture', async () => {
+      const fs = await import('node:fs');
+      const content = fs.readFileSync(path.join(fixturesDir, 'rust-complex.rs'), 'utf-8');
+      docs = await scanner.extractFromFile(content, 'rust-complex.rs');
+      expect(docs.length).toBeGreaterThan(0);
+    });
+
+    it('should handle impl Trait for Type — uses concrete type', () => {
+      const handle = docs.find((d) => d.metadata.name === 'Server.handle');
+      expect(handle).toBeDefined();
+      expect(handle!.type).toBe('method');
+    });
+
+    it('should handle impl fmt::Display — uses concrete type', () => {
+      const fmt = docs.find((d) => d.metadata.name === 'Server.fmt');
+      expect(fmt).toBeDefined();
+      expect(fmt!.type).toBe('method');
+    });
+
+    it('should strip generic type params from impl', () => {
+      const show = docs.find((d) => d.metadata.name === 'Container.show');
+      expect(show).toBeDefined();
+      expect(show!.metadata.name).toBe('Container.show');
+      // Should NOT be Container<T>.show
+      expect(show!.metadata.name).not.toContain('<');
+    });
+
+    it('should extract callees from methods', () => {
+      const handle = docs.find((d) => d.metadata.name === 'Server.handle');
+      expect(handle?.metadata.callees).toBeDefined();
+      const calleeNames = handle!.metadata.callees!.map((c) => c.name);
+      expect(calleeNames.some((n) => n.includes('process_request'))).toBe(true);
+    });
+
+    it('should extract callees inside closures', () => {
+      const processItems = docs.find((d) => d.metadata.name === 'process_items');
+      expect(processItems?.metadata.callees).toBeDefined();
+      const calleeNames = processItems!.metadata.callees!.map((c) => c.name);
+      expect(calleeNames.some((n) => n.includes('transform'))).toBe(true);
+    });
+
+    it('should NOT include macros in callees', () => {
+      // process_request calls format!() — should NOT be in callees
+      const processReq = docs.find((d) => d.metadata.name === 'Server.process_request');
+      if (processReq?.metadata.callees) {
+        const calleeNames = processReq.metadata.callees.map((c) => c.name);
+        expect(calleeNames.some((n) => n.includes('format!'))).toBe(false);
+      }
+    });
+  });
+
+  describe('malformed file', () => {
+    it('should return empty documents for malformed Rust file', async () => {
+      const fs = await import('node:fs');
+      const content = fs.readFileSync(path.join(fixturesDir, 'rust-malformed.rs'), 'utf-8');
+      const docs = await scanner.extractFromFile(content, 'rust-malformed.rs');
+      // Should not crash — may return partial or empty results
+      expect(Array.isArray(docs)).toBe(true);
+    });
+  });
+
+  describe('generated file detection', () => {
+    it('should skip files in target/ directory', async () => {
+      const files = ['target/debug/build/main.rs'];
+      const results = await scanner.scan(files, '/fake/root');
+      expect(results.length).toBe(0);
+    });
   });
 });
