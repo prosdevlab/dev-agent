@@ -2,6 +2,7 @@
 
 export { GoScanner } from './go';
 export { MarkdownScanner } from './markdown';
+export { PythonScanner } from './python';
 export { ScannerRegistry } from './registry';
 export type {
   CalleeInfo,
@@ -22,7 +23,8 @@ export { TypeScriptScanner } from './typescript';
 
 import { GoScanner } from './go';
 import { MarkdownScanner } from './markdown';
-// Create default scanner registry with TypeScript, Markdown, and Go
+import { PythonScanner } from './python';
+// Create default scanner registry with TypeScript, Markdown, Go, and Python
 import { ScannerRegistry } from './registry';
 import type { ScanOptions } from './types';
 import { TypeScriptScanner } from './typescript';
@@ -41,6 +43,9 @@ export function createDefaultRegistry(): ScannerRegistry {
 
   // Register Go scanner
   registry.register(new GoScanner());
+
+  // Register Python scanner
+  registry.register(new PythonScanner());
 
   return registry;
 }
