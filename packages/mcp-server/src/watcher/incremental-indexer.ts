@@ -6,12 +6,16 @@
  * path-to-docID cache for resolving delete targets.
  */
 
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {
+  deserializeGraph,
   type EmbeddingDocument,
   prepareDocumentsForEmbedding,
   type RepositoryIndexer,
   scanRepository,
+  serializeGraph,
+  updateGraphIncremental,
 } from '@prosdevlab/dev-agent-core';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -19,6 +23,8 @@ import {
 export interface IncrementalIndexerConfig {
   repositoryIndexer: RepositoryIndexer;
   repositoryPath: string;
+  /** Path to cached dependency-graph.json */
+  graphPath?: string;
   logger?: {
     info: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
@@ -52,7 +58,7 @@ export function createIncrementalIndexer(config: IncrementalIndexerConfig): {
   onChanges: (changed: string[], deleted: string[]) => Promise<void>;
   invalidateCache: () => void;
 } {
-  const { repositoryIndexer, repositoryPath, logger } = config;
+  const { repositoryIndexer, repositoryPath, graphPath, logger } = config;
 
   // Path-to-docID cache for resolving deletes
   const pathToDocIds = new Map<string, string[]>();
@@ -123,6 +129,26 @@ export function createIncrementalIndexer(config: IncrementalIndexerConfig): {
       logger?.info(
         `[MCP] Incremental update: ${upserts.length} upserted, ${deleteIds.length} deleted`
       );
+
+      // 5. Update cached dependency graph
+      if (graphPath) {
+        try {
+          const json = await fs.readFile(graphPath, 'utf-8');
+          const existing = deserializeGraph(json);
+          if (existing) {
+            const deletedFiles = deleted.map((f) => path.relative(repositoryPath, f));
+            const changedDocs = upserts.map((d) => ({
+              id: d.id,
+              score: 0,
+              metadata: d.metadata,
+            }));
+            const updated = updateGraphIncremental(existing, changedDocs, deletedFiles);
+            await fs.writeFile(graphPath, serializeGraph(updated), 'utf-8');
+          }
+        } catch {
+          // Graph update failed — next full index will fix it
+        }
+      }
     }
   }
 

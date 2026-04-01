@@ -9,8 +9,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDependencyGraph,
   connectedComponents,
+  deserializeGraph,
+  loadOrBuildGraph,
   pageRank,
+  serializeGraph,
   shortestPath,
+  updateGraphIncremental,
   type WeightedEdge,
 } from '../graph';
 
@@ -331,5 +335,180 @@ describe('shortestPath', () => {
 
   it('should return null for unknown source', () => {
     expect(shortestPath(new Map(), 'X', 'Y')).toBeNull();
+  });
+});
+
+// ============================================================================
+// Serialization
+// ============================================================================
+
+describe('serializeGraph / deserializeGraph', () => {
+  it('should round-trip correctly', () => {
+    const graph = new Map<string, WeightedEdge[]>();
+    graph.set('src/a.ts', [edge('src/b.ts', 1.414), edge('src/c.ts', 1)]);
+    graph.set('src/b.ts', [edge('src/c.ts', 2)]);
+
+    const json = serializeGraph(graph);
+    const restored = deserializeGraph(json);
+
+    expect(restored).not.toBeNull();
+    expect(restored!.size).toBe(2);
+    expect(restored!.get('src/a.ts')).toEqual([
+      { target: 'src/b.ts', weight: 1.414 },
+      { target: 'src/c.ts', weight: 1 },
+    ]);
+    expect(restored!.get('src/b.ts')).toEqual([{ target: 'src/c.ts', weight: 2 }]);
+  });
+
+  it('should include metadata in serialized JSON', () => {
+    const graph = new Map<string, WeightedEdge[]>();
+    graph.set('a', [edge('b')]);
+
+    const parsed = JSON.parse(serializeGraph(graph));
+    expect(parsed.version).toBe(1);
+    expect(parsed.nodeCount).toBe(1);
+    expect(parsed.edgeCount).toBe(1);
+    expect(parsed.generatedAt).toBeTruthy();
+  });
+
+  it('should return null for invalid JSON', () => {
+    expect(deserializeGraph('not json')).toBeNull();
+  });
+
+  it('should return null for wrong version', () => {
+    const json = JSON.stringify({ version: 99, graph: {} });
+    expect(deserializeGraph(json)).toBeNull();
+  });
+
+  it('should return null for missing graph field', () => {
+    const json = JSON.stringify({ version: 1 });
+    expect(deserializeGraph(json)).toBeNull();
+  });
+
+  it('should handle empty graph', () => {
+    const graph = new Map<string, WeightedEdge[]>();
+    const json = serializeGraph(graph);
+    const restored = deserializeGraph(json);
+    expect(restored).not.toBeNull();
+    expect(restored!.size).toBe(0);
+  });
+});
+
+// ============================================================================
+// loadOrBuildGraph
+// ============================================================================
+
+describe('loadOrBuildGraph', () => {
+  it('should call fallback when graphPath is undefined', async () => {
+    const fallbackDocs = [
+      {
+        id: '1',
+        score: 0,
+        metadata: {
+          path: 'src/a.ts',
+          callees: [{ name: 'foo', file: 'src/b.ts', line: 1 }],
+        },
+      },
+    ];
+
+    const graph = await loadOrBuildGraph(undefined, async () => fallbackDocs);
+    expect(graph.get('src/a.ts')).toBeDefined();
+  });
+
+  it('should call fallback when graphPath file does not exist', async () => {
+    const fallbackDocs = [
+      {
+        id: '1',
+        score: 0,
+        metadata: {
+          path: 'src/x.ts',
+          callees: [{ name: 'bar', file: 'src/y.ts', line: 1 }],
+        },
+      },
+    ];
+
+    const graph = await loadOrBuildGraph('/nonexistent/path.json', async () => fallbackDocs);
+    expect(graph.get('src/x.ts')).toBeDefined();
+  });
+});
+
+// ============================================================================
+// updateGraphIncremental
+// ============================================================================
+
+describe('updateGraphIncremental', () => {
+  it('should add edges for new files', () => {
+    const existing = new Map<string, WeightedEdge[]>();
+    existing.set('src/a.ts', [edge('src/b.ts')]);
+
+    const changedDocs = [
+      {
+        id: '1',
+        score: 0,
+        metadata: {
+          path: 'src/c.ts',
+          callees: [{ name: 'foo', file: 'src/d.ts', line: 1 }],
+        },
+      },
+    ];
+
+    const updated = updateGraphIncremental(existing, changedDocs, []);
+    expect(updated.get('src/a.ts')).toBeDefined(); // Kept
+    expect(updated.get('src/c.ts')).toBeDefined(); // Added
+  });
+
+  it('should remove edges for deleted files', () => {
+    const existing = new Map<string, WeightedEdge[]>();
+    existing.set('src/a.ts', [edge('src/b.ts')]);
+    existing.set('src/b.ts', [edge('src/c.ts')]);
+
+    const updated = updateGraphIncremental(existing, [], ['src/a.ts']);
+    expect(updated.has('src/a.ts')).toBe(false); // Removed
+    expect(updated.get('src/b.ts')).toBeDefined(); // Kept
+  });
+
+  it('should replace edges for changed files', () => {
+    const existing = new Map<string, WeightedEdge[]>();
+    existing.set('src/a.ts', [edge('src/old.ts')]);
+
+    const changedDocs = [
+      {
+        id: '1',
+        score: 0,
+        metadata: {
+          path: 'src/a.ts',
+          callees: [{ name: 'foo', file: 'src/new.ts', line: 1 }],
+        },
+      },
+    ];
+
+    const updated = updateGraphIncremental(existing, changedDocs, []);
+    const edges = updated.get('src/a.ts')!;
+    expect(edges.length).toBe(1);
+    expect(edges[0].target).toBe('src/new.ts'); // Replaced
+  });
+
+  it('should not mutate the existing graph', () => {
+    const existing = new Map<string, WeightedEdge[]>();
+    existing.set('src/a.ts', [edge('src/b.ts')]);
+
+    updateGraphIncremental(existing, [], ['src/a.ts']);
+    expect(existing.has('src/a.ts')).toBe(true); // Original unchanged
+  });
+
+  it('should handle empty existing graph', () => {
+    const changedDocs = [
+      {
+        id: '1',
+        score: 0,
+        metadata: {
+          path: 'src/a.ts',
+          callees: [{ name: 'foo', file: 'src/b.ts', line: 1 }],
+        },
+      },
+    ];
+
+    const updated = updateGraphIncremental(new Map(), changedDocs, []);
+    expect(updated.get('src/a.ts')).toBeDefined();
   });
 });

@@ -10,7 +10,9 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import type { EventBus } from '../events/types.js';
+import { buildDependencyGraph, serializeGraph } from '../map/graph';
 import { scanRepository } from '../scanner';
+import { getStorageFilePaths } from '../storage/path';
 import type { EmbeddingDocument, LinearMergeResult, SearchOptions, SearchResult } from '../vector';
 import { VectorStorage } from '../vector';
 import { StatsAggregator } from './stats-aggregator';
@@ -182,6 +184,23 @@ export class RepositoryIndexer {
         },
         `Linear Merge complete: ${mergeResult.upserted} upserted, ${mergeResult.skipped} unchanged, ${mergeResult.deleted} removed`
       );
+
+      // Build and cache dependency graph
+      try {
+        const graphDocs = embeddingDocuments.map((d) => ({
+          id: d.id,
+          score: 0,
+          metadata: d.metadata,
+        }));
+        const graph = buildDependencyGraph(graphDocs);
+        const storagePath = path.dirname(this.config.vectorStorePath);
+        const graphPath = getStorageFilePaths(storagePath).dependencyGraph;
+        await fs.writeFile(graphPath, serializeGraph(graph), 'utf-8');
+        logger?.info({ nodes: graph.size }, 'Dependency graph cached');
+      } catch (graphError) {
+        // Non-fatal — graph is a performance optimization, not required
+        logger?.warn({ error: graphError }, 'Failed to cache dependency graph');
+      }
 
       // Phase 4: Complete
       const endTime = new Date();

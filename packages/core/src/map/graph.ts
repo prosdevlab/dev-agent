@@ -11,6 +11,7 @@
  * which uses NetworkX PageRank over a weighted dependency graph.
  */
 
+import * as fs from 'node:fs/promises';
 import type { SearchResult } from '../vector/types';
 
 // ============================================================================
@@ -20,6 +21,14 @@ import type { SearchResult } from '../vector/types';
 export interface WeightedEdge {
   target: string;
   weight: number;
+}
+
+export interface CachedGraph {
+  version: 1;
+  generatedAt: string;
+  nodeCount: number;
+  edgeCount: number;
+  graph: Record<string, WeightedEdge[]>;
 }
 
 // ============================================================================
@@ -257,4 +266,107 @@ export function shortestPath(
   }
 
   return null;
+}
+
+// ============================================================================
+// Serialization
+// ============================================================================
+
+const GRAPH_VERSION = 1;
+
+/**
+ * Serialize a dependency graph to JSON string.
+ */
+export function serializeGraph(graph: Map<string, WeightedEdge[]>): string {
+  let edgeCount = 0;
+  const obj: Record<string, WeightedEdge[]> = {};
+  for (const [key, edges] of graph) {
+    obj[key] = edges;
+    edgeCount += edges.length;
+  }
+  const cached: CachedGraph = {
+    version: GRAPH_VERSION,
+    generatedAt: new Date().toISOString(),
+    nodeCount: graph.size,
+    edgeCount,
+    graph: obj,
+  };
+  return JSON.stringify(cached);
+}
+
+/**
+ * Deserialize a JSON string to a dependency graph.
+ * Returns null if JSON is invalid or version doesn't match.
+ */
+export function deserializeGraph(json: string): Map<string, WeightedEdge[]> | null {
+  try {
+    const data = JSON.parse(json) as CachedGraph;
+    if (data.version !== GRAPH_VERSION) return null;
+    if (!data.graph || typeof data.graph !== 'object') return null;
+
+    const graph = new Map<string, WeightedEdge[]>();
+    for (const [key, edges] of Object.entries(data.graph)) {
+      graph.set(key, edges as WeightedEdge[]);
+    }
+    return graph;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// Load / Build
+// ============================================================================
+
+/**
+ * Load dependency graph from cache, or build from docs as fallback.
+ */
+export async function loadOrBuildGraph(
+  graphPath: string | undefined,
+  fallbackDocs: () => Promise<SearchResult[]>
+): Promise<Map<string, WeightedEdge[]>> {
+  if (graphPath) {
+    try {
+      const json = await fs.readFile(graphPath, 'utf-8');
+      const graph = deserializeGraph(json);
+      if (graph) return graph;
+    } catch {
+      // File missing or unreadable — fall through to build
+    }
+  }
+
+  const docs = await fallbackDocs();
+  return buildDependencyGraph(docs);
+}
+
+// ============================================================================
+// Incremental Update
+// ============================================================================
+
+/**
+ * Update a dependency graph incrementally.
+ *
+ * For changed/new files: remove old edges from those files, add new edges.
+ * For deleted files: remove all edges from those files.
+ * Returns a new graph (does not mutate existing).
+ */
+export function updateGraphIncremental(
+  existing: Map<string, WeightedEdge[]>,
+  changedDocs: SearchResult[],
+  deletedFiles: string[]
+): Map<string, WeightedEdge[]> {
+  const updated = new Map(existing);
+
+  // Remove edges for deleted files
+  for (const file of deletedFiles) {
+    updated.delete(file);
+  }
+
+  // Build graph from changed docs, then merge
+  const changedGraph = buildDependencyGraph(changedDocs);
+  for (const [file, edges] of changedGraph) {
+    updated.set(file, edges);
+  }
+
+  return updated;
 }
