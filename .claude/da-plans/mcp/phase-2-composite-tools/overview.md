@@ -1,6 +1,6 @@
 # MCP Phase 2: Composite Tools — dev_review and dev_research
 
-**Status:** Draft
+**Status:** Draft (revised after AI agent architect review)
 
 ## Context
 
@@ -9,228 +9,141 @@ MCP Phase 1 delivered 5 low-level tools: `dev_search`, `dev_refs`, `dev_map`,
 
 AI assistants using these tools must orchestrate them manually — call `dev_search`
 to find relevant code, `dev_refs` to trace call chains, `dev_patterns` to compare
-conventions, `dev_map` for structural context. A typical review requires 5-10 tool
-calls, burning 3,000-5,000 tokens on orchestration alone.
+conventions, `dev_map` for structural context. This works, but:
 
-### The opportunity
+1. **Round-trip latency** — 5 sequential tool calls take 5x the time of one
+2. **Planning overhead** — the AI spends tokens deciding which tool to call next
+3. **Incomplete coverage** — the AI may skip cross-package impact analysis or
+   pattern comparison because it doesn't know to ask
 
-Composite tools run multiple low-level tools internally and return **workflow-ready
-context** in a single call. The AI assistant gets pre-digested analysis instead of
-raw data. One call replaces 5-10.
+### The insight
 
-### The swarm pattern
+Dev-agent is an MCP server. The AI assistant (Claude Code, Cursor) IS the LLM.
+We don't need to bring our own. Our job is to give the assistant the best possible
+context so it can do what it does best — reason, research, and synthesize.
 
-Inspired by multi-agent swarm architectures where a coordinator delegates to
-specialists and synthesizes results. Our composite tools use the same pattern
-internally:
+**Composite tools deliver workflow-ready context in a single call.** The assistant
+reads it and applies judgment. We handle the data; it handles the intelligence.
 
 ```
-┌──────────────────────────────────────────────────┐
-│  dev_review (composite MCP tool)                 │
-│                                                  │
-│  Coordinator: receives file/diff + focus area    │
-│       │                                          │
-│       ├── Specialist: impact analysis            │
-│       │   └── dev_refs (callers/callees)         │
-│       │   └── dependency graph (affected files)  │
-│       │                                          │
-│       ├── Specialist: pattern comparison         │
-│       │   └── dev_patterns (conventions)         │
-│       │   └── dev_search (similar code)          │
-│       │                                          │
-│       ├── Specialist: structural context         │
-│       │   └── dev_map (hot paths, subsystems)    │
-│       │                                          │
-│       └── Synthesizer: combine into report       │
-│                                                  │
-│  Returns: structured analysis, not raw data      │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                  The Partnership                         │
+│                                                          │
+│  dev-agent (MCP)           │  AI assistant (LLM)         │
+│  ─────────────────         │  ─────────────────          │
+│  Internal knowledge:       │  External research:         │
+│    What does our code do?  │    What should it do?       │
+│    Who calls what?         │    What do best practices   │
+│    What patterns exist?    │    say?                     │
+│    Where does it fit?      │    How do popular projects  │
+│                            │    handle this?             │
+│                            │                             │
+│  dev_review returns:       │  AI assistant adds:         │
+│    impact analysis         │    security concerns        │
+│    pattern comparison      │    logic issues             │
+│    structural context      │    recommendations          │
+│    similar code            │    evidence from web/docs   │
+│                            │                             │
+│  dev_research returns:     │  AI assistant adds:         │
+│    relevant code           │    external comparisons     │
+│    call graphs             │    best practice research   │
+│    architecture            │    synthesis + plan         │
+└──────────────────────────────────────────────────────────┘
+
+CLI is the degraded experience: structured data, no synthesis.
+Still useful — developers can read the report. But the magic
+happens in the AI assistant.
 ```
 
-The specialists run in parallel internally. The coordinator and synthesizer are
-pure functions — no LLM calls, just structured data composition. The intelligence
-is in choosing WHAT to query and HOW to combine results.
+### What this phase delivers
 
-### Updated mission
+Two composite MCP tools that run low-level tools in parallel and return
+enriched, structured context:
 
-> **Dev-Agent is a repository-aware context engine for AI tools.** It indexes your
-> codebase locally, builds a semantic understanding (search, call graphs, patterns,
-> structure), and delivers that context to AI assistants efficiently — from low-level
-> queries to workflow-ready analysis.
+- **`dev_review`** — Everything an AI needs to review a file or change
+- **`dev_research`** — Everything an AI needs to understand a concept in the codebase
 
----
-
-## What this phase delivers
-
-### `dev_review` — Change analysis in one call
-
-```typescript
-dev_review {
-  target: "packages/core/src/scanner/rust.ts",  // file, dir, or git diff
-  focus?: "security" | "quality" | "performance" | "all",
-  depth?: "quick" | "standard" | "deep"
-}
-```
-
-Returns:
-
-```markdown
-## Review Context: packages/core/src/scanner/rust.ts
-
-### Impact Analysis
-- Called by: 3 files across 2 packages
-- Calls: 12 functions in 4 files
-- Hot path rank: #8 (PageRank 0.023)
-- Subsystem: packages/core/src/scanner (14 files)
-
-### Pattern Comparison
-- Error handling: uses try/catch (consistent with 85% of codebase)
-- Naming: follows camelCase convention
-- Similar implementations: python.ts (87% pattern overlap), go.ts (72%)
-
-### Similar Code
-- normalizeAndRelativize() at typescript.ts:27 — similar path normalization
-- walkCallNodes() at python.ts:468 — same AST walking pattern
-
-### Structural Context
-- This file is in the scanner subsystem (14 files, 3rd largest)
-- scanner/ accounts for 223 of 2,220 indexed components
-- Recent churn: 4 commits in last 30 days
-```
-
-The AI assistant reads this once and has everything it needs to review the code.
-No follow-up tool calls needed. It can then add its own analysis (security concerns,
-logic issues, style) ON TOP of this context.
-
-### `dev_research` — Codebase research in one call
-
-```typescript
-dev_research {
-  query: "how is authentication handled",
-  scope?: "architecture" | "implementation" | "usage",
-  depth?: "quick" | "standard" | "deep"
-}
-```
-
-Returns:
-
-```markdown
-## Research: how is authentication handled
-
-### Relevant Code (ranked by relevance)
-1. packages/mcp-server/src/server/auth.ts — token validation middleware
-2. packages/core/src/services/github-service.ts — GitHub OAuth flow
-3. packages/cli/src/utils/config.ts — credential storage
-
-### Call Graph
-auth.ts → validateToken() → github-service.ts → getUser()
-         → rateLimit() → rate-limiter.ts
-
-### Patterns Found
-- Token validation: 3 files use the same pattern
-- Error handling: auth errors return 401 with structured message
-- No password storage — all OAuth-based
-
-### Architecture
-- Auth is centralized in mcp-server, consumed by 5 adapters
-- GitHub service handles all external auth
-- Tokens stored via gh CLI, not in dev-agent
-
-### Related
-- Similar pattern: packages/core/src/services/search-service.ts (service pattern)
-- Test coverage: 2 test files, 8 test cases
-```
-
-For the AI assistant, this replaces the typical "let me search for auth... now let
-me read that file... now let me trace the callers..." cycle. One call, full picture.
+Plus CLI commands (`dev review`, `dev research`) for standalone terminal use.
 
 ---
 
 ## Architecture
 
-### Composite adapter pattern
+### Shared analysis services (not adapter DI)
+
+The AI agent architect review identified a key problem: existing adapters contain
+inline analysis logic that would be duplicated by composites. The `refs` CLI command
+already duplicates RefsAdapter's caller resolution algorithm.
+
+Fix: extract analysis logic into shared services in `packages/core/src/services/`.
+Both MCP adapters and CLI commands call these services.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  packages/mcp-server/src/adapters/built-in/              │
+│  packages/core/src/services/                             │
 │                                                          │
-│  Existing (low-level):                                   │
-│    search-adapter.ts                                     │
-│    refs-adapter.ts                                       │
-│    map-adapter.ts                                        │
-│    inspect-adapter.ts (dev_patterns)                     │
-│    status-adapter.ts                                     │
+│  review-analysis.ts     ← impact, patterns, structure    │
+│  research-analysis.ts   ← search, enrich, format         │
 │                                                          │
-│  New (composite):                                        │
-│    review-adapter.ts  ──► uses search, refs, map,        │
-│                           inspect internally             │
-│    research-adapter.ts ──► uses search, refs, map,       │
-│                            inspect internally            │
-│                                                          │
-│  Composite adapters receive other adapters at             │
-│  construction time (dependency injection).                │
-│  They orchestrate, not duplicate.                        │
+│  Pure functions. Take indexer + search service + graph.   │
+│  Return structured data. No MCP, no CLI, no formatting.  │
 └──────────────────────────────────────────────────────────┘
+         ▲                              ▲
+         │                              │
+┌────────┴─────────┐         ┌─────────┴──────────┐
+│  MCP Adapters    │         │  CLI Commands       │
+│  review-adapter  │         │  dev review         │
+│  research-adapter│         │  dev research       │
+│                  │         │                     │
+│  Format for MCP  │         │  Format for terminal│
+│  (markdown)      │         │  (chalk/plain)      │
+└──────────────────┘         └────────────────────┘
 ```
 
-### Internal orchestration (not LLM-based)
+This also sets up the path to refactor existing adapters (refs, map, etc.) to
+use shared services — eliminating the CLI duplication problem. That refactor is
+out of scope for Phase 2 but enabled by this architecture.
 
-The composite tools do NOT call an LLM to synthesize. They use structured
-data composition:
+### Parallel query composition
+
+Composites run analysis functions in parallel via `Promise.all`. This is not a
+"swarm" or multi-agent system — it's parallel query composition with structured
+formatting. The AI assistant provides the intelligence; we provide the data.
 
 ```typescript
-class ReviewAdapter extends ToolAdapter {
-  constructor(config: {
-    searchAdapter: SearchAdapter;
-    refsAdapter: RefsAdapter;
-    mapAdapter: MapAdapter;
-    inspectAdapter: InspectAdapter;
-    indexer: RepositoryIndexer;
-  }) { ... }
+// review-analysis.ts — pure functions, no adapter dependencies
+export async function analyzeForReview(
+  target: string[],
+  indexer: RepositoryIndexer,
+  searchService: SearchService,
+  graphPath?: string,
+  options?: { depth: 'quick' | 'standard' | 'deep' }
+): Promise<ReviewAnalysis> {
 
-  async execute(args: ReviewArgs, context: ToolExecutionContext): Promise<ToolResult> {
-    // Run specialists in parallel
-    const [impact, patterns, structure] = await Promise.all([
-      this.analyzeImpact(args.target),      // refs + graph
-      this.comparePatterns(args.target),     // patterns + search
-      this.getStructuralContext(args.target), // map
-    ]);
+  const [impact, patterns, structure] = await Promise.all([
+    analyzeImpact(target, indexer, graphPath),
+    comparePatterns(target, searchService),
+    getStructuralContext(target, indexer, graphPath),
+  ]);
 
-    // Synthesize into structured markdown (no LLM call)
-    return this.formatReport(impact, patterns, structure, args.focus);
-  }
+  return { impact, patterns, structure };
 }
 ```
 
-This is key: **the composite tool is deterministic.** Same input, same output.
-No LLM variance. The AI assistant provides the judgment; we provide the facts.
-
 ### Depth levels
 
-| Depth | What it does | Token cost | Latency |
-|-------|-------------|-----------|---------|
-| `quick` | search + refs only | ~500 | <2s |
-| `standard` | search + refs + patterns + map | ~1,500 | <5s |
-| `deep` | all tools + change frequency + similar files | ~3,000 | <10s |
+| Depth | What it runs | Latency | Best for |
+|-------|-------------|---------|----------|
+| `quick` | impact only (refs + graph) | <2s | Small changes, quick check |
+| `standard` | impact + patterns + structure | <5s | Normal PRs, most reviews |
+| `deep` | all + similar code + change frequency | <10s | Major refactors, new features |
 
-The default is `standard`. The AI assistant can request `quick` for small changes
-or `deep` for major refactors.
+### Partial failure behavior
 
-### CLI exposure
-
-```bash
-# Standalone CLI (works without AI assistant)
-dev review packages/core/src/scanner/rust.ts
-dev review --focus security --depth deep
-dev review --diff HEAD~1        # review last commit
-dev review --pr 31              # review a PR (via gh API)
-
-dev research "authentication flow"
-dev research "error handling patterns" --depth deep
-```
-
-CLI output is the same structured markdown. User reads it directly or pipes
-it into an AI assistant.
+When one specialist fails (e.g., patterns times out but refs succeeds):
+- Return a partial report with available sections
+- Add a warning note: "Pattern analysis unavailable — index may need refresh"
+- Never crash. Always return something useful.
 
 ---
 
@@ -238,10 +151,10 @@ it into an AI assistant.
 
 | Part | Description | Risk |
 |------|-------------|------|
-| [2.1](./2.1-review-adapter.md) | `dev_review` MCP adapter — impact, patterns, structure | Medium — composing existing tools |
-| [2.2](./2.2-research-adapter.md) | `dev_research` MCP adapter — relevant code, call graph, patterns | Medium — query interpretation |
-| [2.3](./2.3-cli-commands.md) | `dev review` and `dev research` CLI commands | Low — wiring to adapters |
-| [2.4](./2.4-docs-and-agents.md) | Update CLAUDE.md, agents, doc site, changelog | Low — docs only |
+| [2.1](./2.1-review-adapter.md) | Shared review analysis service + `dev_review` MCP adapter | Medium |
+| [2.2](./2.2-research-adapter.md) | Shared research analysis service + `dev_research` MCP adapter | Medium |
+| [2.3](./2.3-cli-commands.md) | `dev review` and `dev research` CLI commands (using shared services) | Low |
+| [2.4](./2.4-docs-and-agents.md) | Update CLAUDE.md, agents, doc site, changelog | Low |
 
 ---
 
@@ -249,13 +162,13 @@ it into an AI assistant.
 
 | Decision | Rationale | Alternatives |
 |----------|-----------|-------------|
-| Composite adapter pattern (DI) | Adapters receive other adapters, not services. Reuses existing test infrastructure. | Direct service calls: bypasses adapter validation/formatting |
-| No LLM in composite tools | Deterministic output. AI assistant adds judgment. We provide facts. | LLM synthesis: adds latency, cost, variance, API key dependency |
-| Parallel specialist execution | Impact, patterns, structure are independent. Parallel saves 2-3x latency. | Sequential: simpler but slower |
-| Structured markdown output | Consistent format. AI assistants parse it reliably. Humans can read it too. | JSON: harder for humans. Free text: harder for AI to parse. |
-| Depth levels | Users control token/latency trade-off. Quick for small changes, deep for major ones. | Always deep: wastes tokens on trivial changes. Always quick: misses context on complex ones. |
-| Diff support via git | `--diff HEAD~1` and `--pr 31` use `git diff` and `gh api`. No custom diff parsing. | Custom diff parser: unnecessary when git handles it |
-| CLI outputs same format as MCP | One rendering path. CLI users and MCP users get identical reports. | Separate formats: maintenance burden |
+| No LLM in composite tools | AI assistant IS the LLM. We provide context, it provides judgment. No API key, no cost, no extra dependency. | LLM in tool: competes with a superior model, adds complexity |
+| Shared services in core, not adapter DI | Avoids duplication between CLI and MCP. Pure functions, testable. Adapters are thin wrappers. | Adapter DI: creates coupling between MCP adapters. Service bypass: duplicates logic. |
+| Parallel query composition, not "swarm" | Honest naming. It's Promise.all on analysis functions. No dynamic routing, no agent autonomy. | "Swarm" label: misleading, creates confusion with subagents package |
+| Partial failure → partial report | Always return something useful. A review with impact but no patterns is better than an error. | Fail entirely: wastes the successful queries. Retry: adds latency. |
+| MCP is primary, CLI is secondary | Our users are AI assistant users. MCP delivers the full experience. CLI is the degraded-but-functional fallback. | CLI-first: would need its own LLM, adds cost and complexity |
+| dev_review description triggers on "review a PR/change" | Disambiguates from dev_patterns (single file analysis) and dev_search (conceptual query). | Generic description: AI won't know when to use it |
+| dev_research enriches ALL results by default | Scope controls emphasis in output, not which data is collected. Avoids the counterintuitive "usage skips call graphs" problem. | Scope skips enrichments: confusing mapping, loses useful data |
 
 ---
 
@@ -263,11 +176,12 @@ it into an AI assistant.
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Composite tool too slow (>10s) | Medium | Medium | Parallel execution + depth levels. Quick mode for fast feedback. |
-| Output too large for AI context | Medium | Medium | Depth levels cap output. Quick: ~500 tokens, Standard: ~1,500, Deep: ~3,000. |
-| Adapter-to-adapter coupling | Low | Medium | DI pattern. Composites depend on interfaces, not implementations. |
-| Review output not useful enough | Medium | High | Test against real PRs. Compare: does this report answer the questions a reviewer would ask? |
-| File vs diff confusion | Low | Low | Clear parameter: `target` for files, `--diff` for git ranges. |
+| AI assistant doesn't call composite tools | Medium | High | Tool descriptions must clearly signal WHEN to use them. Test with Claude Code and Cursor. |
+| Composite too slow (>10s) | Medium | Medium | Parallel execution + depth levels. Quick mode for fast feedback. |
+| Output too large for AI context | Medium | Medium | Depth levels cap output. Quick: ~500, Standard: ~1,500, Deep: ~3,000 tokens. |
+| AI makes worse decisions with composite than manual tools | Low | High | Test: compare review quality with composite vs 5 manual tool calls. If worse, the composite is failing. |
+| Shared services create unwanted coupling | Low | Medium | Services are pure functions with minimal interface. No state, no side effects. |
+| CLI experience too degraded without LLM | Medium | Low | CLI returns structured markdown that developers can read. Add LLM synthesis in Phase 3. |
 
 ---
 
@@ -275,49 +189,53 @@ it into an AI assistant.
 
 | Test | Priority | What it verifies |
 |------|----------|-----------------|
-| ReviewAdapter returns impact analysis | P0 | refs + graph queried, results in output |
-| ReviewAdapter returns pattern comparison | P0 | patterns + search queried, results in output |
-| ReviewAdapter returns structural context | P0 | map queried, hot path rank included |
-| ReviewAdapter parallel execution | P1 | specialists run concurrently (timing test) |
-| ReviewAdapter depth levels | P0 | quick returns less than deep |
-| ReviewAdapter handles missing index | P0 | graceful error, not crash |
-| ResearchAdapter returns relevant code | P0 | search results ranked and formatted |
-| ResearchAdapter returns call graph | P0 | refs traced for top results |
-| ResearchAdapter returns patterns | P1 | pattern comparison for relevant files |
-| CLI `dev review` outputs markdown | P0 | structured report on stdout |
-| CLI `dev review --diff HEAD~1` | P1 | git diff integrated |
-| CLI `dev review --pr 31` | P1 | GitHub PR diff via gh API |
-| MCP tool definition valid | P0 | schema accepted by MCP clients |
-| Token estimation accurate | P1 | estimateTokens matches actual output |
+| analyzeImpact returns callers/callees/rank | P0 | Core impact analysis works |
+| comparePatterns returns convention comparison | P0 | Pattern analysis works |
+| getStructuralContext returns subsystem + hot paths | P0 | Map integration works |
+| ReviewAdapter returns combined report | P0 | MCP tool composes correctly |
+| ReviewAdapter depth levels | P0 | Quick returns less than deep |
+| ReviewAdapter partial failure | P0 | One specialist fails → partial report, not crash |
+| ReviewAdapter file target | P0 | Single file resolved |
+| ReviewAdapter git diff target | P1 | git range parsed, files extracted |
+| ReviewAdapter invalid target | P0 | Graceful error for nonexistent file/bad git range |
+| ResearchAdapter returns relevant code + enrichment | P0 | Search + enrichment pipeline works |
+| ResearchAdapter scope controls output emphasis | P0 | All data collected, scope affects formatting |
+| ResearchAdapter empty results | P0 | Helpful message, not crash |
+| Tool descriptions disambiguate from low-level tools | P1 | AI chooses correctly in test scenarios |
+| CLI `dev review <file>` produces report | P0 | Standalone CLI works |
+| CLI `dev research <query>` produces report | P0 | Standalone CLI works |
+| Shared services called by both MCP and CLI | P1 | No logic duplication |
 
 ---
 
 ## Verification checklist
 
 ### Automated (CI)
-- [ ] ReviewAdapter tests pass
-- [ ] ResearchAdapter tests pass
+- [ ] Review analysis service tests pass
+- [ ] Research analysis service tests pass
+- [ ] MCP adapter tests pass
 - [ ] CLI command tests pass
 - [ ] `pnpm build && pnpm test` passes
 - [ ] `pnpm typecheck` clean
 
 ### Manual
-- [ ] `dev review packages/core/src/scanner/typescript.ts` produces useful report
-- [ ] `dev review --diff HEAD~1` reviews last commit
-- [ ] `dev research "error handling"` returns relevant code + patterns
-- [ ] MCP tool works in Claude Code: `dev_review { target: "..." }`
-- [ ] MCP tool works in Cursor
-- [ ] Report answers the questions a human reviewer would ask
+- [ ] `dev_review` in Claude Code: AI uses the report to produce a quality review
+- [ ] `dev_review` in Cursor: same experience
+- [ ] `dev_research` in Claude Code: AI combines our context with its own web research
+- [ ] AI chooses `dev_review` over `dev_search` + `dev_refs` when reviewing a PR
+- [ ] CLI `dev review` produces readable terminal output
+- [ ] CLI `dev research` produces readable terminal output
 
 ---
 
 ## Commit strategy
 
 ```
-1. feat(mcp): add dev_review composite adapter
-2. feat(mcp): add dev_research composite adapter
-3. feat(cli): add dev review and dev research commands
-4. docs: update CLAUDE.md, agents, and doc site for composite tools
+1. feat(core): add review and research analysis services
+2. feat(mcp): add dev_review composite adapter
+3. feat(mcp): add dev_research composite adapter
+4. feat(cli): add dev review and dev research commands
+5. docs: update CLAUDE.md, agents, and doc site for composite tools
 ```
 
 ---
@@ -327,17 +245,20 @@ it into an AI assistant.
 - MCP Phase 1 (5 low-level tools) — merged
 - Core Phase 3 (cached dependency graph) — merged
 - No new npm dependencies
-- No LLM API key required (composite tools are deterministic)
+- No LLM API key required
 
 ---
 
-## Future work
+## Future work (Phase 3)
 
-- **LLM-powered synthesis** — optional `--ai` flag that uses an API key to add
-  LLM judgment on top of the factual report. Phase 3 scope.
-- **Cached research** — index external repos once, reference in future sessions.
-  `dev research --index ripgrep` → clones, indexes, caches for reuse.
-- **Custom review profiles** — `.dev-agent/review.yml` config for team-specific
-  review focuses (e.g., "always check for SQL injection in this repo").
-- **PR integration** — `dev review --pr 31 --comment` posts the report as a
-  GitHub PR comment.
+- **LLM synthesis for CLI** — Optional `ANTHROPIC_API_KEY` or Ollama integration
+  adds AI-powered synthesis to CLI output. MCP users already get this from their
+  AI assistant.
+- **Cached external research** — `dev research --index ripgrep` clones, indexes,
+  and caches an external repo for comparison. Reusable across sessions.
+- **Custom review profiles** — `.dev-agent/review.yml` for team-specific review
+  focuses.
+- **PR integration** — `dev review --pr 31 --comment` posts report as GitHub PR
+  comment.
+- **Refactor existing adapters** — Migrate refs, map, etc. to shared services
+  pattern, eliminating CLI duplication.
