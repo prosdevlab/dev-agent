@@ -23,6 +23,8 @@ const TEST_PATTERNS: Record<string, (filePath: string) => boolean> = {
     const name = path.basename(f);
     return name.startsWith('test_') || name.endsWith('_test.py') || name === 'conftest.py';
   },
+  // Rust: integration tests in tests/ directory, or _test.rs convention
+  rs: (f) => f.includes('/tests/') || path.basename(f).endsWith('_test.rs'),
 };
 
 /**
@@ -45,6 +47,11 @@ const TEST_PATH_GENERATORS: Record<string, (base: string, ext: string) => string
     const dir = path.dirname(base);
     const name = path.basename(base);
     return [path.join(dir, `test_${name}.py`), path.join(dir, `${name}_test.py`)];
+  },
+  rs: (base, _ext) => {
+    const dir = path.dirname(base);
+    const name = path.basename(base, '.rs');
+    return [path.join(dir, '..', 'tests', `${name}.rs`), path.join(dir, `${name}_test.rs`)];
   },
 };
 

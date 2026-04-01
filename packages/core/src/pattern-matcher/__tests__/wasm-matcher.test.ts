@@ -253,7 +253,7 @@ function App() {
     });
 
     it('returns empty map for unsupported language', async () => {
-      const results = await matcher.match('fn main() {}', 'rust', ERROR_HANDLING_QUERIES);
+      const results = await matcher.match('fn main() {}', 'dart', ERROR_HANDLING_QUERIES);
       expect(results.size).toBe(0);
     });
   });
@@ -346,10 +346,17 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage('components/App.jsx')).toBe('javascript');
   });
 
+  it('maps .go to go', () => {
+    expect(resolveLanguage('main.go')).toBe('go');
+  });
+
+  it('maps .rs to rust', () => {
+    expect(resolveLanguage('main.rs')).toBe('rust');
+  });
+
   it('returns undefined for unsupported extensions', () => {
-    expect(resolveLanguage('main.py')).toBe('python');
-    expect(resolveLanguage('main.go')).toBeUndefined(); // Go has scanner, not pattern matcher
     expect(resolveLanguage('README.md')).toBeUndefined();
+    expect(resolveLanguage('main.dart')).toBeUndefined();
   });
 });
 
@@ -443,7 +450,7 @@ describe('extractErrorHandlingWithAst', () => {
 
   it('unsupported extension → runAllAstQueries returns empty → regex', async () => {
     const source = 'throw new Error("bad");';
-    const ast = await runAllAstQueries(source, 'test.rs', matcher);
+    const ast = await runAllAstQueries(source, 'test.dart', matcher);
     expect(ast.size).toBe(0); // unsupported language
     expect(extractErrorHandlingWithAst(source, ast)).toEqual(
       extractErrorHandlingFromContent(source)
