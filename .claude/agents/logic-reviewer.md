@@ -65,9 +65,10 @@ Every finding MUST include confidence: **HIGH** (verified from code), **MEDIUM**
 
 ### Cross-Package Data Flow (Deep+ Effort)
 
-Use `dev_refs` to trace caller/callee chains across package boundaries. Use `dev_search` to find related code by concept when the function name isn't obvious.
+Use MCP tools to trace cross-package flows without reading every file (see CLAUDE.md for token savings). `dev_refs` returns the call graph directly, `dev_search` finds related code by concept, `dev_patterns` compares error handling across files.
 
 - [ ] Core exports consumed correctly by CLI, MCP server, and subagents — verify with `dev_refs`
+- [ ] Dependency chains make sense — use `dev_refs` with `dependsOn` to trace file-to-file paths
 - [ ] Type boundaries between packages match (no `any` casting to bridge mismatches)
 - [ ] Logger (@prosdevlab/kero) configuration consistent across consumers
 - [ ] Error handling patterns are consistent with existing code (verify with `dev_patterns`)

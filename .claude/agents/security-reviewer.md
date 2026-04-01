@@ -12,6 +12,10 @@ Security-focused review for a TypeScript monorepo that processes repository data
 
 This agent **NEVER modifies code**. It reports issues for the developer to fix.
 
+## Token Efficiency
+
+Use MCP tools to avoid expensive Grep → Read cycles. See CLAUDE.md for the token savings table. `dev_search` returns ranked snippets, `dev_refs` traces input flow directly, `dev_patterns` scans for similar vulnerability patterns — all without reading files manually.
+
 ## Checklist
 
 Use `dev_search` to find security-sensitive code ("user input", "shell execution", "token handling"). Use `dev_patterns` to find similar patterns across the codebase — if one injection vector exists, the same pattern likely appears elsewhere. Use `dev_refs` to trace how user input flows through the system.

@@ -22,7 +22,7 @@ Everything runs on your machine. No data leaves.
 ```
 packages/
   core/          # Scanner (ts-morph, tree-sitter for Python/Go), vector storage (Antfly), services
-  cli/           # Commander.js CLI — dev index, dev mcp install, etc.
+  cli/           # Commander.js CLI — dev index, dev search, dev refs, dev map, dev mcp install
   mcp-server/    # MCP server with 5 built-in adapters
   subagents/     # Coordinator, explorer, planner, PR agents
   integrations/  # Claude Code, VS Code, Cursor
@@ -139,15 +139,32 @@ See `.claude/da-plans/README.md` for status and format details.
 
 ---
 
-## MCP tools (5 adapters)
+## MCP tools — token-efficient context
+
+MCP tools return pre-ranked, pre-snippeted results. Use them to avoid expensive Grep → Read cycles that burn thousands of tokens on irrelevant context.
+
+| Instead of | Use | Tokens saved |
+|------------|-----|-------------|
+| Grep "auth" → read 10 files | `dev_search "authentication"` | ~5,000 |
+| Grep function name → read callers | `dev_refs "functionName"` | ~3,000 |
+| ls + glob + read READMEs | `dev_map` | ~2,000 |
+| Read multiple files to compare patterns | `dev_patterns filePath` | ~3,000 |
+
+Reserve Grep/Glob for exact string matches where you know the literal text.
+
+### 5 adapters
 
 | Tool | Purpose |
 |------|---------|
 | `dev_search` | Hybrid code search — BM25 + vector + RRF (use FIRST for conceptual queries) |
-| `dev_refs` | Find callers/callees of functions |
-| `dev_map` | Codebase structure with change frequency |
+| `dev_refs` | Find callers/callees of functions. `dependsOn` traces the dependency chain between files. |
+| `dev_map` | Codebase structure with PageRank hot paths and connected subsystems |
 | `dev_patterns` | File pattern analysis (similar code, error handling, types). Takes `filePath`, not `query`. |
 | `dev_status` | Repository indexing status + Antfly stats + health checks (`section="health"`) |
+
+**Graph caching:** `dev index` builds a dependency graph (`dependency-graph.json`) saved alongside the index.
+`dev_map` and `dev_refs` load the cached graph instead of fetching all docs — scales to 50k+ docs.
+File watcher incrementally updates the graph on save.
 
 ---
 
@@ -172,6 +189,13 @@ dev setup                                 # One-time: start Antfly
 dev index                                 # Index repository
 dev mcp install                           # Install for Claude Code
 dev mcp install --cursor                  # Install for Cursor
+
+# CLI tools (no MCP server needed)
+dev search "authentication"               # Semantic code search
+dev refs "functionName"                   # Find callers/callees
+dev refs "fn" --depends-on "src/db.ts"    # Trace dependency chain
+dev map                                    # Codebase structure overview
+dev map --focus packages/core --depth 3    # Focused map
 ```
 
 ---

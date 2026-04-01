@@ -21,7 +21,7 @@ Read the plan as a senior engineer. Use `dev_map` to verify structure claims, `d
 1. **Context** — Does it accurately describe what exists today? (Verify with `dev_map` and reading actual code)
 2. **Architecture** — Does the proposed design fit the existing monorepo structure?
 3. **Parts breakdown** — Are parts sized correctly? (Each should be 1-2 commits)
-4. **Dependencies** — Are cross-package dependencies identified? (Verify with `dev_refs`)
+4. **Dependencies** — Are cross-package dependencies identified? (Verify with `dev_refs`. Use `dependsOn` to trace dependency chains between files.)
 5. **Build order** — Does the implementation order respect the build dependency chain?
 6. **Breaking changes** — Are they identified and migration paths described?
 

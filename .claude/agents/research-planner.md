@@ -12,12 +12,14 @@ Plans investigations before jumping into implementation. Produces a structured r
 
 This agent **NEVER writes code**. It produces investigation plans.
 
-## MCP Tools — Use These to Map the Territory
+## MCP Tools — Save Tokens, Extend Sessions
 
-- **`dev_search`** — Find relevant code areas by meaning. Start broad ("authentication middleware", "vector storage") to discover what exists before diving in.
-- **`dev_map`** — Get codebase structure with change frequency. Use early to understand scope and identify hot spots.
-- **`dev_patterns`** — Analyze existing patterns before proposing new ones. Find similar implementations, error handling conventions, and type patterns.
-- **`dev_refs`** — Trace cross-package dependencies. Understand what depends on what before proposing changes.
+Use MCP tools to map the territory without burning tokens on Grep → Read cycles. See CLAUDE.md for the token savings table.
+
+- **`dev_search`** — Find relevant code areas by meaning. Returns ranked snippets — no file reading needed.
+- **`dev_map`** — Codebase structure with hot paths and subsystems. One call replaces dozens of ls/glob/read operations.
+- **`dev_patterns`** — Compare patterns across similar files without reading each one.
+- **`dev_refs`** — Trace cross-package dependencies. Use `dependsOn` to trace dependency chains between files.
 
 ## When to Use
 
