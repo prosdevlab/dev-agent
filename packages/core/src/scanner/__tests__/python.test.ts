@@ -135,6 +135,72 @@ describe('PythonScanner', () => {
     });
   });
 
+  describe('Service fixture (methods, decorators, docstrings)', () => {
+    let serviceDocs: Document[];
+
+    beforeAll(async () => {
+      serviceDocs = await scanner.scan(['python-service.py'], fixturesPath);
+    });
+
+    it('extracts __init__ as a method', () => {
+      const init = serviceDocs.find((d) => d.metadata.name === '__init__');
+      expect(init).toBeDefined();
+      expect(init!.type).toBe('method');
+    });
+
+    it('extracts @property as a decorated method', () => {
+      const prop = serviceDocs.find((d) => d.metadata.name === 'is_connected');
+      expect(prop).toBeDefined();
+      expect(prop!.type).toBe('method');
+    });
+
+    it('extracts @classmethod as a decorated method', () => {
+      const cm = serviceDocs.find((d) => d.metadata.name === 'from_config');
+      expect(cm).toBeDefined();
+      expect(cm!.type).toBe('method');
+    });
+
+    it('extracts @staticmethod as a decorated method', () => {
+      const sm = serviceDocs.find((d) => d.metadata.name === 'validate_email');
+      expect(sm).toBeDefined();
+      expect(sm!.type).toBe('method');
+    });
+
+    it('extracts multi-line Google-style docstring fully', () => {
+      const getUser = serviceDocs.find((d) => d.metadata.name === 'get_user');
+      expect(getUser).toBeDefined();
+      expect(getUser!.metadata.docstring).toContain('Fetch a user by ID.');
+      expect(getUser!.metadata.docstring).toContain('Args:');
+      expect(getUser!.metadata.docstring).toContain('user_id');
+      expect(getUser!.metadata.docstring).toContain('Returns:');
+      expect(getUser!.metadata.docstring).toContain('Raises:');
+      expect(getUser!.metadata.docstring).toContain('ConnectionError');
+    });
+
+    it('extracts class docstring fully', () => {
+      const cls = serviceDocs.find((d) => d.metadata.name === 'UserService');
+      expect(cls).toBeDefined();
+      expect(cls!.metadata.docstring).toContain('Service for managing users');
+      expect(cls!.metadata.docstring).toContain('Attributes:');
+    });
+
+    it('extracts @property docstring', () => {
+      const prop = serviceDocs.find((d) => d.metadata.name === 'is_connected');
+      expect(prop!.metadata.docstring).toBe('Check if the database connection is active.');
+    });
+
+    it('detects async method', () => {
+      const getUser = serviceDocs.find((d) => d.metadata.name === 'get_user');
+      expect(getUser!.metadata.isAsync).toBe(true);
+    });
+
+    it('marks _private methods as not exported', () => {
+      const checkCache = serviceDocs.find((d) => d.metadata.name === '_check_cache');
+      expect(checkCache).toBeDefined();
+      expect(checkCache!.metadata.exported).toBe(false);
+    });
+  });
+
   describe('edge cases', () => {
     it('does not extract decorated functions twice', () => {
       // get_user is @app.get decorated — should appear exactly once
