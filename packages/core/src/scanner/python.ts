@@ -148,7 +148,7 @@ export class PythonScanner implements Scanner {
     documents.push(...this.extractClasses(tree, sourceText, relativeFile, allExports));
 
     // Extract methods (inside classes + decorated)
-    documents.push(...this.extractMethods(tree, sourceText, relativeFile, allExports));
+    documents.push(...this.extractMethods(tree, sourceText, relativeFile));
 
     // Extract module-level variables
     documents.push(...this.extractModuleVariables(tree, sourceText, relativeFile, allExports));
@@ -227,12 +227,7 @@ export class PythonScanner implements Scanner {
     return documents;
   }
 
-  private extractMethods(
-    tree: ParsedTree,
-    _sourceText: string,
-    file: string,
-    _allExports: Set<string> | null
-  ): Document[] {
+  private extractMethods(tree: ParsedTree, _sourceText: string, file: string): Document[] {
     const documents: Document[] = [];
 
     // Regular methods
@@ -457,7 +452,7 @@ export class PythonScanner implements Scanner {
       );
       if (!funcNode) return;
 
-      const name = funcNode.type === 'attribute' ? funcNode.text : funcNode.text;
+      const name = funcNode.text; // e.g., "db.get" for attribute, "foo" for identifier
       const line = callNode.startPosition.row + 1;
       const key = `${name}:${line}`;
 

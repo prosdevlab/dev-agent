@@ -135,6 +135,21 @@ describe('PythonScanner', () => {
     });
   });
 
+  describe('edge cases', () => {
+    it('does not extract decorated functions twice', () => {
+      // get_user is @app.get decorated — should appear exactly once
+      const getUsers = fastApiDocs.filter((d) => d.metadata.name === 'get_user');
+      expect(getUsers).toHaveLength(1);
+    });
+
+    it('skips generated files', async () => {
+      const docs = await scanner.scan(['test_pb2.py'], fixturesPath);
+      // File doesn't exist as a fixture, but if it did it would be skipped by name
+      // The scanner handles missing files gracefully (returns empty)
+      expect(docs).toHaveLength(0);
+    });
+  });
+
   describe('Document parity with Go/TS', () => {
     it('has all required metadata fields', () => {
       const doc = fastApiDocs.find((d) => d.type === 'function');

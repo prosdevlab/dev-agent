@@ -18,6 +18,7 @@ const TEST_PATTERNS: Record<string, (filePath: string) => boolean> = {
   js: (f) => f.includes('.test.') || f.includes('.spec.'),
   jsx: (f) => f.includes('.test.') || f.includes('.spec.'),
   go: (f) => f.endsWith('_test.go'),
+  // Python conventions are name-based (test_*.py), so we check basename not full path
   py: (f) => {
     const name = path.basename(f);
     return name.startsWith('test_') || name.endsWith('_test.py') || name === 'conftest.py';
