@@ -268,6 +268,98 @@ describe('RefsAdapter', () => {
     });
   });
 
+  describe('Dependency Path Tracing (dependsOn)', () => {
+    let adapterWithIndexer: RefsAdapter;
+
+    // Mock indexer that returns docs with callees forming a chain:
+    // src/planner.ts → src/github.ts → src/api.ts
+    const chainDocs: SearchResult[] = [
+      {
+        id: '1',
+        score: 0.9,
+        metadata: {
+          path: 'src/planner.ts',
+          callees: [{ name: 'fetchIssue', file: 'src/github.ts', line: 15 }],
+        },
+      },
+      {
+        id: '2',
+        score: 0.9,
+        metadata: {
+          path: 'src/github.ts',
+          callees: [{ name: 'httpGet', file: 'src/api.ts', line: 5 }],
+        },
+      },
+      {
+        id: '3',
+        score: 0.9,
+        metadata: {
+          path: 'src/api.ts',
+          callees: [],
+        },
+      },
+    ];
+
+    beforeEach(async () => {
+      const mockIndexer = {
+        getAll: vi.fn().mockResolvedValue(chainDocs),
+      };
+
+      adapterWithIndexer = new RefsAdapter({
+        searchService: mockSearchService,
+        indexer: mockIndexer as unknown as import('@prosdevlab/dev-agent-core').RepositoryIndexer,
+        defaultLimit: 20,
+      });
+
+      await adapterWithIndexer.initialize(context);
+    });
+
+    it('should trace dependency path between files', async () => {
+      const result = await adapterWithIndexer.execute(
+        { name: 'createPlan', dependsOn: 'src/api.ts' },
+        execContext
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data).toContain('Dependency Path');
+      expect(result.data).toContain('src/planner.ts');
+      expect(result.data).toContain('src/api.ts');
+      expect(result.data).toContain('→');
+    });
+
+    it('should report hop count', async () => {
+      const result = await adapterWithIndexer.execute(
+        { name: 'createPlan', dependsOn: 'src/api.ts' },
+        execContext
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data).toContain('2 hops');
+    });
+
+    it('should report when no path exists', async () => {
+      const result = await adapterWithIndexer.execute(
+        { name: 'createPlan', dependsOn: 'src/nonexistent.ts' },
+        execContext
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data).toContain('No Path Found');
+      expect(result.data).toContain('separate subsystems');
+    });
+
+    it('should return error when indexer is not available', async () => {
+      // The base adapter (no indexer) should fail for dependsOn
+      const result = await adapter.execute(
+        { name: 'createPlan', dependsOn: 'src/api.ts' },
+        execContext
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('INDEX_REQUIRED');
+    });
+  });
+
   describe('Not Found', () => {
     it('should return error when function not found', async () => {
       // Mock empty results
