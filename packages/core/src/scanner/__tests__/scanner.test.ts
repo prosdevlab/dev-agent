@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MarkdownScanner } from '../markdown';
 import { ScannerRegistry } from '../registry';
-import { TypeScriptScanner } from '../typescript';
+import { normalizeAndRelativize, TypeScriptScanner } from '../typescript';
 
 // Helper to create registry
 function createDefaultRegistry(): ScannerRegistry {
@@ -1004,5 +1004,54 @@ describe('Scanner', () => {
       );
       expect(config).toBeUndefined();
     });
+  });
+});
+
+describe('normalizeAndRelativize', () => {
+  const repoRoot = '/Users/dev/project';
+
+  it('should replace dist/ with src/', () => {
+    expect(
+      normalizeAndRelativize('/Users/dev/project/packages/core/dist/map/index.ts', repoRoot)
+    ).toBe('packages/core/src/map/index.ts');
+  });
+
+  it('should replace .d.ts with .ts', () => {
+    expect(
+      normalizeAndRelativize('/Users/dev/project/packages/core/dist/types.d.ts', repoRoot)
+    ).toBe('packages/core/src/types.ts');
+  });
+
+  it('should replace .js with .ts', () => {
+    expect(normalizeAndRelativize('/Users/dev/project/packages/core/dist/index.js', repoRoot)).toBe(
+      'packages/core/src/index.ts'
+    );
+  });
+
+  it('should handle multiple dist/ segments', () => {
+    expect(
+      normalizeAndRelativize(
+        '/Users/dev/project/packages/core/dist/formatters/dist/utils.js',
+        repoRoot
+      )
+    ).toBe('packages/core/src/formatters/src/utils.ts');
+  });
+
+  it('should make paths relative to repoRoot', () => {
+    expect(normalizeAndRelativize('/Users/dev/project/packages/cli/src/cli.ts', repoRoot)).toBe(
+      'packages/cli/src/cli.ts'
+    );
+  });
+
+  it('should return absolute path when repoRoot is empty', () => {
+    expect(normalizeAndRelativize('/abs/packages/core/src/index.ts', '')).toBe(
+      '/abs/packages/core/src/index.ts'
+    );
+  });
+
+  it('should handle path without dist/', () => {
+    expect(normalizeAndRelativize('/Users/dev/project/packages/core/src/index.ts', repoRoot)).toBe(
+      'packages/core/src/index.ts'
+    );
   });
 });
