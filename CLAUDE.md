@@ -21,7 +21,7 @@ Everything runs on your machine. No data leaves.
 
 ```
 packages/
-  core/          # Scanner (ts-morph, tree-sitter for Python/Go), vector storage (Antfly), services
+  core/          # Scanner (ts-morph, tree-sitter for Python/Go/Rust), vector storage (Antfly), services
   cli/           # Commander.js CLI — dev index, dev search, dev refs, dev map, dev mcp install
   mcp-server/    # MCP server with 5 built-in adapters
   subagents/     # Coordinator, explorer, planner, PR agents

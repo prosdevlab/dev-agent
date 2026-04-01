@@ -9,6 +9,23 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.12.0 — Go Callees + Rust Language Support
+
+*April 1, 2026*
+
+**dev-agent now indexes Rust codebases and traces Go call graphs.**
+
+- **Rust scanner:** functions, structs, enums, traits, impl methods, imports, callees, doc comments
+- **Rust patterns:** try operator (`?`), match expressions, unsafe blocks, impl/trait definitions
+- **Go callees:** `dev_refs` now traces Go call chains (was extraction-only, no call graph)
+- **Go patterns:** error handling (`if err != nil`), goroutines, defer, channels
+- Generic impl type parameter stripping: `Container<T>.show` → `Container.show`
+- Macros intentionally excluded from callees (they're `macro_invocation`, not function calls)
+- Malformed file resilience: scanner returns empty, no crash
+- 43 new tests across both languages
+
+---
+
 ## v0.11.2 — `dev refs` CLI Command
 
 *April 1, 2026*
