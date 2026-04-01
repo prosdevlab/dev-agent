@@ -137,13 +137,17 @@ Touch points:
 
 | Decision | Rationale | Alternatives |
 |----------|-----------|-------------|
+| Validate grammar before building | Step 0 parse test confirms node names. Prevents building on wrong assumptions. | Trust docs: risky, grammar may differ from documentation |
 | Recursive AST walk for callees (not query) | Matches Python pattern, handles nested calls naturally | tree-sitter query: harder to capture all nesting levels |
+| `call_expression` for all Rust calls | tree-sitter-rust uses `call_expression` for bare calls AND method calls (via `field_expression` child). No separate `method_call` node. | N/A — grammar doesn't offer alternatives |
+| Full selector text for Go callees | `"fmt.Println"` not `"Println"`. Matches TS scanner behavior, gives agents package context. | Short name only: loses context |
 | `impl_item` parent walk for method naming | Rust methods are inside impl blocks — need parent context | Flat function extraction: loses the `Type.method` naming |
-| Skip macro callees (`println!`, `vec!`) | Macros aren't function calls — different semantics. Include as future work. | Include: would need `macro_invocation` node handling |
+| Skip macro callees (`println!`, `vec!`) | Macros are `macro_invocation` nodes, not `call_expression`. Different semantics. Explicit negative test locks in decision. | Include: would need `macro_invocation` node handling |
 | `pub` keyword for export detection | Rust's visibility is explicit. `pub fn` = exported, `fn` = private. | Parse `pub(crate)`, `pub(super)`: future refinement |
-| Doc comments via `///` prefix | tree-sitter-rust exposes these as `line_comment` nodes. Filter by `///` prefix. | Attribute doc: `#[doc = "..."]` — rare, skip for now |
+| Doc comments via `///` prefix only | tree-sitter-rust exposes as `line_comment` nodes. Block doc (`/** */`) deferred to v2. | Include block docs: more complex, rare in practice |
 | Test detection: `tests/` dir + `_test.rs` | Covers integration tests and the common convention. Inline `#[cfg(test)]` deferred. | Parse `#[cfg(test)]`: would flag functions inside test modules — more complex |
 | Self-contained fixtures, real-repo local test | Unit tests with fixtures for CI. Clone real repos for manual verification. | Real-repo in CI: too slow, too flaky |
+| Type is `PatternMatchRule` not `PatternQuery` | Matches existing type in `wasm-matcher.ts` and `rules.ts`. | N/A — compiler enforces |
 
 ---
 
@@ -151,11 +155,14 @@ Touch points:
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| tree-sitter-rust grammar node names differ from docs | Medium | Low | Validate with parse test before writing queries |
-| `impl` block association misses trait impls | Medium | Low | Start with `impl Type`, add `impl Trait for Type` as follow-up |
+| tree-sitter-rust grammar node names differ from docs | Medium | Low | Step 0 validation test confirms names before building. Keep test as reference. |
+| `impl` block association misses trait impls | Medium | Low | Handle both `impl Type` and `impl Trait for Type` in v1. Test both forms. |
 | Go callee extraction too noisy (stdlib calls) | Low | Low | Callees already include all calls in TS/Python — consistent |
 | Rust WASM grammar large or slow | Low | Low | Python WASM is 476KB, Go is similar. Lazy-loaded per file. |
 | Real-repo test finds edge cases we can't handle | Medium | Low | Track in scratchpad as known limitations. Don't block on edge cases. |
+| Malformed Rust files crash scanner | Low | Medium | Explicit test with `rust-malformed.rs` fixture. Scanner returns empty, no crash. |
+| `.go` extension missing from pattern matcher | Already broken | Low | Fix in Part 5.1 with regression test for `resolveLanguage('.go')` |
+| Block doc comments (`/** */`) missed | Low | Low | Track in scratchpad. `///` covers 95%+ of real Rust code. |
 
 ---
 
@@ -164,20 +171,26 @@ Touch points:
 | Test | Priority | What it verifies |
 |------|----------|-----------------|
 | Go: callee extraction from functions | P0 | `walkCallNodes` returns correct callees |
+| Go: callee name format (full selector) | P0 | `"fmt.Println"` not `"Println"` |
 | Go: callee extraction from methods | P0 | Methods have callees with correct names/lines |
 | Go: callee deduplication | P1 | Same call on same line not duplicated |
 | Go: no callees for interfaces/types | P1 | Non-callable types return no callees |
 | Go: pattern rules fire | P1 | Error handling, goroutine, defer patterns detected |
+| Go: resolveLanguage('.go') | P0 | Bug fix regression test |
+| Rust: Step 0 grammar validation | P0 | Confirm node names before building scanner |
 | Rust: canHandle('.rs') | P0 | Scanner claims Rust files |
 | Rust: extract functions | P0 | Free functions with name, line, signature, exported |
 | Rust: extract methods from impl | P0 | `Type.method` naming, correct line numbers |
+| Rust: impl Trait for Type | P0 | `Server.handle` uses concrete type, `Server.fmt` for Display |
 | Rust: extract structs/enums/traits | P0 | All type definitions captured |
 | Rust: extract imports | P0 | `use` declarations captured |
 | Rust: callee extraction | P0 | Function calls and method calls in callees |
+| Rust: macros NOT in callees | P0 | `println!`, `format!` excluded from callee list |
 | Rust: doc comment extraction | P1 | `///` comments extracted as docstrings |
 | Rust: pub vs non-pub | P1 | `pub fn` → exported: true, `fn` → exported: false |
 | Rust: pattern rules fire | P1 | Result/Option, unsafe, match patterns detected |
 | Rust: isTestFile for tests/ dir | P1 | Files in tests/ directory flagged |
+| Rust: malformed file resilience | P0 | Scanner returns empty documents, no crash |
 | Local: `dev index` on cli/cli (Go) | P0 | Indexes without crash, callees populated |
 | Local: `dev index` on ripgrep (Rust) | P0 | Indexes without crash, functions/structs captured |
 | Local: `dev map` on both repos | P1 | Hot paths show real Go/Rust files |
