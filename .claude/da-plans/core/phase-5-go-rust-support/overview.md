@@ -141,13 +141,15 @@ Touch points:
 | Recursive AST walk for callees (not query) | Matches Python pattern, handles nested calls naturally | tree-sitter query: harder to capture all nesting levels |
 | `call_expression` for all Rust calls | tree-sitter-rust uses `call_expression` for bare calls AND method calls (via `field_expression` child). No separate `method_call` node. | N/A — grammar doesn't offer alternatives |
 | Full selector text for Go callees | `"fmt.Println"` not `"Println"`. Matches TS scanner behavior, gives agents package context. | Short name only: loses context |
-| `impl_item` parent walk for method naming | Rust methods are inside impl blocks — need parent context | Flat function extraction: loses the `Type.method` naming |
+| `impl_item.type` field for method naming | Use the `type` field on `impl_item` — holds the concrete type in both `impl Type` and `impl Trait for Type`. Strip generic params (`<T>`) for document name. | Positional child walking: fragile, depends on child order |
+| Strip generic type params from impl | `Container<T>.show` → `Container.show`. Use `.replace(/<.*>/, '')` (mirrors Go scanner's `replace(/\[.*\]/, '')` for type params). | Keep full generic name: hurts search matching |
 | Skip macro callees (`println!`, `vec!`) | Macros are `macro_invocation` nodes, not `call_expression`. Different semantics. Explicit negative test locks in decision. | Include: would need `macro_invocation` node handling |
-| `pub` keyword for export detection | Rust's visibility is explicit. `pub fn` = exported, `fn` = private. | Parse `pub(crate)`, `pub(super)`: future refinement |
-| Doc comments via `///` prefix only | tree-sitter-rust exposes as `line_comment` nodes. Block doc (`/** */`) deferred to v2. | Include block docs: more complex, rare in practice |
+| `pub` keyword for export detection | Rust's visibility is explicit. `pub fn` = exported, `fn` = private. All `visibility_modifier` variants (`pub`, `pub(crate)`, `pub(super)`) → exported: true. | N/A — pragmatic v1 |
+| Async via AST child node, not regex | tree-sitter-rust exposes `async` as a keyword child on `function_item`. More reliable than regex against full text. | Regex: fragile if text includes "async" in comments |
+| Doc comments via `///` prefix only | tree-sitter-rust exposes as `line_comment` nodes. `//!` inner docs and `/** */` block docs deferred to v2. | Include all doc forms: more complex, diminishing returns |
 | Test detection: `tests/` dir + `_test.rs` | Covers integration tests and the common convention. Inline `#[cfg(test)]` deferred. | Parse `#[cfg(test)]`: would flag functions inside test modules — more complex |
 | Self-contained fixtures, real-repo local test | Unit tests with fixtures for CI. Clone real repos for manual verification. | Real-repo in CI: too slow, too flaky |
-| Type is `PatternMatchRule` not `PatternQuery` | Matches existing type in `wasm-matcher.ts` and `rules.ts`. | N/A — compiler enforces |
+| Type is `PatternMatchRule` with `{ id, category, query }` | Matches existing interface and all rules in `rules.ts`. All queries need `@match` capture alias. | N/A — compiler enforces |
 
 ---
 
@@ -157,6 +159,7 @@ Touch points:
 |------|-----------|--------|------------|
 | tree-sitter-rust grammar node names differ from docs | Medium | Low | Step 0 validation test confirms names before building. Keep test as reference. |
 | `impl` block association misses trait impls | Medium | Low | Handle both `impl Type` and `impl Trait for Type` in v1. Test both forms. |
+| Generic impl names include type params | Medium | Low | Strip `<...>` from type name. Explicit test: `Container.show` not `Container<T>.show`. |
 | Go callee extraction too noisy (stdlib calls) | Low | Low | Callees already include all calls in TS/Python — consistent |
 | Rust WASM grammar large or slow | Low | Low | Python WASM is 476KB, Go is similar. Lazy-loaded per file. |
 | Real-repo test finds edge cases we can't handle | Medium | Low | Track in scratchpad as known limitations. Don't block on edge cases. |
@@ -191,6 +194,11 @@ Touch points:
 | Rust: pattern rules fire | P1 | Result/Option, unsafe, match patterns detected |
 | Rust: isTestFile for tests/ dir | P1 | Files in tests/ directory flagged |
 | Rust: malformed file resilience | P0 | Scanner returns empty documents, no crash |
+| Rust: generic impl type param stripping | P0 | `Container.show` not `Container<T>.show` |
+| Rust: `pub(crate)` visibility | P1 | `pub(crate) fn` → exported: true |
+| Rust: callees inside closures | P1 | `transform` in `.map(\|x\| transform(x))` captured |
+| Rust: async via AST child | P1 | `async fn` detected via keyword child, not regex |
+| Rust: `self.field` NOT a callee | P1 | Field access excluded, only `self.method()` calls |
 | Local: `dev index` on cli/cli (Go) | P0 | Indexes without crash, callees populated |
 | Local: `dev index` on ripgrep (Rust) | P0 | Indexes without crash, functions/structs captured |
 | Local: `dev map` on both repos | P1 | Hot paths show real Go/Rust files |
@@ -245,6 +253,18 @@ dev search "grep pattern"       # Should find search code
 3. feat(core): wire Go and Rust into pattern matcher and pipeline
 4. docs: update language lists and add changelog
 ```
+
+---
+
+## Known Limitations (v1)
+
+Intentional scope limits, documented for transparency. Not bugs — tracked for v2.
+
+1. **`//!` inner doc comments not extracted.** Module-level docs (`//!` at top of `lib.rs`) are skipped. Only `///` outer doc comments (item-level) are captured.
+2. **`/** */` block doc comments not extracted.** Rare in practice — `///` covers 95%+ of real Rust code.
+3. **Trait default method bodies not extracted.** `trait Foo { fn bar(&self) { ... } }` — the default implementation body and its callees are not captured. Only the trait definition itself is indexed.
+4. **`#[cfg(test)]` inline test modules not detected.** `isTestFile` only checks path patterns (`tests/`, `_test.rs`). Functions inside `#[cfg(test)] mod tests { ... }` are not flagged as test code.
+5. **Macro invocations not in callees.** `println!`, `vec!`, `format!` etc. are intentionally excluded. They're `macro_invocation` nodes, not function calls.
 
 ---
 
