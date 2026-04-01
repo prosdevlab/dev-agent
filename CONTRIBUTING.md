@@ -1,127 +1,145 @@
 # Contributing to Dev-Agent
 
-Thank you for considering contributing to dev-agent! This document outlines the process for contributing and the standards we follow.
+## Prerequisites
 
-## 🎯 **Core Values**
+- **Node.js >= 22** (LTS)
+- **pnpm** — `npm install -g pnpm`
+- **Claude Code** — [install](https://claude.com/claude-code). We use Claude Code + dev-agent for development.
+- **dev-agent** — `npm install -g @prosdevlab/dev-agent`
+- **Antfly** — local search backend. Run `dev setup` after install.
 
-1. **Testability First** - If it's hard to test, refactor it
-2. **Modularity** - Small, focused, reusable modules
-3. **100% Coverage on Utilities** - Pure functions should be fully tested
-4. **Atomic Commits** - Each commit should build and test independently
-
-## Development Process
-
-1. **Fork and clone** the repository
-2. **Install dependencies**: `pnpm install`
-3. **Create a branch**: `git checkout -b feature/my-feature`
-4. **Make your changes**
-5. **Test your changes**: `pnpm test`
-6. **Ensure code quality**: `pnpm lint && pnpm typecheck`
-
-## Commit Message Convention
-
-We follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. This is enforced using commitlint.
-
-Format: `type(scope): subject`
-
-Types:
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation changes
-- `style`: Changes that don't affect code meaning (formatting, etc.)
-- `refactor`: Code changes that neither fix bugs nor add features
-- `perf`: Performance improvements
-- `test`: Adding or fixing tests
-- `chore`: Changes to build process or auxiliary tools
-
-Example:
-```
-feat(core): add new API method for authentication
-```
-
-## Pull Request Process
-
-1. Update the README.md if needed with details of changes to the interface.
-2. Add a changeset to document your changes: `pnpm changeset`
-3. Create a pull request to the `main` branch.
-4. The PR will be reviewed and merged if it meets our standards.
-
-## Adding New Packages
-
-1. Create a new directory in the `packages` folder.
-2. Create a `package.json`, `tsconfig.json`, and source files.
-3. Add the package to relevant workspace configurations.
-4. Update path mappings in the root `tsconfig.json`.
-
-## Testing & Testability
-
-### 📖 **Read First:** [TESTABILITY.md](./docs/TESTABILITY.md)
-
-Our comprehensive testability guide covers:
-- When and how to extract utilities
-- Organization patterns
-- Coverage targets
-- Real-world examples
-
-### **Quick Rules:**
-
-1. **Extract Pure Functions** to `utils/` modules
-   - ✅ DO: `utils/formatting.ts` with `formatDocument(doc: Document)`
-   - ❌ DON'T: Private methods in 500-line classes
-
-2. **Aim for 100% on Utilities**
-   - Pure functions are easy to test
-   - No mocks needed
-   - Foundation for everything else
-
-3. **No Non-Null Assertions (`!`)**
-   - Use guard clauses or optional chaining
-   - Makes code safer and more testable
-
-4. **Organize by Domain**
-   - ✅ `utils/strings.ts`, `utils/dates.ts`, `utils/validation.ts`
-   - ❌ `utils.ts` (500 lines of everything)
-
-### **Coverage Targets:**
-
-| Code Type | Target | Example |
-|-----------|--------|---------|
-| **Pure Utilities** | 100% | `formatDocument()`, `calculateCoverage()` |
-| **Integration** | >80% | `RepositoryIndexer`, `ExplorerAgent` |
-| **CLI/UI** | >60% | Command handlers, spinners |
-
-### **Before Submitting:**
+## Getting started
 
 ```bash
-# Run tests with coverage
-pnpm vitest run --coverage
+# Clone and install
+git clone https://github.com/prosdevlab/dev-agent.git
+cd dev-agent
+pnpm install
 
-# Check specific package
-pnpm vitest run packages/core/src/indexer --coverage
+# Start Antfly (one-time setup)
+dev setup
+
+# Index the codebase
+dev index
+
+# Install MCP server for Claude Code
+dev mcp install
+
+# Build and test
+pnpm build
+pnpm test
 ```
 
-- Write tests for all new features and bug fixes
-- Run existing tests to ensure your changes don't break existing functionality
-- See [TESTABILITY.md](./docs/TESTABILITY.md) for detailed guidelines
+## Development workflow
 
-## Code Style
+We use Claude Code with dev-agent's MCP tools for development. The tools
+provide semantic code search, call graph tracing, pattern analysis, and
+codebase structure — saving significant context window usage.
 
-We use Biome for linting and formatting:
+### Before you code
 
-- Run `pnpm lint` to check code quality.
-- Run `pnpm format` to format the code.
+1. **Index the repo:** `dev index` (run after pulling changes)
+2. **Understand the area:** `dev search "your topic"`, `dev map --focus packages/core`
+3. **Plan non-trivial features:** Write a plan in `.claude/da-plans/` and run the `plan-reviewer` agent before implementation
 
-All code must pass linting and typechecking before being merged.
+### While you code
 
-## Versioning
+```bash
+pnpm dev                  # Watch mode
+pnpm test                 # Run tests (from root, NOT turbo test)
+pnpm lint                 # Biome lint
+pnpm typecheck            # Type check (AFTER pnpm build)
+```
 
-We use [Changesets](https://github.com/changesets/changesets) to manage versions and generate changelogs.
+### Before you PR
 
-After making changes:
-1. Run `pnpm changeset`
-2. Follow the prompts to describe your changes
-3. Commit the generated changeset file
+1. Run the `code-reviewer` agent on your branch diff
+2. Address any CRITICAL or WARNING findings
+3. Add a changeset: `pnpm changeset` (only for `@prosdevlab/dev-agent` or `@prosdevlab/kero`)
+4. Update release notes in `website/content/updates/index.mdx` and `website/content/latest-version.ts`
+
+## Commit convention
+
+[Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint.
+
+```
+type(scope): description
+
+feat(mcp): add health check adapter
+fix(core): resolve vector search timeout
+docs: update CLAUDE.md
+chore: update dependencies
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`
+
+## Pull request process
+
+1. Create a branch: `git checkout -b feat/my-feature`
+2. Make your changes with tests
+3. Run the full validation suite: `pnpm build && pnpm test && pnpm typecheck && pnpm lint`
+4. Run `code-reviewer` agent on the diff
+5. Add a changeset if the change affects published packages
+6. Push and create a PR to `main`
+
+## CLI tools (available after `dev index`)
+
+```bash
+dev search "authentication"              # Semantic code search
+dev refs "functionName"                  # Find callers/callees
+dev refs "fn" --depends-on "src/db.ts"   # Trace dependency chain
+dev map                                   # Codebase structure overview
+dev map --focus packages/core --depth 3   # Focused map
+```
+
+## Agent system (`.claude/agents/`)
+
+We use Claude Code agents for code review, research, and planning:
+
+| Agent | Purpose |
+|-------|---------|
+| `code-reviewer` | Orchestrates security, logic, and quality review in parallel |
+| `research-planner` | Maps internal code + delegates external research to sub-agents |
+| `plan-reviewer` | Two-pass plan review (engineer + SDET) |
+| `bug-investigator` | Systematic root cause analysis |
+| `quick-scout` | Fast codebase exploration |
+
+Agents use dev-agent's MCP tools (`dev_search`, `dev_refs`, `dev_map`, `dev_patterns`)
+to understand the codebase without reading every file.
+
+## Architecture
+
+See [CLAUDE.md](./CLAUDE.md) for the full monorepo structure, build order,
+MCP tools reference, and non-negotiables.
+
+## Testing
+
+- **Tests run from root only:** `pnpm test`
+- **Build before typecheck:** `pnpm build` then `pnpm typecheck`
+- **Biome for linting:** `pnpm lint` (not ESLint)
+
+| Code type | Coverage target |
+|-----------|----------------|
+| Pure utilities | 100% |
+| Integration | >80% |
+| CLI/UI | >60% |
+
+See [TESTABILITY.md](./docs/TESTABILITY.md) for detailed guidelines.
+
+## Changesets
+
+We use [Changesets](https://github.com/changesets/changesets) for versioning.
+Only `@prosdevlab/dev-agent` and `@prosdevlab/kero` are published — all other
+packages are private and bundled.
+
+```bash
+pnpm changeset            # Create a changeset
+```
+
+When adding a changeset, also update:
+1. `website/content/updates/index.mdx` — release notes
+2. `website/content/latest-version.ts` — latest version callout
 
 ## Questions?
 
-If you have any questions, please open an issue or discussion in the repository.
+Open an issue or discussion in the repository.
