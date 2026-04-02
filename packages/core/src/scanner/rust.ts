@@ -170,6 +170,11 @@ export class RustScanner implements Scanner {
       const defCapture = match.captures.find((c) => c.name === 'definition');
       if (!nameCapture || !defCapture) continue;
 
+      // Skip functions inside impl blocks — those are captured by extractMethods.
+      // Functions inside mod blocks (mod_item > declaration_list) should be kept.
+      const parent = defCapture.node.parent;
+      if (parent?.type === 'declaration_list' && parent.parent?.type === 'impl_item') continue;
+
       const name = nameCapture.node.text;
       const node = defCapture.node;
       const startLine = node.startPosition.row + 1;
@@ -327,8 +332,8 @@ export class RustScanner implements Scanner {
       const defCapture = match.captures.find((c) => c.name === 'definition');
       if (!receiverCapture || !nameCapture || !defCapture) continue;
 
-      // Strip generic type params: Container<T> → Container
-      const receiverType = receiverCapture.node.text.replace(/<.*>/, '');
+      // Strip generic type params: Container<T> → Container, HashMap<String, Vec<u8>> → HashMap
+      const receiverType = receiverCapture.node.text.split('<')[0];
       const methodName = nameCapture.node.text;
       const qualifiedName = `${receiverType}.${methodName}`;
       const node = defCapture.node;

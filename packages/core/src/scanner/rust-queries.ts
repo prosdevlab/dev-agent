@@ -7,11 +7,12 @@
  */
 
 export const RUST_QUERIES = {
-  // Free functions (top-level, not inside impl blocks)
+  // All function_item nodes at any depth (including inside mod blocks).
+  // Methods inside impl blocks are filtered out in the scanner code
+  // by checking if the parent is a declaration_list (impl body).
   functions: `
-    (source_file
-      (function_item
-        name: (identifier) @name) @definition)
+    (function_item
+      name: (identifier) @name) @definition
   `,
 
   // Struct definitions
