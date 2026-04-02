@@ -343,32 +343,67 @@ describe('shortestPath', () => {
 // ============================================================================
 
 describe('serializeGraph / deserializeGraph', () => {
-  it('should round-trip correctly', () => {
+  it('should round-trip graph correctly', () => {
     const graph = new Map<string, WeightedEdge[]>();
     graph.set('src/a.ts', [edge('src/b.ts', 1.5), edge('src/c.ts', 1)]);
     graph.set('src/b.ts', [edge('src/c.ts', 2)]);
 
     const json = serializeGraph(graph);
-    const restored = deserializeGraph(json);
+    const result = deserializeGraph(json);
 
-    expect(restored).not.toBeNull();
-    expect(restored!.size).toBe(2);
-    expect(restored!.get('src/a.ts')).toEqual([
+    expect(result).not.toBeNull();
+    expect(result!.graph.size).toBe(2);
+    expect(result!.graph.get('src/a.ts')).toEqual([
       { target: 'src/b.ts', weight: 1.5 },
       { target: 'src/c.ts', weight: 1 },
     ]);
-    expect(restored!.get('src/b.ts')).toEqual([{ target: 'src/c.ts', weight: 2 }]);
+    expect(result!.graph.get('src/b.ts')).toEqual([{ target: 'src/c.ts', weight: 2 }]);
   });
 
-  it('should include metadata in serialized JSON', () => {
+  it('should round-trip graph + reverse index (v2)', () => {
+    const graph = new Map([['a.ts', [edge('b.ts')]]]);
+    const reverseIndex = new Map([
+      ['b.ts:funcB', [{ name: 'funcA', file: 'a.ts', line: 5, type: 'function' }]],
+    ]);
+
+    const json = serializeGraph(graph, reverseIndex);
+    const result = deserializeGraph(json);
+
+    expect(result!.graph).toEqual(graph);
+    expect(result!.reverseIndex).toEqual(reverseIndex);
+  });
+
+  it('should serialize as v2', () => {
     const graph = new Map<string, WeightedEdge[]>();
     graph.set('a', [edge('b')]);
 
     const parsed = JSON.parse(serializeGraph(graph));
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(2);
     expect(parsed.nodeCount).toBe(1);
     expect(parsed.edgeCount).toBe(1);
     expect(parsed.generatedAt).toBeTruthy();
+  });
+
+  it('should accept generatedAt parameter for testability', () => {
+    const graph = new Map<string, WeightedEdge[]>();
+    const json = serializeGraph(graph, undefined, '2026-01-01T00:00:00Z');
+    const parsed = JSON.parse(json);
+    expect(parsed.generatedAt).toBe('2026-01-01T00:00:00Z');
+  });
+
+  it('should deserialize v1 graph with null reverse index', () => {
+    const v1Json = JSON.stringify({
+      version: 1,
+      generatedAt: '',
+      nodeCount: 1,
+      edgeCount: 1,
+      graph: { 'a.ts': [{ target: 'b.ts', weight: 1 }] },
+    });
+    const result = deserializeGraph(v1Json);
+
+    expect(result).not.toBeNull();
+    expect(result!.graph.size).toBe(1);
+    expect(result!.reverseIndex).toBeNull();
   });
 
   it('should return null for invalid JSON', () => {
@@ -388,9 +423,9 @@ describe('serializeGraph / deserializeGraph', () => {
   it('should handle empty graph', () => {
     const graph = new Map<string, WeightedEdge[]>();
     const json = serializeGraph(graph);
-    const restored = deserializeGraph(json);
-    expect(restored).not.toBeNull();
-    expect(restored!.size).toBe(0);
+    const result = deserializeGraph(json);
+    expect(result).not.toBeNull();
+    expect(result!.graph.size).toBe(0);
   });
 });
 
@@ -411,8 +446,9 @@ describe('loadOrBuildGraph', () => {
       },
     ];
 
-    const graph = await loadOrBuildGraph(undefined, async () => fallbackDocs);
-    expect(graph.get('src/a.ts')).toBeDefined();
+    const result = await loadOrBuildGraph(undefined, async () => fallbackDocs);
+    expect(result.graph.get('src/a.ts')).toBeDefined();
+    expect(result.reverseIndex).toBeNull(); // fallback doesn't build reverse index
   });
 
   it('should call fallback when graphPath file does not exist', async () => {
@@ -427,8 +463,8 @@ describe('loadOrBuildGraph', () => {
       },
     ];
 
-    const graph = await loadOrBuildGraph('/nonexistent/path.json', async () => fallbackDocs);
-    expect(graph.get('src/x.ts')).toBeDefined();
+    const result = await loadOrBuildGraph('/nonexistent/path.json', async () => fallbackDocs);
+    expect(result.graph.get('src/x.ts')).toBeDefined();
   });
 });
 

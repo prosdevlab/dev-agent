@@ -11,6 +11,7 @@ import * as path from 'node:path';
 import type { Logger } from '@prosdevlab/kero';
 import type { EventBus } from '../events/types.js';
 import { buildDependencyGraph, serializeGraph } from '../map/graph';
+import { buildReverseCalleeIndex } from '../map/reverse-index';
 import { scanRepository } from '../scanner';
 import { getStorageFilePaths } from '../storage/path';
 import type { EmbeddingDocument, LinearMergeResult, SearchOptions, SearchResult } from '../vector';
@@ -196,10 +197,14 @@ export class RepositoryIndexer {
           metadata: d.metadata,
         }));
         const graph = buildDependencyGraph(graphDocs);
+        const reverseIndex = buildReverseCalleeIndex(graphDocs);
         const storagePath = path.dirname(this.config.vectorStorePath);
         const graphPath = getStorageFilePaths(storagePath).dependencyGraph;
-        await fs.writeFile(graphPath, serializeGraph(graph), 'utf-8');
-        logger?.info({ nodes: graph.size }, 'Dependency graph cached');
+        await fs.writeFile(graphPath, serializeGraph(graph, reverseIndex), 'utf-8');
+        logger?.info(
+          { nodes: graph.size, reverseIndexKeys: reverseIndex.size },
+          'Dependency graph + reverse index cached'
+        );
       } catch (graphError) {
         // Non-fatal — graph is a performance optimization, not required
         logger?.warn({ error: graphError }, 'Failed to cache dependency graph');

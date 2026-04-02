@@ -109,7 +109,7 @@ export class RefsAdapter extends ToolAdapter {
       return this.cachedGraph;
     }
 
-    this.cachedGraph = await loadOrBuildGraph(this.graphPath, async () => {
+    const result = await loadOrBuildGraph(this.graphPath, async () => {
       const DOC_LIMIT = 50_000;
       const allDocs = await this.indexer!.getAll({ limit: DOC_LIMIT });
       if (allDocs.length >= DOC_LIMIT) {
@@ -119,6 +119,7 @@ export class RefsAdapter extends ToolAdapter {
       }
       return allDocs;
     });
+    this.cachedGraph = result.graph;
     this.cachedGraphTime = Date.now();
     return this.cachedGraph;
   }
