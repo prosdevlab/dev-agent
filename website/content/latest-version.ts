@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.12.1',
-  title: 'Cleaner Search Output + refs Fix',
-  date: 'April 1, 2026',
+  version: '0.12.2',
+  title: 'Reverse Callee Index for dev_refs',
+  date: 'April 2, 2026',
   summary:
-    'MCP search results drop misleading scores, add result preamble, and fix dev_refs silently returning no results.',
-  link: '/updates#v0121--cleaner-search-output--refs-fix',
+    'dev_refs callers finally work — reverse callee index with 4,000+ entries, compound keys, class aggregation, and O(1) lookups.',
+  link: '/updates#v0122--reverse-callee-index-for-dev_refs',
 } as const;
