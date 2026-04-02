@@ -379,6 +379,27 @@ describe('RustScanner', () => {
       expect(calleeNames.some((n) => n.includes('transform'))).toBe(true);
     });
 
+    it('should extract functions inside mod blocks', () => {
+      const handleReq = docs.find(
+        (d) => d.metadata.name === 'handle_request' && d.type === 'function'
+      );
+      expect(handleReq).toBeDefined();
+      expect(handleReq!.metadata.exported).toBe(true);
+
+      const helper = docs.find((d) => d.metadata.name === 'internal_helper');
+      expect(helper).toBeDefined();
+      expect(helper!.metadata.exported).toBe(false);
+    });
+
+    it('should strip nested generic type params from impl', () => {
+      // impl<T: Display> Wrapper<Option<T>> → Wrapper, not Wrapper<Option<T>> or Wrapper>
+      const method = docs.find((d) => d.metadata.name === 'Wrapper.unwrap_display');
+      expect(method).toBeDefined();
+      expect(method!.metadata.name).toBe('Wrapper.unwrap_display');
+      expect(method!.metadata.name).not.toContain('<');
+      expect(method!.metadata.name).not.toContain('>');
+    });
+
     it('should NOT include macros in callees', () => {
       // process_request calls format!() — should NOT be in callees
       const processReq = docs.find((d) => d.metadata.name === 'Server.process_request');

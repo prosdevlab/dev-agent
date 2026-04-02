@@ -60,3 +60,25 @@ pub fn read_server_host(s: &Server) -> String {
     let _host = s.host.clone();
     s.host.to_uppercase()
 }
+
+// Tests mod block support — functions inside mod blocks must be captured
+mod handlers {
+    pub fn handle_request(data: &str) -> String {
+        data.to_uppercase()
+    }
+
+    fn internal_helper() -> bool {
+        true
+    }
+}
+
+// Tests nested generic stripping
+pub struct Wrapper<T> {
+    inner: Option<T>,
+}
+
+impl<T: fmt::Display> Wrapper<Option<T>> {
+    pub fn unwrap_display(&self) -> String {
+        format!("{:?}", self.inner)
+    }
+}
