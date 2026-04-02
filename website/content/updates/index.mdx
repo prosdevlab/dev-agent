@@ -9,6 +9,22 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.12.2 — Reverse Callee Index for dev_refs
+
+*April 2, 2026*
+
+**`dev_refs` callers finally work.**
+
+- **Reverse callee index:** maps callee names to their callers, built at index time from scan data. 4,000+ caller entries on a typical codebase
+- **Compound keys:** `file:name` for TypeScript (O(1) exact match), bare names for Go/Rust/Python with secondary name index for O(1) resolution
+- **Single artifact:** persisted inside `dependency-graph.json` v2 — atomic write, no drift between graph and reverse index
+- **Class aggregation:** `dev refs "SearchAdapter"` aggregates callers across constructor + all methods
+- **Backward compatible:** v1 graph files load fine, callers return empty until re-indexed
+- Before: `dev refs "validateArgs"` → "No callers found"
+- After: `dev refs "validateArgs"` → 5 adapter callers listed with file paths and line numbers
+
+---
+
 ## v0.12.1 — Cleaner Search Output + refs Fix
 
 *April 1, 2026*
