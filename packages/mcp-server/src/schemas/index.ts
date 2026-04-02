@@ -47,7 +47,6 @@ export const SearchArgsSchema = z
     query: z.string().min(1, 'Query must be a non-empty string'),
     format: FormatSchema.default('compact'),
     limit: z.number().int().min(1).max(50).default(10),
-    scoreThreshold: z.number().min(0).max(1).default(0),
     tokenBudget: z.number().int().min(500).max(10000).optional(),
   })
   .strict();

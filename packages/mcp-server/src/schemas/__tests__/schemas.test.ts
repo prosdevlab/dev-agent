@@ -98,7 +98,6 @@ describe('SearchArgsSchema', () => {
       expect(result.data).toMatchObject({
         format: 'compact',
         limit: 10,
-        scoreThreshold: 0,
       });
     }
   });

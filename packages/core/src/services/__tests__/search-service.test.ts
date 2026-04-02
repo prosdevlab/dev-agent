@@ -81,7 +81,7 @@ describe('SearchService', () => {
 
       expect(mockIndexer.search).toHaveBeenCalledWith('test query', {
         limit: 10,
-        scoreThreshold: 0.7,
+        scoreThreshold: 0,
       });
     });
 

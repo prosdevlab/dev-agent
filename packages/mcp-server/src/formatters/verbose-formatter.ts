@@ -103,8 +103,6 @@ export class VerboseFormatter implements ResultFormatter {
 
   private formatHeader(result: SearchResult): string {
     const header: string[] = [];
-    header.push(`[Score: ${(result.score * 100).toFixed(1)}%]`);
-
     if (this.options.includeTypes && typeof result.metadata.type === 'string') {
       header.push(`${result.metadata.type}:`);
     }
@@ -197,7 +195,8 @@ export class VerboseFormatter implements ResultFormatter {
 
   formatResults(results: SearchResult[]): FormattedResult {
     if (results.length === 0) {
-      const content = 'No results found';
+      const content =
+        'No results found. Try broader terms or use dev_map to explore the codebase structure.';
       return {
         content,
         tokens: estimateTokensForText(content),

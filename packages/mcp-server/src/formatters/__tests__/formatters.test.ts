@@ -55,7 +55,7 @@ describe('Formatters', () => {
       const formatter = new CompactFormatter();
       const formatted = formatter.formatResult(mockResults[0]);
 
-      expect(formatted).toContain('[89%]');
+      expect(formatted).not.toContain('[89%]');
       expect(formatted).toContain('class:');
       expect(formatted).toContain('AuthMiddleware');
       expect(formatted).toContain('src/auth/middleware.ts');
@@ -66,9 +66,9 @@ describe('Formatters', () => {
       const formatter = new CompactFormatter();
       const result = formatter.formatResults(mockResults);
 
-      expect(result.content).toContain('1. [89%]');
-      expect(result.content).toContain('2. [84%]');
-      expect(result.content).toContain('3. [72%]');
+      expect(result.content).toContain('1. class:');
+      expect(result.content).toContain('2. function:');
+      expect(result.content).toContain('3. function:');
       expect(result.tokens).toBeGreaterThan(0);
       // Token footer moved to metadata, no longer in content
       expect(result.content).not.toContain('🪙');
@@ -101,7 +101,7 @@ describe('Formatters', () => {
       const formatter = new CompactFormatter();
       const formatted = formatter.formatResult(minimalResult);
 
-      expect(formatted).toContain('[50%]');
+      expect(formatted).not.toContain('[50%]');
       expect(formatted).not.toContain('undefined');
     });
 
@@ -120,7 +120,7 @@ describe('Formatters', () => {
       const formatter = new VerboseFormatter();
       const formatted = formatter.formatResult(mockResults[0]);
 
-      expect(formatted).toContain('[Score: 89.0%]');
+      expect(formatted).not.toContain('[Score:');
       expect(formatted).toContain('class:');
       expect(formatted).toContain('AuthMiddleware');
       expect(formatted).toContain('Location: src/auth/middleware.ts:15');
@@ -136,9 +136,9 @@ describe('Formatters', () => {
       const formatter = new VerboseFormatter();
       const result = formatter.formatResults(mockResults);
 
-      expect(result.content).toContain('1. [Score: 89.0%]');
-      expect(result.content).toContain('2. [Score: 84.0%]');
-      expect(result.content).toContain('3. [Score: 72.0%]');
+      expect(result.content).toContain('1. class:');
+      expect(result.content).toContain('2. function:');
+      expect(result.content).toContain('3. function:');
 
       // Should have double newlines between results
       expect(result.content).toContain('\n\n');
@@ -201,7 +201,7 @@ describe('Formatters', () => {
       const formatter = new VerboseFormatter();
       const formatted = formatter.formatResult(minimalResult);
 
-      expect(formatted).toContain('[Score: 50.0%]');
+      expect(formatted).not.toContain('[Score:');
       expect(formatted).toContain('TestFunc');
       expect(formatted).not.toContain('undefined');
     });
