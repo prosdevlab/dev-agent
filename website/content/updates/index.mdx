@@ -9,6 +9,20 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.12.1 — Cleaner Search Output + refs Fix
+
+*April 1, 2026*
+
+**MCP search results now match industry best practices.**
+
+- **Drop misleading scores:** search results no longer show RRF fusion percentages (always ~1-2%). Results are ranked by position, matching Sourcegraph Cody, Cursor, and GitHub Copilot
+- **Result preamble:** search output starts with `Found N results for "query" | showing top K`
+- **Fix dev_refs via MCP:** `SearchService` defaulted `scoreThreshold` to 0.7, silently filtering all results since RRF scores are ~0.01. Now defaults to 0
+- **Remove `scoreThreshold` from MCP tool schema:** agents can no longer pass a threshold that doesn't work with RRF scores. Core API retains it for CLI use
+- **Better empty results:** suggests `dev_map` when no results found
+
+---
+
 ## v0.12.0 — Go Callees + Rust Language Support
 
 *April 1, 2026*
