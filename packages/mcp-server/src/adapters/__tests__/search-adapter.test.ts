@@ -102,7 +102,7 @@ describe('SearchAdapter', () => {
       expect(def.inputSchema.properties).toHaveProperty('query');
       expect(def.inputSchema.properties).toHaveProperty('format');
       expect(def.inputSchema.properties).toHaveProperty('limit');
-      expect(def.inputSchema.properties).toHaveProperty('scoreThreshold');
+      expect(def.inputSchema.properties).not.toHaveProperty('scoreThreshold');
       expect(def.inputSchema.required).toContain('query');
     });
 
@@ -236,48 +236,6 @@ describe('SearchAdapter', () => {
     });
   });
 
-  describe('Score Threshold Validation', () => {
-    it('should accept valid threshold', async () => {
-      const result = await adapter.execute(
-        {
-          query: 'test',
-          scoreThreshold: 0.5,
-        },
-        execContext
-      );
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject threshold below 0', async () => {
-      const result = await adapter.execute(
-        {
-          query: 'test',
-          scoreThreshold: -0.1,
-        },
-        execContext
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe('INVALID_PARAMS');
-      expect(result.error?.message).toContain('scoreThreshold');
-    });
-
-    it('should reject threshold above 1', async () => {
-      const result = await adapter.execute(
-        {
-          query: 'test',
-          scoreThreshold: 1.1,
-        },
-        execContext
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe('INVALID_PARAMS');
-      expect(result.error?.message).toContain('scoreThreshold');
-    });
-  });
-
   describe('Search Execution', () => {
     it('should return search results', async () => {
       const result = await adapter.execute(
@@ -295,7 +253,6 @@ describe('SearchAdapter', () => {
       expect(result.metadata).toHaveProperty('results_total', 2);
       expect(mockIndexer.search).toHaveBeenCalledWith('authentication', {
         limit: 10,
-        scoreThreshold: 0,
       });
     });
 
@@ -325,25 +282,8 @@ describe('SearchAdapter', () => {
       expect(result.success).toBe(true);
       expect(mockIndexer.search).toHaveBeenCalledWith('test', {
         limit: 3,
-        scoreThreshold: 0,
       });
       expect(result.metadata?.results_total).toBe(2); // Mock returns 2 results
-    });
-
-    it('should respect score threshold parameter', async () => {
-      const result = await adapter.execute(
-        {
-          query: 'test',
-          scoreThreshold: 0.9,
-        },
-        execContext
-      );
-
-      expect(result.success).toBe(true);
-      expect(mockIndexer.search).toHaveBeenCalledWith('test', {
-        limit: 10,
-        scoreThreshold: 0.9,
-      });
     });
 
     it('compact format should use fewer tokens than verbose', async () => {

@@ -106,13 +106,6 @@ export class SearchAdapter extends ToolAdapter {
             maximum: 50,
             default: this.config.defaultLimit,
           },
-          scoreThreshold: {
-            type: 'number',
-            description: 'Minimum similarity score (0-1). Lower = more results (default: 0)',
-            minimum: 0,
-            maximum: 1,
-            default: 0,
-          },
           tokenBudget: {
             type: 'number',
             description:
@@ -133,7 +126,7 @@ export class SearchAdapter extends ToolAdapter {
       return validation.error;
     }
 
-    const { query, format, limit, scoreThreshold, tokenBudget } = validation.data;
+    const { query, format, limit, tokenBudget } = validation.data;
 
     try {
       const startTime = Date.now();
@@ -141,14 +134,12 @@ export class SearchAdapter extends ToolAdapter {
         query,
         format,
         limit,
-        scoreThreshold,
         tokenBudget,
       });
 
       // Perform search using SearchService
       const results = await this.searchService.search(query as string, {
         limit: limit as number,
-        scoreThreshold: scoreThreshold as number,
       });
 
       // Create formatter with token budget if specified
@@ -194,10 +185,14 @@ export class SearchAdapter extends ToolAdapter {
         duration_ms,
       });
 
+      // Build preamble with result count
+      const returned = Math.min(results.length, limit as number);
+      const preamble = `Found ${results.length} results for "${query}" | showing top ${returned}\n\n`;
+
       // Return markdown content (MCP will wrap in content blocks)
       return {
         success: true,
-        data: formatted.content + relatedFilesSection,
+        data: preamble + formatted.content + relatedFilesSection,
         metadata: {
           tokens: formatted.tokens,
           duration_ms,

@@ -35,7 +35,7 @@ Find authentication middleware that handles JWT tokens
 - `query` (required): Natural language search query
 - `format`: `compact` (default) or `verbose`
 - `limit`: Number of results (1-50, default: 10)
-- `scoreThreshold`: Minimum relevance (0-1, default: 0)
+- `tokenBudget`: Maximum tokens for results (500-10000)
 
 ### `dev_status` - Repository Status
 Get indexing status and repository health information.

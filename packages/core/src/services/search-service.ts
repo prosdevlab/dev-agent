@@ -103,7 +103,7 @@ export class SearchService {
     try {
       const results = await indexer.search(query, {
         limit: options?.limit ?? 10,
-        scoreThreshold: options?.scoreThreshold ?? 0.7,
+        scoreThreshold: options?.scoreThreshold ?? 0,
       });
       return results;
     } finally {

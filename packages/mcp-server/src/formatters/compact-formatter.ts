@@ -87,8 +87,6 @@ export class CompactFormatter implements ResultFormatter {
   private formatHeader(result: SearchResult): string {
     const parts: string[] = [];
 
-    parts.push(`[${(result.score * 100).toFixed(0)}%]`);
-
     if (this.options.includeTypes && typeof result.metadata.type === 'string') {
       parts.push(`${result.metadata.type}:`);
     }
@@ -152,7 +150,8 @@ export class CompactFormatter implements ResultFormatter {
 
   formatResults(results: SearchResult[]): FormattedResult {
     if (results.length === 0) {
-      const content = 'No results found';
+      const content =
+        'No results found. Try broader terms or use dev_map to explore the codebase structure.';
       return {
         content,
         tokens: estimateTokensForText(content),
