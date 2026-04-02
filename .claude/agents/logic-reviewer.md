@@ -65,13 +65,17 @@ Every finding MUST include confidence: **HIGH** (verified from code), **MEDIUM**
 
 ### Cross-Package Data Flow (Deep+ Effort)
 
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?** `dev_refs` returns the call graph directly, `dev_search` finds related code by concept, `dev_patterns` compares error handling across files — each saves ~3,000-5,000 tokens vs manual file reading.
+Start by running these MCP tools on the changed functions:
+1. `dev_refs` on each modified function — trace callers and callees across packages.
+2. `dev_refs` with `dependsOn` on the changed files — trace file-to-file dependency paths.
+3. `dev_patterns` on changed files — compare error handling patterns against similar files.
 
-- [ ] Core exports consumed correctly by CLI, MCP server, and subagents — verify with `dev_refs`
-- [ ] Dependency chains make sense — use `dev_refs` with `dependsOn` to trace file-to-file paths
+Then verify:
+- [ ] Core exports consumed correctly by CLI, MCP server, and subagents (from `dev_refs` results)
+- [ ] Dependency chains make sense (from `dependsOn` results)
 - [ ] Type boundaries between packages match (no `any` casting to bridge mismatches)
 - [ ] Logger (@prosdevlab/kero) configuration consistent across consumers
-- [ ] Error handling patterns are consistent with existing code (verify with `dev_patterns`)
+- [ ] Error handling patterns consistent with existing code (from `dev_patterns` results)
 
 ## Design Echo Pass (Deep+ Effort)
 

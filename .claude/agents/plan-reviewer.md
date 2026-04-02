@@ -12,28 +12,22 @@ Two-pass review of execution plans in `.claude/da-plans/`. Validates completenes
 
 This agent **NEVER modifies plans**. It reports issues for the author to fix.
 
-## MCP Tools — Conserve Context
-
-This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
-
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
-
-- **`dev_map`** — Verify structure claims in the plan against actual codebase layout.
-- **`dev_refs`** — Confirm dependency assertions. Use `dependsOn` to trace dependency chains between files.
-- **`dev_patterns`** — Check if proposed patterns match existing conventions.
-
 ## Two-Pass Review
 
 ### Pass 1: Engineer Review
 
-Read the plan as a senior engineer. Use `dev_map` to verify structure claims, `dev_refs` to confirm dependency assertions, and `dev_patterns` to check if proposed patterns match existing conventions.
+Read the plan as a senior engineer. Start by gathering context with MCP tools before evaluating.
 
-1. **Context** — Does it accurately describe what exists today? (Verify with `dev_map` and reading actual code)
-2. **Architecture** — Does the proposed design fit the existing monorepo structure?
-3. **Parts breakdown** — Are parts sized correctly? (Each should be 1-2 commits)
-4. **Dependencies** — Are cross-package dependencies identified? (Verify with `dev_refs`. Use `dependsOn` to trace dependency chains between files.)
-5. **Build order** — Does the implementation order respect the build dependency chain?
-6. **Breaking changes** — Are they identified and migration paths described?
+1. Run `dev_map` to see the current codebase structure. Compare against the plan's architecture claims.
+2. Run `dev_refs` on the key functions the plan modifies. Use `dependsOn` to trace dependency chains between files the plan touches.
+3. Run `dev_patterns` on files the plan proposes to change. Check if the proposed code follows existing conventions.
+4. Now evaluate with the context you gathered:
+   - **Context** — Does the plan accurately describe what exists today?
+   - **Architecture** — Does the proposed design fit the actual structure you saw in `dev_map`?
+   - **Parts breakdown** — Are parts sized correctly? (Each should be 1-2 commits)
+   - **Dependencies** — Do the `dev_refs` results confirm the plan's dependency claims?
+   - **Build order** — Does the implementation order respect the dependency chain?
+   - **Breaking changes** — Are they identified and migration paths described?
 
 ### Pass 2: Test Engineer Review
 

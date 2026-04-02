@@ -14,24 +14,15 @@ specialist agents, and produce a unified report.
 
 This agent **NEVER modifies code**. It reports issues for the developer to fix.
 
-## MCP Tools — Conserve Context
-
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
-
-Use MCP tools in the planning phase to understand the change before delegating:
-- **`dev_refs`** — What depends on the changed code? What does it call?
-- **`dev_map`** — How central are these files? What subsystem are they in?
-- **`dev_patterns`** — Do the changes follow existing conventions?
-- **`dev_search`** — Are there similar implementations elsewhere?
-
 ## Workflow
 
 ### Phase 1: Understand the change
 
 1. Get the diff: `git diff main...HEAD` or staged changes
-2. Use `dev_refs` on the key changed functions — who calls them? What do they call?
-3. Use `dev_map` — are these hot path files? Which subsystem?
-4. Read the diff carefully. Identify the areas of highest risk.
+2. Run `dev_refs` on the key changed functions — who calls them? What do they call?
+3. Run `dev_map` — are these hot path files? Which subsystem?
+4. Run `dev_patterns` on the changed files — do they follow existing conventions?
+5. Read the diff carefully. Identify the areas of highest risk.
 
 ### Phase 2: Plan specialist tasks
 
