@@ -13,7 +13,8 @@ Implementation deviations are logged at the bottom of each plan file.
 | [Core](core/) | Phase 2 | Indexing rethink (Linear Merge, incremental) | Merged |
 | [Core](core/) | Phase 3 | Cached dependency graph for scale | Merged |
 | [Core](core/) | Phase 4 | Python language support | Merged |
-| [Core](core/) | Phase 5 | Go callee extraction + Rust language support | Draft |
+| [Core](core/) | Phase 5 | Go callee extraction + Rust language support | Merged |
+| [Core](core/) | Phase 6 | Reverse callee index for dev_refs callers | Draft |
 | [MCP](mcp/) | Phase 1 | Tools improvement (patterns, consolidation, AST, graph algorithms) | Merged |
 | [MCP](mcp/) | Phase 2 | Composite tools — dev_review and dev_research | Draft |
 
