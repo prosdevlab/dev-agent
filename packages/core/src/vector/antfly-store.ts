@@ -7,7 +7,6 @@
  */
 
 import { AntflyClient } from '@antfly/sdk';
-import { chunk } from '../utils/chunking';
 import type {
   EmbeddingDocument,
   SearchOptions,
@@ -304,13 +303,6 @@ export class AntflyVectorStore implements VectorStore {
    * Use ONLY for full-index operations. For incremental updates, use batchUpsertAndDelete().
    * Records must be sorted lexicographically by key (handled internally).
    */
-  /**
-   * Maximum documents per Linear Merge HTTP request.
-   * Antfly's endpoint fails on large JSON payloads (~6k+ docs).
-   * Chunking into smaller batches avoids the limit.
-   */
-  private static readonly MERGE_BATCH_SIZE = 3000;
-
   async linearMerge(
     documents: EmbeddingDocument[],
     lastMergedId = '',
@@ -322,79 +314,57 @@ export class AntflyVectorStore implements VectorStore {
     this.assertReady();
 
     const sorted = [...documents].sort((a, b) => a.id.localeCompare(b.id));
+    const records: Record<string, unknown> = {};
+    for (const doc of sorted) {
+      records[doc.id] = { text: doc.text, metadata: JSON.stringify(doc.metadata) };
+    }
+
     const total = documents.length;
     const totals: LinearMergeResult = { upserted: 0, skipped: 0, deleted: 0 };
-
-    // Chunk documents to avoid Antfly HTTP payload size limit
-    const chunks = chunk(sorted, AntflyVectorStore.MERGE_BATCH_SIZE);
+    let cursor = lastMergedId;
 
     try {
-      for (const chunk of chunks) {
-        const result = await this.linearMergeChunk(chunk, lastMergedId);
-        totals.upserted += result.upserted;
-        totals.skipped += result.skipped;
-        totals.deleted += result.deleted;
-        if (result.took) totals.took = (totals.took ?? 0) + result.took;
+      const raw = this.client.getRawClient();
+      do {
+        const result = await raw.POST('/tables/{tableName}/merge', {
+          params: { path: { tableName: this.cfg.table } },
+          body: { records, last_merged_id: cursor },
+        });
+
+        if (result.error) {
+          throw new Error(
+            typeof result.error === 'object' && 'error' in result.error
+              ? String((result.error as Record<string, unknown>).error)
+              : String(result.error)
+          );
+        }
+
+        const data = result.data;
+        if (!data) {
+          throw new Error('Linear Merge returned no data');
+        }
+
+        totals.upserted += data.upserted ?? 0;
+        totals.skipped += data.skipped ?? 0;
+        totals.deleted += data.deleted ?? 0;
+        if (data.took) totals.took = (totals.took ?? 0) + data.took;
+
         onProgress?.(totals.upserted + totals.skipped, total);
-      }
+
+        if (data.status === 'partial' && data.next_cursor) {
+          cursor = data.next_cursor;
+        } else {
+          break;
+        }
+        // biome-ignore lint/correctness/noConstantCondition: pagination loop exits via break
+      } while (true);
+
       return totals;
     } catch (error) {
       throw new Error(
         `Linear Merge failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-  }
-
-  /**
-   * Merge a single chunk of documents via Antfly's merge endpoint.
-   * Handles server-side pagination (status: "partial" + next_cursor).
-   */
-  private async linearMergeChunk(
-    chunk: EmbeddingDocument[],
-    lastMergedId: string
-  ): Promise<LinearMergeResult> {
-    const records: Record<string, unknown> = {};
-    for (const doc of chunk) {
-      records[doc.id] = { text: doc.text, metadata: JSON.stringify(doc.metadata) };
-    }
-
-    const totals: LinearMergeResult = { upserted: 0, skipped: 0, deleted: 0 };
-    let cursor = lastMergedId;
-
-    const raw = this.client.getRawClient();
-    do {
-      const result = await raw.POST('/tables/{tableName}/merge', {
-        params: { path: { tableName: this.cfg.table } },
-        body: { records, last_merged_id: cursor },
-      });
-
-      if (result.error) {
-        throw new Error(
-          typeof result.error === 'object' && 'error' in result.error
-            ? String((result.error as Record<string, unknown>).error)
-            : String(result.error)
-        );
-      }
-
-      const data = result.data;
-      if (!data) {
-        throw new Error('Linear Merge returned no data');
-      }
-
-      totals.upserted += data.upserted ?? 0;
-      totals.skipped += data.skipped ?? 0;
-      totals.deleted += data.deleted ?? 0;
-      if (data.took) totals.took = (totals.took ?? 0) + data.took;
-
-      if (data.status === 'partial' && data.next_cursor) {
-        cursor = data.next_cursor;
-      } else {
-        break;
-      }
-      // biome-ignore lint/correctness/noConstantCondition: pagination loop exits via break
-    } while (true);
-
-    return totals;
   }
 
   /**
