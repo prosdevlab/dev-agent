@@ -48,9 +48,9 @@ Maximum **5 SUGGESTION items** per review. If more found, pick the top 5 and not
 
 ### Readability & Simplification
 
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?** `dev_patterns` compares patterns across similar files (~500 tokens vs ~3,000 for manual reads). `dev_search` checks if a utility exists by meaning, not just name.
+Run `dev_patterns` on changed files to find similar code and detect duplication. Run `dev_search` to check if a utility already exists before flagging missing abstractions.
 
-- [ ] No code duplicating existing utilities — verify with `dev_patterns` and `dev_search`
+- [ ] No code duplicating existing utilities (from `dev_patterns` and `dev_search` results)
 - [ ] Functions reasonably sized (consider splitting if >50 lines)
 - [ ] Complex logic has comments explaining "why", not "what"
 - [ ] No premature abstractions for one-time operations

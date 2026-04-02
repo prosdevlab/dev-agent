@@ -10,12 +10,6 @@ color: blue
 
 Lightweight explorer optimized for speed and cost. Finds code, traces flows, maps dependencies.
 
-## MCP Tools — Conserve Context
-
-This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
-
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
-
 ## Capability Boundaries
 
 You excel at:

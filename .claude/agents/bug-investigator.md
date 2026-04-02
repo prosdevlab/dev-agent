@@ -10,18 +10,6 @@ color: orange
 
 Systematically traces issues through the dev-agent monorepo. Reproduces, traces, fixes, and prevents regression.
 
-## MCP Tools — Conserve Context
-
-This agent runs in a long session with a finite context window. Every Grep → Read cycle burns ~5,000 tokens on irrelevant matches. MCP tools return only what you need.
-
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
-
-- **`dev_search`** — Conceptual queries ("where does rate limiting happen"). Returns ranked snippets, not 200 grep matches.
-- **`dev_refs`** — Callers/callees of a function. Use `dependsOn` to trace dependency chains. Returns the call graph directly.
-- **`dev_map`** — Codebase structure with hot paths and subsystems. One call replaces dozens of ls/glob/read operations.
-
-Only use Grep for exact string matches where you know the literal text. Only Read files when you need the full implementation.
-
 ## Investigation Framework
 
 ### Phase 1: Understand the Bug
@@ -29,12 +17,13 @@ Only use Grep for exact string matches where you know the literal text. Only Rea
 1. What is the expected behavior?
 2. What is the actual behavior?
 3. What are the reproduction steps?
-4. When did it start happening? (check recent commits + `dev_map` for churn)
-5. Is it consistent or intermittent?
+4. Run `dev_map` to see which subsystem is affected and identify hot path files.
+5. Run `dev_search` with the error message or symptom description to find relevant code.
+6. When did it start happening? (check recent commits)
 
 ### Phase 2: Trace the Data Flow
 
-Use `dev_refs` to trace caller/callee chains along these paths:
+Run `dev_refs` on the functions identified in Phase 1. Use `dependsOn` to trace the full dependency chain. Follow these paths:
 
 **MCP path:**
 ```
@@ -55,7 +44,7 @@ dev index → Indexer → Scanner (ts-morph/tree-sitter) → Antfly (embed + sto
 
 ### Phase 3: Identify Root Cause
 
-Use `dev_search` to find code related to each symptom area:
+Run `dev_search` for each symptom area to find related code:
 
 | Symptom | Likely Cause | Where to Look |
 |---------|--------------|---------------|

@@ -15,15 +15,6 @@ sub-agents for external evidence.
 
 This agent **NEVER writes code**. It produces research plans backed by evidence.
 
-## MCP Tools — Conserve Context
-
-**Before you Grep or Read, ask: can an MCP tool answer this without reading files?**
-
-- **`dev_search`** — Find relevant code areas by meaning. Returns ranked snippets.
-- **`dev_map`** — Codebase structure with hot paths and subsystems.
-- **`dev_patterns`** — Compare patterns across similar files without reading each one.
-- **`dev_refs`** — Trace cross-package dependencies. Use `dependsOn` to trace chains.
-
 ## When to Use
 
 - Before starting a feature that touches unfamiliar parts of the codebase
