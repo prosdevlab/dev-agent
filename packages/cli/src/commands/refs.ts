@@ -70,7 +70,7 @@ export const refsCommand = new Command('refs')
       // Handle --depends-on
       if (options.dependsOn) {
         spinner.text = `Tracing path: ${name} → ${options.dependsOn}`;
-        const graph = await loadOrBuildGraph(filePaths.dependencyGraph, async () =>
+        const { graph } = await loadOrBuildGraph(filePaths.dependencyGraph, async () =>
           indexer.getAll({ limit: 50000 })
         );
         const sourceFile = (target.metadata.path as string) || '';

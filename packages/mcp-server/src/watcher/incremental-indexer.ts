@@ -9,6 +9,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {
+  buildReverseCalleeIndex,
   deserializeGraph,
   type EmbeddingDocument,
   prepareDocumentsForEmbedding,
@@ -16,6 +17,7 @@ import {
   scanRepository,
   serializeGraph,
   updateGraphIncremental,
+  updateReverseIndexIncremental,
 } from '@prosdevlab/dev-agent-core';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -130,20 +132,23 @@ export function createIncrementalIndexer(config: IncrementalIndexerConfig): {
         `[MCP] Incremental update: ${upserts.length} upserted, ${deleteIds.length} deleted`
       );
 
-      // 5. Update cached dependency graph
+      // 5. Update cached dependency graph + reverse index (atomic write)
       if (graphPath) {
         try {
           const json = await fs.readFile(graphPath, 'utf-8');
-          const existing = deserializeGraph(json);
-          if (existing) {
+          const result = deserializeGraph(json);
+          if (result) {
             const deletedFiles = deleted.map((f) => path.relative(repositoryPath, f));
             const changedDocs = upserts.map((d) => ({
               id: d.id,
               score: 0,
               metadata: d.metadata,
             }));
-            const updated = updateGraphIncremental(existing, changedDocs, deletedFiles);
-            await fs.writeFile(graphPath, serializeGraph(updated), 'utf-8');
+            const updatedGraph = updateGraphIncremental(result.graph, changedDocs, deletedFiles);
+            const updatedReverse = result.reverseIndex
+              ? updateReverseIndexIncremental(result.reverseIndex, changedDocs, deletedFiles)
+              : buildReverseCalleeIndex(changedDocs);
+            await fs.writeFile(graphPath, serializeGraph(updatedGraph, updatedReverse), 'utf-8');
           }
         } catch {
           // Graph update failed — next full index will fix it

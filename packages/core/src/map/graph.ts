@@ -13,6 +13,7 @@
 
 import * as fs from 'node:fs/promises';
 import type { SearchResult } from '../vector/types';
+import type { CallerEntry } from './types';
 
 // ============================================================================
 // Types
@@ -24,11 +25,15 @@ export interface WeightedEdge {
 }
 
 export interface CachedGraph {
-  version: 1;
+  version: 1 | 2;
   generatedAt: string;
   nodeCount: number;
   edgeCount: number;
   graph: Record<string, WeightedEdge[]>;
+  /** v2: reverse callee index — compound key (file:name) → callers */
+  reverseIndex?: Record<string, CallerEntry[]>;
+  /** v2: total entries across all reverse index keys */
+  reverseIndexEntryCount?: number;
 }
 
 // ============================================================================
@@ -272,43 +277,78 @@ export function shortestPath(
 // Serialization
 // ============================================================================
 
-const GRAPH_VERSION = 1;
-
 /**
- * Serialize a dependency graph to JSON string.
+ * Serialize a dependency graph (and optional reverse index) to JSON string.
+ * Always writes v2 format. v1 readers will reject on version check (expected).
  */
-export function serializeGraph(graph: Map<string, WeightedEdge[]>): string {
+export function serializeGraph(
+  graph: Map<string, WeightedEdge[]>,
+  reverseIndex?: Map<string, CallerEntry[]>,
+  generatedAt?: string
+): string {
   let edgeCount = 0;
-  const obj: Record<string, WeightedEdge[]> = {};
+  const graphObj: Record<string, WeightedEdge[]> = {};
   for (const [key, edges] of graph) {
-    obj[key] = edges;
+    graphObj[key] = edges;
     edgeCount += edges.length;
   }
+
+  let reverseObj: Record<string, CallerEntry[]> | undefined;
+  let reverseEntryCount: number | undefined;
+  if (reverseIndex) {
+    reverseObj = {};
+    reverseEntryCount = 0;
+    for (const [key, entries] of reverseIndex) {
+      reverseObj[key] = entries;
+      reverseEntryCount += entries.length;
+    }
+  }
+
   const cached: CachedGraph = {
-    version: GRAPH_VERSION,
-    generatedAt: new Date().toISOString(),
+    version: 2,
+    generatedAt: generatedAt ?? new Date().toISOString(),
     nodeCount: graph.size,
     edgeCount,
-    graph: obj,
+    graph: graphObj,
+    reverseIndex: reverseObj,
+    reverseIndexEntryCount: reverseEntryCount,
   };
   return JSON.stringify(cached);
 }
 
 /**
- * Deserialize a JSON string to a dependency graph.
- * Returns null if JSON is invalid or version doesn't match.
+ * Deserialized graph result — graph is always present, reverseIndex is null for v1.
  */
-export function deserializeGraph(json: string): Map<string, WeightedEdge[]> | null {
+export interface DeserializedGraph {
+  graph: Map<string, WeightedEdge[]>;
+  reverseIndex: Map<string, CallerEntry[]> | null;
+}
+
+/**
+ * Deserialize a JSON string to a dependency graph.
+ * Handles both v1 (graph only) and v2 (graph + reverse index).
+ * Returns null if JSON is invalid or version is unsupported.
+ */
+export function deserializeGraph(json: string): DeserializedGraph | null {
   try {
     const data = JSON.parse(json) as CachedGraph;
-    if (data.version !== GRAPH_VERSION) return null;
+    if (data.version !== 1 && data.version !== 2) return null;
     if (!data.graph || typeof data.graph !== 'object') return null;
 
     const graph = new Map<string, WeightedEdge[]>();
     for (const [key, edges] of Object.entries(data.graph)) {
       graph.set(key, edges as WeightedEdge[]);
     }
-    return graph;
+
+    let reverseIndex: Map<string, CallerEntry[]> | null = null;
+    if (data.reverseIndex) {
+      reverseIndex = new Map<string, CallerEntry[]>();
+      for (const [key, entries] of Object.entries(data.reverseIndex)) {
+        reverseIndex.set(key, entries);
+      }
+    }
+
+    return { graph, reverseIndex };
   } catch {
     return null;
   }
@@ -320,23 +360,24 @@ export function deserializeGraph(json: string): Map<string, WeightedEdge[]> | nu
 
 /**
  * Load dependency graph from cache, or build from docs as fallback.
+ * Returns both graph and reverse index (null if v1 or rebuilt from fallback).
  */
 export async function loadOrBuildGraph(
   graphPath: string | undefined,
   fallbackDocs: () => Promise<SearchResult[]>
-): Promise<Map<string, WeightedEdge[]>> {
+): Promise<DeserializedGraph> {
   if (graphPath) {
     try {
       const json = await fs.readFile(graphPath, 'utf-8');
-      const graph = deserializeGraph(json);
-      if (graph) return graph;
+      const result = deserializeGraph(json);
+      if (result) return result;
     } catch {
       // File missing or unreadable — fall through to build
     }
   }
 
   const docs = await fallbackDocs();
-  return buildDependencyGraph(docs);
+  return { graph: buildDependencyGraph(docs), reverseIndex: null };
 }
 
 // ============================================================================

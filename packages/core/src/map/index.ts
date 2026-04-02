@@ -22,6 +22,7 @@ import type {
 export { GitExtractor, LocalGitExtractor } from './git-extractor';
 export * from './git-types';
 export * from './graph';
+export * from './reverse-index';
 export * from './types';
 
 /** Default options for map generation */
@@ -123,7 +124,7 @@ export async function generateCodebaseMap(
 
   // Load cached dependency graph or build from docs as fallback
   const t7 = Date.now();
-  const graph = await loadOrBuildGraph(context.graphPath, async () => allDocs);
+  const { graph } = await loadOrBuildGraph(context.graphPath, async () => allDocs);
   const hotPaths = opts.includeHotPaths ? computeHotPaths(allDocs, graph, opts.maxHotPaths) : [];
   const rawComponents = connectedComponents(graph);
   const components = rawComponents

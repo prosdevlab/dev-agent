@@ -92,6 +92,20 @@ export interface HotPath {
 }
 
 /**
+ * Entry in the reverse callee index — represents a caller of a function/method.
+ */
+export interface CallerEntry {
+  /** Caller component name (e.g., "SearchAdapter.execute") */
+  name: string;
+  /** Caller file path */
+  file: string;
+  /** Call site line in caller */
+  line: number;
+  /** Caller component type (function, method, class) */
+  type: string;
+}
+
+/**
  * Result of codebase map generation
  */
 export interface CodebaseMap {
