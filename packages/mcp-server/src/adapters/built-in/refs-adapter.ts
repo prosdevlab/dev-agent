@@ -5,11 +5,18 @@
 
 import type {
   CalleeInfo,
+  CallerEntry,
   RepositoryIndexer,
   SearchResult,
   SearchService,
 } from '@prosdevlab/dev-agent-core';
-import { loadOrBuildGraph, shortestPath } from '@prosdevlab/dev-agent-core';
+import {
+  buildNameIndex,
+  loadOrBuildGraph,
+  lookupCallers,
+  lookupClassCallers,
+  shortestPath,
+} from '@prosdevlab/dev-agent-core';
 import { estimateTokensForText, startTimer } from '../../formatters/utils';
 import { RefsArgsSchema } from '../../schemas/index.js';
 import { ToolAdapter } from '../tool-adapter';
@@ -78,6 +85,8 @@ export class RefsAdapter extends ToolAdapter {
   private indexer?: RepositoryIndexer;
   private graphPath?: string;
   private cachedGraph?: Map<string, import('@prosdevlab/dev-agent-core').WeightedEdge[]>;
+  private cachedReverseIndex: Map<string, CallerEntry[]> | null = null;
+  private cachedNameIndex: Map<string, string[]> | null = null;
   private cachedGraphTime = 0;
 
   constructor(config: RefsAdapterConfig) {
@@ -110,8 +119,9 @@ export class RefsAdapter extends ToolAdapter {
     }
 
     const result = await loadOrBuildGraph(this.graphPath, async () => {
+      if (!this.indexer) return [];
       const DOC_LIMIT = 50_000;
-      const allDocs = await this.indexer!.getAll({ limit: DOC_LIMIT });
+      const allDocs = await this.indexer.getAll({ limit: DOC_LIMIT });
       if (allDocs.length >= DOC_LIMIT) {
         console.error(
           `[dev-agent] Warning: dependency graph hit ${DOC_LIMIT} doc limit. Results may be incomplete.`
@@ -120,6 +130,8 @@ export class RefsAdapter extends ToolAdapter {
       return allDocs;
     });
     this.cachedGraph = result.graph;
+    this.cachedReverseIndex = result.reverseIndex;
+    this.cachedNameIndex = result.reverseIndex ? buildNameIndex(result.reverseIndex) : null;
     this.cachedGraphTime = Date.now();
     return this.cachedGraph;
   }
@@ -251,7 +263,9 @@ export class RefsAdapter extends ToolAdapter {
 
       // Get callers if requested
       if (direction === 'callers' || direction === 'both') {
-        result.callers = await this.getCallers(target, limit);
+        // Ensure graph (and reverse index) is loaded before looking up callers
+        await this.getDependencyGraph();
+        result.callers = this.getCallersFromIndex(target, limit);
       }
 
       const content = this.formatOutput(result, direction);
@@ -322,47 +336,39 @@ export class RefsAdapter extends ToolAdapter {
   }
 
   /**
-   * Find callers by searching all indexed components for callees that reference the target
+   * Find callers using the reverse callee index.
+   * Falls back to empty results if no reverse index is available (v1 graph).
    */
-  private async getCallers(target: SearchResult, limit: number): Promise<RefResult[]> {
-    const targetName = target.metadata.name;
-    if (!targetName) return [];
+  private getCallersFromIndex(target: SearchResult, limit: number): RefResult[] {
+    if (!this.cachedReverseIndex || !this.cachedNameIndex) return [];
 
-    // Search for components that might call this target
-    // We search broadly and then filter by callees
-    const candidates = await this.searchService.search(targetName, { limit: 100 });
+    const targetName = (target.metadata.name as string) || '';
+    const targetFile = (target.metadata.path as string) || '';
+    const targetType = target.metadata.type as string;
 
-    const callers: RefResult[] = [];
+    const callers =
+      targetType === 'class'
+        ? lookupClassCallers(
+            this.cachedReverseIndex,
+            this.cachedNameIndex,
+            targetName,
+            targetFile,
+            limit
+          )
+        : lookupCallers(
+            this.cachedReverseIndex,
+            this.cachedNameIndex,
+            targetName,
+            targetFile,
+            limit
+          );
 
-    for (const candidate of candidates) {
-      // Skip the target itself
-      if (candidate.id === target.id) continue;
-
-      const callees = candidate.metadata.callees as CalleeInfo[] | undefined;
-      if (!callees) continue;
-
-      // Check if any callee matches our target
-      const callsTarget = callees.some(
-        (c) =>
-          c.name === targetName ||
-          c.name.endsWith(`.${targetName}`) ||
-          targetName.endsWith(`.${c.name}`)
-      );
-
-      if (callsTarget) {
-        callers.push({
-          name: candidate.metadata.name || 'unknown',
-          file: candidate.metadata.path,
-          line: candidate.metadata.startLine || 0,
-          type: candidate.metadata.type as string,
-          snippet: candidate.metadata.signature as string | undefined,
-        });
-
-        if (callers.length >= limit) break;
-      }
-    }
-
-    return callers;
+    return callers.map((c) => ({
+      name: c.name,
+      file: c.file,
+      line: c.line,
+      type: c.type,
+    }));
   }
 
   /**

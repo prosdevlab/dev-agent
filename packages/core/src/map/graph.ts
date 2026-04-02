@@ -13,6 +13,7 @@
 
 import * as fs from 'node:fs/promises';
 import type { SearchResult } from '../vector/types';
+import { buildReverseCalleeIndex } from './reverse-index';
 import type { CallerEntry } from './types';
 
 // ============================================================================
@@ -377,7 +378,10 @@ export async function loadOrBuildGraph(
   }
 
   const docs = await fallbackDocs();
-  return { graph: buildDependencyGraph(docs), reverseIndex: null };
+  return {
+    graph: buildDependencyGraph(docs),
+    reverseIndex: docs.length > 0 ? buildReverseCalleeIndex(docs) : null,
+  };
 }
 
 // ============================================================================

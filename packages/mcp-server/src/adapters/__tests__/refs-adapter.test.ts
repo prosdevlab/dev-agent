@@ -74,9 +74,17 @@ describe('RefsAdapter', () => {
       search: vi.fn().mockResolvedValue(mockSearchResults),
     } as unknown as SearchService;
 
-    // Create adapter
+    // Create mock indexer for reverse index building
+    const mockIndexer = {
+      getAll: vi.fn().mockResolvedValue(mockSearchResults),
+      initialize: vi.fn(),
+      close: vi.fn(),
+    };
+
+    // Create adapter with indexer so reverse index can be built
     adapter = new RefsAdapter({
       searchService: mockSearchService,
+      indexer: mockIndexer as any,
       defaultLimit: 20,
     });
 
@@ -349,8 +357,14 @@ describe('RefsAdapter', () => {
     });
 
     it('should return error when indexer is not available', async () => {
-      // The base adapter (no indexer) should fail for dependsOn
-      const result = await adapter.execute(
+      // Create an adapter without indexer — dependsOn requires it
+      const adapterNoIndexer = new RefsAdapter({
+        searchService: mockSearchService,
+        defaultLimit: 20,
+      });
+      await adapterNoIndexer.initialize(context);
+
+      const result = await adapterNoIndexer.execute(
         { name: 'createPlan', dependsOn: 'src/api.ts' },
         execContext
       );
