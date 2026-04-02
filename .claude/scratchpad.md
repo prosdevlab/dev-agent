@@ -4,6 +4,8 @@
 
 - **`getDocsByFilePath` fetches all docs client-side (capped at 5k).** Uses `getAll(limit: 5000)` + exact path filter. Fine for single repos (dev-agent has ~2,200 docs). Won't scale to monorepos with 50k+ files. Future fix: server-side path filter in Antfly SDK.
 - **Two clones of the same repo share one index.** Storage path is hashed from git remote URL (`prosdevlab/dev-agent` → `a1b2c3d4`). Two local clones on different branches share the same index, graph cache, and watcher snapshot. Stale data possible if branches diverge significantly. Pre-existing design — not introduced by graph cache. Fix would be to include branch or worktree path in the hash.
+- **Antfly Linear Merge fails on large batch sizes (~6k+ docs).** Tested with cli/cli (5,933 docs): `decoding request: json: string unexpected end of JSON input`. The scanner completes successfully but Antfly's HTTP endpoint fails to process the full payload. Workaround: none currently — the full index fails. Fix options: (1) batch the linearMerge into chunks of ~3k docs, (2) raise the limit on Antfly side, (3) stream instead of single POST. This blocks indexing medium-large Go/Rust repos (>~5k components).
+- **Rust/Go callee extraction does not resolve target files.** tree-sitter callees have `name` and `line` but no `file` field (unlike ts-morph which resolves cross-file references). This means `dev_map` hot paths show 0 refs for Rust/Go repos, and `dev_refs --depends-on` won't trace cross-file paths. The dependency graph only has edges when callees include a `file` field. Future: cross-file resolution for tree-sitter languages.
 
 ## Open Questions
 
