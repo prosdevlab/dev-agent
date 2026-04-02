@@ -1,9 +1,12 @@
 import * as path from 'node:path';
 import {
+  buildNameIndex,
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
   loadOrBuildGraph,
+  lookupCallers,
+  lookupClassCallers,
   RepositoryIndexer,
   type SearchResult,
   shortestPath,
@@ -109,32 +112,26 @@ export const refsCommand = new Command('refs')
         callees = (rawCallees || []).slice(0, limit);
       }
 
-      // Get callers
+      // Get callers from reverse index
       const callers: Array<{ name: string; file?: string; line: number; type?: string }> = [];
       if (direction === 'callers' || direction === 'both') {
-        const targetName = target.metadata.name as string;
-        const candidates = await indexer.search(targetName, { limit: 100 });
+        const { reverseIndex } = await loadOrBuildGraph(filePaths.dependencyGraph, async () =>
+          indexer.getAll({ limit: 50000 })
+        );
 
-        for (const candidate of candidates) {
-          if (candidate.id === target.id) continue;
-          const candidateCallees = candidate.metadata.callees as CalleeInfo[] | undefined;
-          if (!candidateCallees) continue;
+        if (reverseIndex) {
+          const nameIndex = buildNameIndex(reverseIndex);
+          const targetName = (target.metadata.name as string) || '';
+          const targetFile = (target.metadata.path as string) || '';
+          const targetType = target.metadata.type as string;
 
-          const callsTarget = candidateCallees.some(
-            (c) =>
-              c.name === targetName ||
-              c.name.endsWith(`.${targetName}`) ||
-              targetName.endsWith(`.${c.name}`)
-          );
+          const found =
+            targetType === 'class'
+              ? lookupClassCallers(reverseIndex, nameIndex, targetName, targetFile, limit)
+              : lookupCallers(reverseIndex, nameIndex, targetName, targetFile, limit);
 
-          if (callsTarget) {
-            callers.push({
-              name: (candidate.metadata.name as string) || 'unknown',
-              file: candidate.metadata.path as string,
-              line: (candidate.metadata.startLine as number) || 0,
-              type: candidate.metadata.type as string,
-            });
-            if (callers.length >= limit) break;
+          for (const c of found) {
+            callers.push({ name: c.name, file: c.file, line: c.line, type: c.type });
           }
         }
       }

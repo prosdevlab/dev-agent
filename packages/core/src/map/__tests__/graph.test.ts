@@ -448,7 +448,9 @@ describe('loadOrBuildGraph', () => {
 
     const result = await loadOrBuildGraph(undefined, async () => fallbackDocs);
     expect(result.graph.get('src/a.ts')).toBeDefined();
-    expect(result.reverseIndex).toBeNull(); // fallback doesn't build reverse index
+    // Fallback builds reverse index from the same docs
+    expect(result.reverseIndex).not.toBeNull();
+    expect(result.reverseIndex!.get('src/b.ts:foo')).toBeDefined();
   });
 
   it('should call fallback when graphPath file does not exist', async () => {
