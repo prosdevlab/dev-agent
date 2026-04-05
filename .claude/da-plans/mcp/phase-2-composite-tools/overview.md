@@ -63,6 +63,14 @@ enriched, structured context:
 - **`dev_review`** — Everything an AI needs to review a file or change
 - **`dev_research`** — Everything an AI needs to understand a concept in the codebase
 
+Two MCP resources that provide ambient codebase context without tool calls:
+
+- **`dev-agent://map`** — Codebase structure (packages, key files, hot paths)
+- **`dev-agent://conventions`** — Coding patterns (error handling, imports, naming)
+
+Resources mean the LLM starts every conversation already knowing the codebase
+shape and conventions. Zero tool calls for structural awareness.
+
 Plus CLI commands (`dev review`, `dev research`) for standalone terminal use.
 
 ---
@@ -88,16 +96,16 @@ Both MCP adapters and CLI commands call these services.
 │  Pure functions. Take indexer + search service + graph.   │
 │  Return structured data. No MCP, no CLI, no formatting.  │
 └──────────────────────────────────────────────────────────┘
-         ▲                              ▲
-         │                              │
-┌────────┴─────────┐         ┌─────────┴──────────┐
-│  MCP Adapters    │         │  CLI Commands       │
-│  review-adapter  │         │  dev review         │
-│  research-adapter│         │  dev research       │
-│                  │         │                     │
-│  Format for MCP  │         │  Format for terminal│
-│  (markdown)      │         │  (chalk/plain)      │
-└──────────────────┘         └────────────────────┘
+         ▲                   ▲                   ▲
+         │                   │                   │
+┌────────┴─────────┐ ┌──────┴──────────┐ ┌──────┴──────────┐
+│  MCP Adapters    │ │  MCP Resources  │ │  CLI Commands    │
+│  review-adapter  │ │  map resource   │ │  dev review      │
+│  research-adapter│ │  conventions    │ │  dev research    │
+│                  │ │                 │ │                  │
+│  Format for MCP  │ │  Passive context│ │  Format for term │
+│  (markdown)      │ │  (text/markdown)│ │  (chalk/plain)   │
+└──────────────────┘ └─────────────────┘ └──────────────────┘
 ```
 
 This also sets up the path to refactor existing adapters (refs, map, etc.) to
@@ -155,6 +163,7 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 | [2.2](./2.2-research-adapter.md) | Shared research analysis service + `dev_research` MCP adapter | Medium |
 | [2.3](./2.3-cli-commands.md) | `dev review` and `dev research` CLI commands (using shared services) | Low |
 | [2.4](./2.4-docs-and-agents.md) | Update CLAUDE.md, agents, doc site, changelog | Low |
+| [2.5](./2.5-mcp-resources.md) | MCP resources — ambient codebase context (map + conventions) | Low |
 
 ---
 
@@ -169,6 +178,8 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 | MCP is primary, CLI is secondary | Our users are AI assistant users. MCP delivers the full experience. CLI is the degraded-but-functional fallback. | CLI-first: would need its own LLM, adds cost and complexity |
 | dev_review description triggers on "review a PR/change" | Disambiguates from dev_patterns (single file analysis) and dev_search (conceptual query). | Generic description: AI won't know when to use it |
 | dev_research enriches ALL results by default | Scope controls emphasis in output, not which data is collected. Avoids the counterintuitive "usage skips call graphs" problem. | Scope skips enrichments: confusing mapping, loses useful data |
+| MCP resources for passive context | LLM starts with codebase structure + conventions in context — zero tool calls for basic awareness. Resources are read-only, lightweight, and the client controls whether to load them. | Embed context in tool descriptions: too limited. Auto-call dev_map on start: wastes a tool call every conversation. |
+| Two resources (map + conventions), not more | Start small. Each resource consumes context window. Two focused resources cover the highest-value ambient knowledge. Add more if usage data supports it. | One resource: misses conventions. Many resources: bloats context. |
 
 ---
 
@@ -182,6 +193,8 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 | AI makes worse decisions with composite than manual tools | Low | High | Test: compare review quality with composite vs 5 manual tool calls. If worse, the composite is failing. |
 | Shared services create unwanted coupling | Low | Medium | Services are pure functions with minimal interface. No state, no side effects. |
 | CLI experience too degraded without LLM | Medium | Low | CLI returns structured markdown that developers can read. Add LLM synthesis in Phase 3. |
+| Resources bloat LLM context window | Medium | Medium | Keep resources concise (~500 tokens each). Client decides whether to load. Provide summary, not exhaustive data. |
+| Resources become stale mid-session | Low | Low | Resources reflect indexed state. Stale data is still useful for structure. LLM can call dev_status to check freshness. |
 
 ---
 
@@ -205,6 +218,12 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 | CLI `dev review <file>` produces report | P0 | Standalone CLI works |
 | CLI `dev research <query>` produces report | P0 | Standalone CLI works |
 | Shared services called by both MCP and CLI | P1 | No logic duplication |
+| resources/list returns map + conventions | P0 | Resources registered correctly |
+| resources/read returns markdown for each URI | P0 | Resource content generated |
+| Resources stay under ~500 tokens each | P1 | Context window budget respected |
+| Resources reflect current index state | P1 | Not hardcoded, generated from index |
+| Composite quick depth completes in <5s | P2 | Latency smoke test (order-of-magnitude check) |
+| Composite standard depth completes in <10s | P2 | Latency smoke test (catches regressions) |
 
 ---
 
@@ -225,6 +244,9 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 - [ ] AI chooses `dev_review` over `dev_search` + `dev_refs` when reviewing a PR
 - [ ] CLI `dev review` produces readable terminal output
 - [ ] CLI `dev research` produces readable terminal output
+- [ ] Resources visible in Claude Code (LLM has ambient codebase awareness)
+- [ ] Resources visible in Cursor
+- [ ] LLM uses resource context to skip unnecessary dev_map calls
 
 ---
 
@@ -233,11 +255,18 @@ When one specialist fails (e.g., patterns times out but refs succeeds):
 ```
 1. feat(core): add review analysis service
 2. feat(mcp): add dev_review composite adapter
-3. feat(core): add research analysis service
-4. feat(mcp): add dev_research composite adapter
-5. feat(cli): add dev review and dev research commands
-6. docs: update CLAUDE.md, agents, and doc site for composite tools
+3. feat(mcp): add MCP resources for ambient codebase context
+4. feat(core): add research analysis service
+5. feat(mcp): add dev_research composite adapter
+6. feat(cli): add dev review and dev research commands
+7. docs: update CLAUDE.md, agents, and doc site for composite tools + resources
 ```
+
+**Dependency note:** Commit 3 (resources) depends only on existing core
+services (`RepositoryIndexer`, `SearchService`, `PatternAnalysisService`) and
+the cached dependency graph — NOT on the new review-analysis or research-analysis
+services from commits 1 and 4. Resources and composite tools are independent
+consumers of the same underlying services.
 
 ---
 

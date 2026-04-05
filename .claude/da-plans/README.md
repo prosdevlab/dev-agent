@@ -16,7 +16,7 @@ Implementation deviations are logged at the bottom of each plan file.
 | [Core](core/) | Phase 5 | Go callee extraction + Rust language support | Merged |
 | [Core](core/) | Phase 6 | Reverse callee index for dev_refs callers | Draft |
 | [MCP](mcp/) | Phase 1 | Tools improvement (patterns, consolidation, AST, graph algorithms) | Merged |
-| [MCP](mcp/) | Phase 2 | Composite tools — dev_review and dev_research | Draft |
+| [MCP](mcp/) | Phase 2 | Composite tools + MCP resources — dev_review, dev_research, ambient context | Draft |
 
 ## Plan Format
 
