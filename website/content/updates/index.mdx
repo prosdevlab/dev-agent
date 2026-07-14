@@ -9,6 +9,21 @@ What's new in dev-agent. We ship improvements regularly to help AI assistants un
 
 ---
 
+## v0.13.0 — Backend Resilience + dev doctor
+
+*July 14, 2026*
+
+**The MCP server survives a down search backend, and `dev doctor` tells you why.**
+
+- **Graceful MCP startup:** the server completes its handshake instantly even when Antfly is down or the index needs a long catchup. Tool calls wait for the backend, and failures return a clear error instead of the connection dying with `-32000`
+- **Self-healing:** a failed backend init is retried on the next tool call — start Antfly (or fix the issue) and the running MCP session recovers without a restart
+- **New `dev doctor`:** CLI health checks for the Antfly install, server reachability, port conflicts, embedding model, and repository index — works when nothing else does
+- **Podman support:** container fallbacks now detect Docker or Podman
+- **Captured startup logs:** Antfly's output lands in `~/.antfly/antfly.log` instead of being discarded, so failed starts are diagnosable
+- **Consistent auto-start:** `dev search`, `dev refs`, and `dev map` now start the backend automatically, matching `dev index`
+
+---
+
 ## v0.12.2 — Reverse Callee Index for dev_refs
 
 *April 2, 2026*
