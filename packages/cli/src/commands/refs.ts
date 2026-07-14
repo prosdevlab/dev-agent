@@ -14,6 +14,7 @@ import {
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
 import ora from 'ora';
+import { ensureAntfly } from '../utils/antfly.js';
 import { loadConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
@@ -55,6 +56,8 @@ export const refsCommand = new Command('refs')
         languages: config?.repository?.languages || config?.languages,
       });
 
+      // Auto-start the search backend if it isn't running
+      await ensureAntfly({ quiet: true });
       await indexer.initialize();
 
       const direction = options.direction as RefDirection;

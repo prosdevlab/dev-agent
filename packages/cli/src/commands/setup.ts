@@ -1,8 +1,9 @@
 /**
  * dev setup — One-time setup for dev-agent's search backend
  *
- * Native-first, Docker fallback. Handles installation, model download,
- * and server startup so users never need to run `antfly` directly.
+ * Native-first, container runtime (Docker or Podman) fallback. Handles
+ * installation, model download, and server startup so users never need to
+ * run `antfly` directly.
  */
 
 import { execSync, spawn } from 'node:child_process';
@@ -10,17 +11,19 @@ import * as readline from 'node:readline';
 import { Command } from 'commander';
 import ora from 'ora';
 import {
+  ANTFLY_CONTAINER_IMAGE,
+  type ContainerRuntime,
+  detectContainerRuntime,
   ensureAntfly,
   getAntflyUrl,
-  getDockerMemoryBytes,
+  getContainerMemoryBytes,
   getNativeVersion,
-  hasDocker,
   hasModel,
-  hasModelDocker,
+  hasModelContainer,
   hasNativeBinary,
   isServerReady,
   pullModel,
-  pullModelDocker,
+  pullModelContainer,
 } from '../utils/antfly.js';
 
 const DEFAULT_MODEL = 'BAAI/bge-small-en-v1.5';
@@ -35,14 +38,14 @@ async function confirm(question: string): Promise<boolean> {
   });
 }
 
-function dockerPull(image: string): Promise<void> {
+function containerPull(runtime: ContainerRuntime, image: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn('docker', ['pull', '--platform', 'linux/amd64', image], {
+    const child = spawn(runtime, ['pull', '--platform', 'linux/amd64', image], {
       stdio: 'pipe',
     });
     child.on('close', (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`docker pull exited with code ${code}`));
+      else reject(new Error(`${runtime} pull exited with code ${code}`));
     });
     child.on('error', reject);
   });
@@ -70,10 +73,14 @@ function ensureModel(spinner: ReturnType<typeof ora>, model: string): void {
   }
 }
 
-function ensureModelDocker(spinner: ReturnType<typeof ora>, model: string): void {
-  if (!hasModelDocker(model)) {
+function ensureModelContainer(
+  spinner: ReturnType<typeof ora>,
+  runtime: ContainerRuntime,
+  model: string
+): void {
+  if (!hasModelContainer(runtime, model)) {
     console.log(`  Pulling embedding model: ${model}`);
-    pullModelDocker(model);
+    pullModelContainer(runtime, model);
     spinner.succeed(`Embedding model ready: ${model}`);
   } else {
     spinner.succeed(`Embedding model ready: ${model}`);
@@ -83,7 +90,7 @@ function ensureModelDocker(spinner: ReturnType<typeof ora>, model: string): void
 export const setupCommand = new Command('setup')
   .description('One-time setup: install search backend and embedding model')
   .option('--model <name>', 'Termite embedding model', DEFAULT_MODEL)
-  .option('--docker', 'Use Docker instead of native binary', false)
+  .option('--docker', 'Use a container runtime (Docker or Podman) instead of native binary', false)
   .action(async (options) => {
     const model = options.model as string;
     const useDocker = options.docker as boolean;
@@ -94,11 +101,12 @@ export const setupCommand = new Command('setup')
       if (await isServerReady()) {
         spinner.succeed('Antfly already running');
 
-        // Ensure model — detect if running via Docker or native
+        // Ensure model — detect if running via container or native
+        const runtime = detectContainerRuntime();
         if (hasNativeBinary() && !useDocker) {
           ensureModel(spinner, model);
-        } else if (hasDocker()) {
-          ensureModelDocker(spinner, model);
+        } else if (runtime) {
+          ensureModelContainer(spinner, runtime, model);
         }
 
         console.log('\n  Setup complete!');
@@ -106,24 +114,27 @@ export const setupCommand = new Command('setup')
         return;
       }
 
-      // ── Docker (explicit flag) ──
+      // ── Container runtime (explicit flag) ──
       if (useDocker) {
-        if (!hasDocker()) {
-          spinner.fail('Docker is not available. Install Docker or run without --docker.');
+        const runtime = detectContainerRuntime();
+        if (!runtime) {
+          spinner.fail(
+            'No container runtime available. Install Docker or Podman, or run without --docker.'
+          );
           process.exit(1);
         }
 
-        const dockerMem = getDockerMemoryBytes();
-        if (dockerMem && dockerMem < 4 * 1024 * 1024 * 1024) {
-          const memGB = (dockerMem / (1024 * 1024 * 1024)).toFixed(1);
+        const containerMem = getContainerMemoryBytes(runtime);
+        if (containerMem && containerMem < 4 * 1024 * 1024 * 1024) {
+          const memGB = (containerMem / (1024 * 1024 * 1024)).toFixed(1);
           spinner.warn(
-            `Docker has only ${memGB}GB memory. Increase to 8GB+ in Docker Desktop → Settings → Resources.`
+            `${runtime} has only ${memGB}GB memory. Increase the VM allocation to 8GB+.`
           );
         }
 
         spinner.start('Pulling Antfly image...');
         try {
-          await dockerPull(getDockerImage());
+          await containerPull(runtime, ANTFLY_CONTAINER_IMAGE);
           spinner.succeed('Antfly image ready');
         } catch {
           spinner.succeed('Antfly image available');
@@ -133,7 +144,7 @@ export const setupCommand = new Command('setup')
         await ensureAntfly({ quiet: true });
         spinner.succeed(`Antfly running on ${getAntflyUrl()}`);
 
-        ensureModelDocker(spinner, model);
+        ensureModelContainer(spinner, runtime, model);
       } else if (hasNativeBinary()) {
         // ── Native (default) ──
         const version = getNativeVersion();
@@ -182,7 +193,3 @@ export const setupCommand = new Command('setup')
       process.exit(1);
     }
   });
-
-function getDockerImage(): string {
-  return 'ghcr.io/antflydb/antfly:latest';
-}

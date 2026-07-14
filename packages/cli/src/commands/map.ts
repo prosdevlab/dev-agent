@@ -18,6 +18,7 @@ import { createLogger } from '@prosdevlab/kero';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
+import { ensureAntfly } from '../utils/antfly.js';
 import { loadConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
@@ -80,6 +81,9 @@ Use Case:
         repositoryPath: resolvedRepoPath,
         vectorStorePath: filePaths.vectors,
       });
+
+      // Auto-start the search backend if it isn't running
+      await ensureAntfly({ quiet: true });
 
       // Skip embedder initialization for read-only map generation (10-20x faster)
       mapLogger.info('Initializing indexer (skipping embedder for fast read-only access)');
