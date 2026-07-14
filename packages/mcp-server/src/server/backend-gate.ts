@@ -36,6 +36,17 @@ export class BackendGate {
     });
   }
 
+  /**
+   * Resolve once no initialization attempt is in flight, without ever
+   * starting one. For shutdown: closing the indexer while init is still
+   * using it is a use-after-close race.
+   */
+  async waitForIdle(): Promise<void> {
+    if (this.current) {
+      await this.current.catch(() => {});
+    }
+  }
+
   /** Resolve when the backend is ready; reject with the init error if not. */
   async ensureReady(): Promise<void> {
     if (this.ready) return;
@@ -71,6 +82,7 @@ class GatedToolAdapter extends ToolAdapter {
     this.metadata = inner.metadata;
     if (inner.validate) this.validate = inner.validate.bind(inner);
     if (inner.estimateTokens) this.estimateTokens = inner.estimateTokens.bind(inner);
+    if (inner.healthCheck) this.healthCheck = inner.healthCheck.bind(inner);
   }
 
   getToolDefinition(): ToolDefinition {

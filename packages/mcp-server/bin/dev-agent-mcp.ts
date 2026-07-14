@@ -149,6 +149,7 @@ async function startupCatchup(
 
 async function main() {
   let watcherHandle: FileWatcherHandle | undefined;
+  let indexerInitialized = false;
 
   try {
     // Get centralized storage paths (filesystem only — no Antfly needed)
@@ -167,6 +168,8 @@ async function main() {
     // completes its handshake immediately; the first tool call waits for
     // this, and a failure here becomes a legible tool error — never a
     // process exit (the old behavior surfaced as a bare -32000).
+    // The gate retries this closure after a failure, so every step is
+    // guarded to be safe on re-entry (a second watcher would leak the first).
     const gate = new BackendGate(async () => {
       console.error('[MCP] Initializing backend...');
       try {
@@ -174,7 +177,10 @@ async function main() {
           deps: { logger: { info: (msg: string) => console.error(`[MCP] ${msg}`) } },
         });
 
-        await indexer.initialize();
+        if (!indexerInitialized) {
+          await indexer.initialize();
+          indexerInitialized = true;
+        }
         await saveMetadata(storagePath, repositoryPath);
 
         // Startup catchup: index or update since last snapshot
@@ -186,29 +192,31 @@ async function main() {
         );
 
         // Start file watcher only once the backend is usable
-        const incrementalIndexer = createIncrementalIndexer({
-          repositoryIndexer: indexer,
-          repositoryPath,
-          graphPath: filePaths.dependencyGraph,
-          logger: {
-            info: console.error.bind(console),
-            warn: console.error.bind(console),
-            error: console.error.bind(console),
-          },
-        });
+        if (!watcherHandle) {
+          const incrementalIndexer = createIncrementalIndexer({
+            repositoryIndexer: indexer,
+            repositoryPath,
+            graphPath: filePaths.dependencyGraph,
+            logger: {
+              info: console.error.bind(console),
+              warn: console.error.bind(console),
+              error: console.error.bind(console),
+            },
+          });
 
-        watcherHandle = await startFileWatcher({
-          repositoryPath,
-          snapshotPath: filePaths.watcherSnapshot,
-          onChanges: async (changed, deleted) => {
-            await incrementalIndexer.onChanges(changed, deleted);
-            // Write snapshot after each successful incremental update
-            await watcherHandle?.writeSnapshot();
-          },
-          onError: (err) => {
-            console.error('[MCP] File watcher error:', err);
-          },
-        });
+          watcherHandle = await startFileWatcher({
+            repositoryPath,
+            snapshotPath: filePaths.watcherSnapshot,
+            onChanges: async (changed, deleted) => {
+              await incrementalIndexer.onChanges(changed, deleted);
+              // Write snapshot after each successful incremental update
+              await watcherHandle?.writeSnapshot();
+            },
+            onError: (err) => {
+              console.error('[MCP] File watcher error:', err);
+            },
+          });
+        }
 
         console.error('[MCP] Backend ready; file watcher started');
       } catch (error) {
@@ -286,6 +294,9 @@ async function main() {
 
     // Handle graceful shutdown
     const shutdown = async () => {
+      // Let an in-flight backend init settle first — closing the indexer
+      // underneath it is a use-after-close race.
+      await gate.waitForIdle();
       if (watcherHandle) {
         await watcherHandle.unsubscribe().catch(() => {});
       }

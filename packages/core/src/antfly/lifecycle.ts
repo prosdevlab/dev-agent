@@ -10,7 +10,7 @@
  * so failed starts are diagnosable after the fact.
  */
 
-import { execSync, spawn } from 'node:child_process';
+import { execFileSync, execSync, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync, renameSync, statSync, writeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -149,18 +149,23 @@ export interface StartAntflyProcessOptions {
 export function startAntflyProcess(options: StartAntflyProcessOptions = {}): void {
   const logPath = options.logPath ?? getAntflyLogPath();
   const fd = openLogFile(logPath);
-  writeSync(
-    fd,
-    `[dev-agent] starting ${options.command ?? 'antfly'} at ${new Date().toISOString()}\n`
-  );
+  // The finally is load-bearing: callers (BackendGate) retry on every failed
+  // tool call, so a leaked fd per attempt would accumulate toward EMFILE.
+  try {
+    writeSync(
+      fd,
+      `[dev-agent] starting ${options.command ?? 'antfly'} at ${new Date().toISOString()}\n`
+    );
 
-  const child = spawn(options.command ?? 'antfly', options.args ?? buildSwarmArgs(), {
-    detached: true,
-    stdio: ['ignore', fd, fd],
-  });
-  child.unref();
-  // The child holds its own copy of the descriptor.
-  closeSync(fd);
+    const child = spawn(options.command ?? 'antfly', options.args ?? buildSwarmArgs(), {
+      detached: true,
+      stdio: ['ignore', fd, fd],
+    });
+    child.unref();
+  } finally {
+    // The child holds its own copy of the descriptor.
+    closeSync(fd);
+  }
 }
 
 function openLogFile(logPath: string): number {
@@ -312,29 +317,50 @@ export function getNativeVersion(): string | null {
 }
 
 /**
+ * Validate a Termite model name before it reaches a child process.
+ *
+ * Names look like "BAAI/bge-small-en-v1.5" or "mxbai-embed-large-v1".
+ * Rejecting anything else blocks shell metacharacters and option-like
+ * values ("--models-dir=...") even though the exec calls below already use
+ * argv arrays (defense-in-depth: the value also flows into container exec).
+ */
+export function assertValidModelName(model: string): void {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(model)) {
+    throw new Error(
+      `Invalid model name: ${JSON.stringify(model)}. ` +
+        'Expected letters, digits, ".", "_", "-", "/" (e.g. "BAAI/bge-small-en-v1.5").'
+    );
+  }
+}
+
+/**
  * Pull a Termite embedding model (native binary), targeting the models dir
  * used by the running swarm server.
  */
 export function pullModel(model: string): void {
-  execSync(`antfly termite pull --models-dir ${getTermiteModelsDir()} ${model}`, {
+  assertValidModelName(model);
+  execFileSync('antfly', ['termite', 'pull', '--models-dir', getTermiteModelsDir(), model], {
     stdio: 'inherit',
   });
 }
 
 /** Pull a Termite model inside the container. */
 export function pullModelContainer(runtime: ContainerRuntime, model: string): void {
-  execSync(`${runtime} exec ${ANTFLY_CONTAINER_NAME} /antfly termite pull ${model}`, {
+  assertValidModelName(model);
+  execFileSync(runtime, ['exec', ANTFLY_CONTAINER_NAME, '/antfly', 'termite', 'pull', model], {
     stdio: 'inherit',
   });
 }
 
 /** Check model presence in the server's models dir (native binary). */
 export function hasModel(model: string): boolean {
+  assertValidModelName(model);
   try {
-    const output = execSync(`antfly termite list --models-dir ${getTermiteModelsDir()}`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const output = execFileSync(
+      'antfly',
+      ['termite', 'list', '--models-dir', getTermiteModelsDir()],
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
     return modelPresentInOutput(model, output);
   } catch {
     return false;
@@ -343,11 +369,13 @@ export function hasModel(model: string): boolean {
 
 /** Check model presence inside the container. */
 export function hasModelContainer(runtime: ContainerRuntime, model: string): boolean {
+  assertValidModelName(model);
   try {
-    const output = execSync(`${runtime} exec ${ANTFLY_CONTAINER_NAME} /antfly termite list`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const output = execFileSync(
+      runtime,
+      ['exec', ANTFLY_CONTAINER_NAME, '/antfly', 'termite', 'list'],
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
     return modelPresentInOutput(model, output);
   } catch {
     return false;
