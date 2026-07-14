@@ -9,9 +9,7 @@ import { execSync } from 'node:child_process';
 import * as readline from 'node:readline';
 import { Command } from 'commander';
 import ora from 'ora';
-import { hasDocker, isContainerExists } from '../utils/antfly.js';
-
-const CONTAINER_NAME = 'dev-agent-antfly';
+import { ANTFLY_CONTAINER_NAME, containerExists, detectContainerRuntime } from '../utils/antfly.js';
 
 async function confirm(question: string): Promise<boolean> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -41,15 +39,16 @@ export const resetCommand = new Command('reset')
 
     try {
       // ── Stop and remove Antfly ──
-      if (hasDocker() && isContainerExists()) {
+      const runtime = detectContainerRuntime();
+      if (runtime && containerExists(runtime)) {
         spinner.start('Stopping Antfly container...');
         try {
-          execSync(`docker stop ${CONTAINER_NAME}`, { stdio: 'pipe' });
+          execSync(`${runtime} stop ${ANTFLY_CONTAINER_NAME}`, { stdio: 'pipe' });
         } catch {
           // Already stopped
         }
         try {
-          execSync(`docker rm ${CONTAINER_NAME}`, { stdio: 'pipe' });
+          execSync(`${runtime} rm ${ANTFLY_CONTAINER_NAME}`, { stdio: 'pipe' });
         } catch {
           // Already removed
         }

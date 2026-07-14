@@ -8,6 +8,7 @@ import {
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
+import { ensureAntfly } from '../utils/antfly.js';
 import { loadConfig } from '../utils/config.js';
 import { prepareFileForSearch } from '../utils/file.js';
 import { logger } from '../utils/logger.js';
@@ -45,6 +46,8 @@ export const searchCommand = new Command('search')
         languages: config?.repository?.languages || config?.languages,
       });
 
+      // Auto-start the search backend if it isn't running
+      await ensureAntfly({ quiet: true });
       await indexer.initialize();
 
       // If --similar-to is provided, use file content as the search query

@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { cleanCommand } from './commands/clean.js';
 import { compactCommand } from './commands/compact.js';
+import { doctorCommand } from './commands/doctor.js';
 import { indexCommand } from './commands/index.js';
 import { mapCommand } from './commands/map.js';
 import { mcpCommand } from './commands/mcp.js';
@@ -35,6 +36,7 @@ program.addCommand(storageCommand);
 program.addCommand(mcpCommand);
 program.addCommand(setupCommand);
 program.addCommand(resetCommand);
+program.addCommand(doctorCommand);
 
 // Show help if no command provided
 if (process.argv.length === 2) {
