@@ -6,6 +6,7 @@
 
 import {
   createPatternMatcher,
+  ensureAntfly,
   ensureStorageDirectory,
   getStorageFilePaths,
   getStoragePath,
@@ -20,6 +21,7 @@ import {
   SearchAdapter,
   StatusAdapter,
 } from '../src/adapters/built-in';
+import { BackendGate } from '../src/server/backend-gate';
 import { MCPServer } from '../src/server/mcp-server';
 import type { FileWatcherHandle } from '../src/watcher';
 import { createIncrementalIndexer, getEventsSince, startFileWatcher } from '../src/watcher';
@@ -145,114 +147,75 @@ async function startupCatchup(
   await watcher.writeSnapshot(repositoryPath, snapshotPath);
 }
 
-/**
- * Check if Antfly server is reachable.
- */
-async function isAntflyReady(): Promise<boolean> {
-  const url = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
-  const baseUrl = url.replace('/api/v1', '');
-  try {
-    const resp = await fetch(`${baseUrl}/api/v1/tables`, { signal: AbortSignal.timeout(3000) });
-    return resp.ok;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Try to start Antfly if not running (native first, then Docker).
- */
-async function tryStartAntfly(): Promise<void> {
-  const { execSync, spawn } = await import('node:child_process');
-
-  // Try native
-  try {
-    execSync('antfly --version', { stdio: 'pipe', timeout: 5000 });
-    const child = spawn(
-      'antfly',
-      [
-        'swarm',
-        '--metadata-api',
-        'http://0.0.0.0:18080',
-        '--store-api',
-        'http://0.0.0.0:18381',
-        '--metadata-raft',
-        'http://0.0.0.0:19017',
-        '--store-raft',
-        'http://0.0.0.0:19021',
-        '--health-port',
-        '14200',
-      ],
-      { detached: true, stdio: 'ignore' }
-    );
-    child.unref();
-    console.error('[MCP] Starting Antfly server (native)...');
-
-    // Wait for ready
-    const start = Date.now();
-    while (Date.now() - start < 30_000) {
-      if (await isAntflyReady()) return;
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    throw new Error('Antfly did not start in 30s');
-  } catch {
-    // Try Docker
-    try {
-      execSync('docker info', { stdio: 'pipe', timeout: 5000 });
-      try {
-        execSync('docker start dev-agent-antfly', { stdio: 'pipe' });
-      } catch {
-        execSync(
-          'docker run -d --name dev-agent-antfly -p 18080:8080 -m 8g --platform linux/amd64 ghcr.io/antflydb/antfly:latest swarm',
-          { stdio: 'pipe' }
-        );
-      }
-      console.error('[MCP] Starting Antfly server (Docker)...');
-
-      const start = Date.now();
-      while (Date.now() - start < 30_000) {
-        if (await isAntflyReady()) return;
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      throw new Error('Antfly did not start in 30s');
-    } catch {
-      // Neither available — will fail at indexer.initialize()
-    }
-  }
-}
-
 async function main() {
   let watcherHandle: FileWatcherHandle | undefined;
 
   try {
-    // Ensure Antfly is running before initializing
-    if (!(await isAntflyReady())) {
-      await tryStartAntfly();
-    }
-
-    // Get centralized storage paths
+    // Get centralized storage paths (filesystem only — no Antfly needed)
     const storagePath = await getStoragePath(repositoryPath);
     await ensureStorageDirectory(storagePath);
     const filePaths = getStorageFilePaths(storagePath);
 
-    // Initialize repository indexer with centralized storage
+    // Construct (but do not initialize) the indexer — construction is
+    // IO-free, so the MCP handshake never waits on the Antfly backend.
     const indexer = new RepositoryIndexer({
       repositoryPath,
       vectorStorePath: filePaths.vectors,
     });
 
-    await indexer.initialize();
+    // Backend initialization runs behind the gate: the server starts and
+    // completes its handshake immediately; the first tool call waits for
+    // this, and a failure here becomes a legible tool error — never a
+    // process exit (the old behavior surfaced as a bare -32000).
+    const gate = new BackendGate(async () => {
+      console.error('[MCP] Initializing backend...');
+      try {
+        await ensureAntfly({
+          deps: { logger: { info: (msg: string) => console.error(`[MCP] ${msg}`) } },
+        });
 
-    // Update metadata
-    await saveMetadata(storagePath, repositoryPath);
+        await indexer.initialize();
+        await saveMetadata(storagePath, repositoryPath);
 
-    // Startup catchup: index or update since last snapshot
-    await startupCatchup(
-      indexer,
-      repositoryPath,
-      filePaths.watcherSnapshot,
-      filePaths.dependencyGraph
-    );
+        // Startup catchup: index or update since last snapshot
+        await startupCatchup(
+          indexer,
+          repositoryPath,
+          filePaths.watcherSnapshot,
+          filePaths.dependencyGraph
+        );
+
+        // Start file watcher only once the backend is usable
+        const incrementalIndexer = createIncrementalIndexer({
+          repositoryIndexer: indexer,
+          repositoryPath,
+          graphPath: filePaths.dependencyGraph,
+          logger: {
+            info: console.error.bind(console),
+            warn: console.error.bind(console),
+            error: console.error.bind(console),
+          },
+        });
+
+        watcherHandle = await startFileWatcher({
+          repositoryPath,
+          snapshotPath: filePaths.watcherSnapshot,
+          onChanges: async (changed, deleted) => {
+            await incrementalIndexer.onChanges(changed, deleted);
+            // Write snapshot after each successful incremental update
+            await watcherHandle?.writeSnapshot();
+          },
+          onError: (err) => {
+            console.error('[MCP] File watcher error:', err);
+          },
+        });
+
+        console.error('[MCP] Backend ready; file watcher started');
+      } catch (error) {
+        console.error('[MCP] Backend initialization failed:', error);
+        throw error;
+      }
+    });
 
     // Create services
     const searchService = new SearchService({ repositoryPath });
@@ -297,7 +260,8 @@ async function main() {
       defaultTokenBudget: 2000,
     });
 
-    // Create MCP server with 5 adapters (health merged into status)
+    // Create MCP server with 5 adapters (health merged into status), each
+    // gated on backend readiness
     const server = new MCPServer({
       serverInfo: {
         name: 'dev-agent',
@@ -308,38 +272,17 @@ async function main() {
         logLevel,
       },
       transport: 'stdio',
-      adapters: [searchAdapter, statusAdapter, inspectAdapter, refsAdapter, mapAdapter],
+      adapters: [searchAdapter, statusAdapter, inspectAdapter, refsAdapter, mapAdapter].map(
+        (adapter) => gate.wrap(adapter)
+      ),
     });
 
-    // Start server
+    // Start server first — the handshake must not wait on the backend
     await server.start();
+    console.error('[MCP] Server started; backend initializing in background');
 
-    // Start file watcher for automatic incremental re-indexing
-    const incrementalIndexer = createIncrementalIndexer({
-      repositoryIndexer: indexer,
-      repositoryPath,
-      graphPath: filePaths.dependencyGraph,
-      logger: {
-        info: console.error.bind(console),
-        warn: console.error.bind(console),
-        error: console.error.bind(console),
-      },
-    });
-
-    watcherHandle = await startFileWatcher({
-      repositoryPath,
-      snapshotPath: filePaths.watcherSnapshot,
-      onChanges: async (changed, deleted) => {
-        await incrementalIndexer.onChanges(changed, deleted);
-        // Write snapshot after each successful incremental update
-        await watcherHandle?.writeSnapshot();
-      },
-      onError: (err) => {
-        console.error('[MCP] File watcher error:', err);
-      },
-    });
-
-    console.error('[MCP] File watcher started');
+    // Kick off backend init (Antfly, index, watcher) without blocking
+    gate.start();
 
     // Handle graceful shutdown
     const shutdown = async () => {
