@@ -3,6 +3,7 @@
  * Manages adapter lifecycle and tool execution routing
  */
 
+import { antflyUnavailableMessage, ensureAntfly } from '@prosdevlab/dev-agent-core';
 import { ErrorCode } from '../server/protocol/types';
 import { RateLimiter } from '../server/utils/rate-limiter';
 import type { ToolAdapter } from './tool-adapter';
@@ -179,12 +180,10 @@ export class AdapterRegistry {
         success: false,
         error: {
           code: String(ErrorCode.ToolExecutionError),
-          message: this.isAntflyError(msg)
-            ? 'Antfly server is not reachable. Run `dev setup` to restart it.'
-            : msg,
+          message: this.isAntflyError(msg) ? antflyUnavailableMessage() : msg,
           recoverable: true,
           suggestion: this.isAntflyError(msg)
-            ? 'Run `dev setup` to restart the Antfly server'
+            ? 'Run `dev doctor` to diagnose the search backend'
             : 'Check the tool arguments and try again',
         },
       };
@@ -278,65 +277,16 @@ export class AdapterRegistry {
   }
 
   /**
-   * Attempt to recover Antfly by restarting it (native first, Docker fallback)
+   * Attempt to recover Antfly by restarting it via the shared lifecycle
+   * (native first, container runtime fallback; output captured to the
+   * Antfly log file).
    */
   private async tryRecoverAntfly(): Promise<void> {
-    const { execSync, spawn } = await import('node:child_process');
-    const antflyUrl = process.env.ANTFLY_URL ?? 'http://localhost:18080/api/v1';
-    const baseUrl = antflyUrl.replace('/api/v1', '');
-
-    const isReady = async () => {
-      try {
-        const resp = await fetch(`${baseUrl}/api/v1/tables`, {
-          signal: AbortSignal.timeout(3000),
-        });
-        return resp.ok;
-      } catch {
-        return false;
-      }
-    };
-
-    // Try native
     try {
-      execSync('antfly --version', { stdio: 'pipe', timeout: 5000 });
-      const child = spawn(
-        'antfly',
-        [
-          'swarm',
-          '--metadata-api',
-          'http://0.0.0.0:18080',
-          '--store-api',
-          'http://0.0.0.0:18381',
-          '--metadata-raft',
-          'http://0.0.0.0:19017',
-          '--store-raft',
-          'http://0.0.0.0:19021',
-          '--health-port',
-          '14200',
-        ],
-        { detached: true, stdio: 'ignore' }
-      );
-      child.unref();
-
-      const start = Date.now();
-      while (Date.now() - start < 15_000) {
-        if (await isReady()) return;
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    } catch {
-      // Try Docker
-      try {
-        execSync('docker start dev-agent-antfly', { stdio: 'pipe' });
-        const start = Date.now();
-        while (Date.now() - start < 15_000) {
-          if (await isReady()) return;
-          await new Promise((r) => setTimeout(r, 500));
-        }
-      } catch {
-        // Neither worked
-      }
+      await ensureAntfly({ quiet: true });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to recover Antfly server: ${detail}`);
     }
-
-    throw new Error('Failed to recover Antfly server');
   }
 }
