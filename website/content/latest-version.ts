@@ -4,10 +4,10 @@
  */
 
 export const latestVersion = {
-  version: '0.12.2',
-  title: 'Reverse Callee Index for dev_refs',
-  date: 'April 2, 2026',
+  version: '0.13.0',
+  title: 'Backend Resilience + dev doctor',
+  date: 'July 14, 2026',
   summary:
-    'dev_refs callers finally work — reverse callee index with 4,000+ entries, compound keys, class aggregation, and O(1) lookups.',
-  link: '/updates#v0122--reverse-callee-index-for-dev_refs',
+    'The MCP server survives a down search backend — graceful startup, self-healing tool calls, new dev doctor health checks, Podman support, and captured Antfly logs.',
+  link: '/updates#v0130--backend-resilience--dev-doctor',
 } as const;
