@@ -114,6 +114,44 @@ describe('BackendGate', () => {
     await new Promise((r) => setTimeout(r, 10));
   });
 
+  it('waitForIdle awaits an in-flight init without triggering a new one', async () => {
+    let calls = 0;
+    let release: () => void = () => {};
+    const gate = new BackendGate(() => {
+      calls++;
+      return new Promise<void>((r) => {
+        release = r;
+      });
+    });
+    gate.start();
+    expect(calls).toBe(1);
+
+    let idle = false;
+    const waiting = gate.waitForIdle().then(() => {
+      idle = true;
+    });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(idle).toBe(false);
+
+    release();
+    await waiting;
+    expect(idle).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  it('waitForIdle resolves immediately after a failure without retrying init', async () => {
+    let calls = 0;
+    const gate = new BackendGate(async () => {
+      calls++;
+      throw new Error('nope');
+    });
+    gate.start();
+    await new Promise((r) => setTimeout(r, 10));
+
+    await expect(gate.waitForIdle()).resolves.toBeUndefined();
+    expect(calls).toBe(1);
+  });
+
   it('delegates tool definition and metadata to the inner adapter', () => {
     const gate = new BackendGate(async () => {});
     const inner = new MockAdapter('my_tool');

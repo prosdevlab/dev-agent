@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   antflyUnavailableMessage,
+  assertValidModelName,
   buildSwarmArgs,
   containerRunCommand,
   containerStartCommand,
@@ -79,6 +80,37 @@ describe('startAntflyProcess', () => {
     expect(content).toContain('hello from child');
     // Header line marks each start attempt so repeated failures are separable.
     expect(content).toContain('[dev-agent] starting');
+  });
+});
+
+describe('startAntflyProcess error path', () => {
+  it('throws (and does not hang) when the spawn command is invalid', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'antfly-lifecycle-err-'));
+    try {
+      // Empty command makes spawn throw synchronously — the log fd must be
+      // released via finally, not leaked (BackendGate retries init on every
+      // failed tool call, so a leak here accumulates toward EMFILE).
+      expect(() =>
+        startAntflyProcess({ command: '', args: [], logPath: join(dir, 'antfly.log') })
+      ).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('assertValidModelName', () => {
+  it('accepts real Termite model names', () => {
+    expect(() => assertValidModelName('BAAI/bge-small-en-v1.5')).not.toThrow();
+    expect(() => assertValidModelName('mxbai-embed-large-v1')).not.toThrow();
+  });
+
+  it('rejects shell metacharacters and option-like names', () => {
+    expect(() => assertValidModelName('x; rm -rf ~')).toThrow(/model name/i);
+    expect(() => assertValidModelName('$(whoami)')).toThrow(/model name/i);
+    expect(() => assertValidModelName('a && b')).toThrow(/model name/i);
+    expect(() => assertValidModelName('--models-dir=/tmp/evil')).toThrow(/model name/i);
+    expect(() => assertValidModelName('')).toThrow(/model name/i);
   });
 });
 

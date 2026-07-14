@@ -42,9 +42,17 @@ export const doctorCommand = new Command('doctor')
       config?.repository?.path || config?.repositoryPath || process.cwd()
     );
 
+    // Memoized: docker/podman probes carry a 5s timeout each, and two of the
+    // checks below need the runtime.
+    let cachedRuntime: ReturnType<typeof detectContainerRuntime> | undefined;
+    const runtimeOnce = () => {
+      if (cachedRuntime === undefined) cachedRuntime = detectContainerRuntime();
+      return cachedRuntime;
+    };
+
     const checks = await runDoctorChecks({
       nativeVersion: getNativeVersion,
-      containerRuntime: () => detectContainerRuntime(),
+      containerRuntime: runtimeOnce,
       serverReady: () => isServerReady(),
       portOwner: () => {
         try {
@@ -59,7 +67,7 @@ export const doctorCommand = new Command('doctor')
       },
       modelPresent: () => {
         if (getNativeVersion()) return hasModel(DEFAULT_MODEL);
-        const runtime = detectContainerRuntime();
+        const runtime = runtimeOnce();
         if (runtime) return hasModelContainer(runtime, DEFAULT_MODEL);
         return false;
       },
