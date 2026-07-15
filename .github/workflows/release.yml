@@ -31,11 +31,39 @@ jobs:
         with:
           node-version: 22.x
           cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
+          # NOTE: intentionally NO `registry-url`. Setting it makes setup-node
+          # write an .npmrc line `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`.
+          # Under OIDC there is no real token, so `changeset publish`'s pre-publish
+          # `npm info <pkg> --json` read carries a bad/placeholder token -> 401 ->
+          # empty stdout, which changesets treats as "not published" and tries to
+          # republish, and npm 11 hard-fails with "cannot publish over the previously
+          # published versions". Dropping registry-url makes the read anonymous (200).
+          # OIDC trusted publishing still works: npm handles publish auth via its
+          # token-exchange endpoint, and publishConfig.registry targets npmjs.org.
 
-      # Ensure npm 11.5.1+ for trusted publishing support
+      # Ensure npm 11.5.1+ for trusted publishing support (OIDC needs >= 11.5.1)
       - name: Update npm
         run: npm install -g npm@latest
+
+      # Diagnostic (non-fatal): prove the pre-publish read is anonymous and returns
+      # data. If stdout is non-empty JSON here, changesets will correctly SKIP
+      # already-published packages instead of re-publishing them. Remove once green.
+      - name: Diagnose npm info read
+        continue-on-error: true
+        run: |
+          echo "== npm config: registry & userconfig =="
+          npm config get registry
+          echo "userconfig=${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          echo "== .npmrc (auth lines masked) =="
+          cat "${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}" 2>/dev/null | sed -E 's/(_authToken|_auth|_password)=.*/\1=<redacted>/' || echo "(no .npmrc)"
+          for pkg in @prosdevlab/dev-agent @prosdevlab/kero; do
+            out=$(npm info "$pkg" --json 2>/dev/null)
+            if [ -z "$out" ]; then
+              echo "READ $pkg -> EMPTY stdout (changesets would treat as UNPUBLISHED)"
+            else
+              echo "READ $pkg -> OK, latest=$(printf '%s' "$out" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d)["dist-tags"].latest)}catch{console.log("parse-fail")}})')"
+            fi
+          done
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
