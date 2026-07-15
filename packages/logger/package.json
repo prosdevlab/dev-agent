@@ -57,7 +57,9 @@
     "node": ">=22"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "@prosdevlab:registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
